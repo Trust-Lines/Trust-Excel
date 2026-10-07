@@ -1,0 +1,479 @@
+/* ============================================
+   Trust Lines Premium Activation Page
+   ============================================ */
+
+.activation-page {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Background Panels */
+.background-panels {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  z-index: 0;
+}
+
+.panel-left {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(135deg, #B03A2E 0%, #A93226 50%, #922B21 100%);
+  border-radius: 0 120px 120px 0;
+}
+
+.panel-right {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(225deg, #2F2F2F 0%, #3A3A3A 50%, #2C2C2C 100%);
+}
+
+.curved-divider {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 100%;
+  z-index: 1;
+}
+
+.curve-svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 20px rgba(0, 0, 0, 0.1));
+}
+
+/* Activation Container */
+.activation-container {
+  position: relative;
+  z-index: 10;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.activation-card {
+  background: #FFFFFF;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 8px 20px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 420px;
+  padding: 48px 40px;
+  margin-left: 5%; /* Slightly right of center */
+  backdrop-filter: blur(10px);
+}
+
+/* Header */
+.activation-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.activation-logo {
+  height: 160px;
+  width: auto;
+  margin-bottom: 32px;
+  filter: brightness(0) saturate(100%) invert(19%) sepia(51%) saturate(1593%) hue-rotate(341deg) brightness(91%) contrast(86%);
+}
+
+.activation-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.5px;
+}
+
+.activation-subtitle {
+  font-size: 16px;
+  color: #6b7280;
+  margin: 0;
+  font-weight: 400;
+}
+
+/* Form Styles */
+.activation-form {
+  width: 100%;
+}
+
+.form-group {
+  margin-bottom: 24px;
+}
+
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+  letter-spacing: 0.2px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 16px 18px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 400;
+  color: #1f2937;
+  background: #ffffff;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #B03A2E;
+  box-shadow: 0 0 0 3px rgba(176, 58, 46, 0.1);
+}
+
+.form-input::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.form-input-error {
+  border-color: #ef4444;
+}
+
+.form-input-error:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+/* Password Input */
+.password-input-container {
+  position: relative;
+}
+
+.password-input {
+  padding-right: 55px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.password-toggle:hover {
+  color: #374151;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.password-toggle:focus {
+  outline: none;
+  background: rgba(176, 58, 46, 0.1);
+  color: #B03A2E;
+}
+
+.password-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Password Strength */
+.password-strength {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.password-strength-bar {
+  flex: 1;
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.password-strength-fill {
+  height: 100%;
+  transition: all 0.3s ease;
+  border-radius: 2px;
+}
+
+.password-strength-text {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Password Requirements */
+.password-requirements {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.password-requirements p {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.password-requirements ul {
+  margin: 0;
+  padding-left: 20px;
+  list-style: disc;
+}
+
+.password-requirements li {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+/* Activate Button */
+.activate-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #B03A2E 0%, #A93226 50%, #922B21 100%);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 12px;
+  padding: 18px 24px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  box-shadow: 0 4px 12px rgba(176, 58, 46, 0.3);
+  margin-top: 8px;
+}
+
+.activate-btn:hover {
+  background: linear-gradient(135deg, #A93226 0%, #922B21 50%, #7B241C 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(176, 58, 46, 0.4);
+}
+
+.activate-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(176, 58, 46, 0.3);
+}
+
+.activate-btn:focus {
+  outline: none;
+  box-shadow: 0 4px 12px rgba(176, 58, 46, 0.3), 0 0 0 3px rgba(176, 58, 46, 0.2);
+}
+
+.activate-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 4px 12px rgba(176, 58, 46, 0.3);
+}
+
+/* Activation Info */
+.activation-info {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.activation-info p {
+  margin: 0;
+}
+
+/* Error Messages */
+.form-error {
+  display: block;
+  color: #ef4444;
+  font-size: 13px;
+  margin-top: 6px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+
+/* Alerts */
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.alert-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.alert-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+
+.alert-success {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #16a34a;
+}
+
+/* Loading State */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+}
+
+.loading-state p {
+  margin-top: 16px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #f1f5f9;
+  border-top: 3px solid #B03A2E;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ============================================
+   Responsive Design
+   ============================================ */
+
+@media (max-width: 768px) {
+  /* Mobile Background */
+  .panel-left {
+    width: 100%;
+    height: 40%;
+    border-radius: 0 0 60px 60px;
+  }
+
+  .panel-right {
+    width: 100%;
+    height: 60%;
+    top: 40%;
+  }
+
+  .curved-divider {
+    top: 35%;
+    left: 50%;
+    width: 100%;
+    height: 10%;
+  }
+
+  .curve-svg {
+    transform: rotate(90deg);
+  }
+
+  /* Mobile Activation Card */
+  .activation-card {
+    max-width: 100%;
+    margin: 0;
+    padding: 32px 24px;
+    border-radius: 16px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  }
+
+  .activation-header {
+    margin-bottom: 32px;
+  }
+
+  .activation-logo {
+    height: 50px;
+    margin-bottom: 24px;
+  }
+
+  .activation-title {
+    font-size: 28px;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-input {
+    padding: 14px 16px;
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+
+  .password-input {
+    padding-right: 50px;
+  }
+
+  .password-toggle {
+    right: 16px;
+  }
+
+  .activate-btn {
+    padding: 16px 20px;
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .activation-container {
+    padding: 20px 16px;
+  }
+
+  .activation-card {
+    padding: 28px 20px;
+  }
+
+  .activation-title {
+    font-size: 24px;
+  }
+
+  .activation-subtitle {
+    font-size: 15px;
+  }
+}
+
+/* High DPI Displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .activation-card {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12), 0 4px 10px rgba(0, 0, 0, 0.08);
+  }
+}
+
+/* Dark mode support (if needed) */
+@media (prefers-color-scheme: dark) {
+  /* Keep activation page light themed for branding consistency */
+}

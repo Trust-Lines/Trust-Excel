@@ -1,0 +1,4671 @@
+/* Global styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --global-navbar-height: 64px;
+  --sort-bar-height: 44px; /* 8px padding top + 28px content + 8px padding bottom */
+  --total-header-height: calc(var(--global-navbar-height) + var(--sort-bar-height)); /* 108px total */
+
+  /* STICKY STACKING SYSTEM - Consistent hierarchy for all pages */
+  --section-separator-height: 56px;
+  --column-header-height: 32px;
+
+  /* Sticky top positions - builds proper stack */
+  --navbar-top: 0px;
+  --filterbar-top: var(--global-navbar-height); /* 64px */
+  --section-separator-top: 10px; /* Higher up - almost at navbar level */
+  --column-header-top: var(--total-header-height); /* 108px - After navbar + filterbar */
+
+  /* Z-index hierarchy - higher number = on top */
+  --z-navbar: 1000;
+  --z-section-separator: 98; /* Section separator high up with navbar/filterbar */
+  --z-filterbar: 99;
+  --z-column-header: 20; /* Column headers clearly visible */
+  --z-content: 1;
+}
+
+html, body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  background-color: #f8f9fa;
+  height: auto; /* Allow vertical scroll */
+  overflow-y: auto; /* Enable vertical scroll */
+  overflow-x: hidden; /* Prevent horizontal page scroll */
+}
+
+#root {
+  height: auto; /* Allow content to determine height */
+  min-height: 100vh; /* Minimum full viewport */
+}
+
+.App {
+  min-height: 100vh; /* Minimum full viewport, not locked */
+  padding-top: var(--global-navbar-height); /* ✅ Space for fixed navbar (64px) */
+}
+
+/* Global Navbar - Always visible at top */
+.global-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--z-navbar);
+  height: var(--global-navbar-height);
+  background-color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 1px 12px rgba(0, 0, 0, 0.4);
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.navbar-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+}
+
+.navbar-logo {
+  height: 150px;
+  width: auto;
+  object-fit: contain;
+}
+
+.navbar-hamburger {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.navbar-hamburger:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #f1f5f9;
+}
+
+.navbar-add-project {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #cbd5e1;
+  cursor: pointer;
+  padding: 5px 12px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.navbar-add-project:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #f1f5f9;
+}
+
+.add-project-icon {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.add-project-text {
+  font-size: 13px;
+}
+
+.hamburger-icon {
+  display: block;
+  width: 24px;
+  text-align: center;
+}
+
+.navbar-account {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+  cursor: pointer;
+  padding: 6px 10px 6px 6px;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.navbar-account:hover {
+  background-color: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.navbar-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.account-name {
+  font-weight: 500;
+  font-size: 13px;
+  color: #cbd5e1;
+}
+
+.account-chevron {
+  color: #64748b;
+  transition: transform 0.2s ease;
+}
+
+.account-chevron.open {
+  transform: rotate(180deg);
+}
+
+/* Navbar Account Dropdown */
+.navbar-account-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 16px;
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 1001;
+  min-width: 200px;
+  overflow: hidden;
+  animation: dropdownFadeIn 0.12s ease-out;
+}
+
+@keyframes dropdownFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.account-dropdown-header {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.account-dropdown-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.account-dropdown-email {
+  font-size: 11px;
+  color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-dropdown-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 0;
+}
+
+.account-dropdown-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #94a3b8;
+  transition: all 0.12s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.account-dropdown-item:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+  color: #f1f5f9;
+}
+
+.account-dropdown-logout {
+  color: #f87171;
+}
+
+.account-dropdown-logout:hover {
+  background-color: rgba(248, 113, 113, 0.08);
+  color: #fca5a5;
+}
+
+/* Section Separator - Sticky under global navbar + filter bar */
+.section-separator {
+  position: sticky;
+  top: var(--section-separator-top); /* 108px - Below navbar + filterbar */
+  z-index: var(--z-section-separator); /* 20 - Above column headers */
+  width: 100%; /* Width constrained by parent wrapper, not viewport */
+  height: var(--section-separator-height); /* 56px */
+  background-color: #B02417;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.section-separator h1 {
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+/* Sidebar */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+  z-index: 999;
+  animation: fadeIn 0.18s ease-out;
+}
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 256px;
+  height: 100vh;
+  background-color: #0f172a;
+  color: white;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: 6px 0 32px rgba(0, 0, 0, 0.5);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sidebar-header {
+  height: 64px;
+  background-color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px 0 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  flex-shrink: 0;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sidebar-brand-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  flex-shrink: 0;
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.6);
+}
+
+.sidebar-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+  color: #e2e8f0;
+  letter-spacing: -0.01em;
+}
+
+.sidebar-close {
+  background: none;
+  border: none;
+  color: #475569;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.sidebar-close:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+}
+
+.sidebar-close:focus {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 8px 10px;
+  overflow-y: auto;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+.sidebar-group {
+  margin-bottom: 4px;
+}
+
+.sidebar-group-label {
+  padding: 12px 8px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.35);
+  user-select: none;
+}
+
+/* Global override for all links within sidebar */
+.sidebar a,
+.sidebar a:link,
+.sidebar a:visited,
+.sidebar a:hover,
+.sidebar a:active {
+  text-decoration: none !important;
+  color: inherit !important;
+}
+
+/* Container Cell Styling */
+.container-cell-editor {
+  position: relative;
+  width: 100%;
+}
+
+.container-cell-display {
+  width: 100% !important;
+  box-sizing: border-box;
+  user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.container-dropdown {
+  background: white;
+  border-radius: 6px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  border: 1px solid #e1e5e9;
+  display: flex;
+  flex-direction: column;
+  max-height: 300px;
+}
+
+.container-options {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.container-option {
+  user-select: none;
+}
+
+.container-option:hover {
+  transition: background-color 0.15s ease;
+}
+
+/* Container cell placeholder styling */
+.row-cell .container-placeholder {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.row-cell .container-value {
+  color: #374151;
+  font-weight: 500;
+}
+
+.sidebar-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border-radius: 8px;
+  color: #64748b;
+  text-decoration: none;
+  font-weight: 500;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 2px;
+}
+
+/* Override default link states */
+.sidebar-menu-item:link,
+.sidebar-menu-item:visited,
+.sidebar-menu-item:hover,
+.sidebar-menu-item:active {
+  text-decoration: none;
+  color: inherit;
+}
+
+.sidebar-menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+  color: #cbd5e1;
+}
+
+.sidebar-menu-item.active {
+  background-color: rgba(99, 102, 241, 0.12);
+  color: #a5b4fc;
+}
+
+.sidebar-menu-item.active .menu-icon {
+  color: #818cf8;
+}
+
+/* Focus ring for accessibility */
+.sidebar-menu-item:focus {
+  outline: 2px solid #6366f1;
+  outline-offset: -2px;
+}
+
+.menu-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  color: #475569;
+}
+
+.menu-label {
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  flex: 1;
+}
+
+/* Icon brightens on hover and active states */
+.sidebar-menu-item:hover .menu-icon {
+  color: #94a3b8;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Sort Bar - Under global navbar */
+.sort-bar {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+  padding: 8px 16px;
+  flex-shrink: 0;
+}
+
+.sort-bar-content {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  max-width: 1200px;
+}
+
+.sort-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sort-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #495057;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.sort-select {
+  padding: 4px 8px;
+  border: 1px solid #ced4da;
+  border-radius: 3px;
+  font-size: 12px;
+  background-color: white;
+  color: #495057;
+  min-width: 120px;
+  cursor: pointer;
+}
+
+.sort-select:focus {
+  outline: none;
+  border-color: #3366ff;
+  box-shadow: 0 0 0 2px rgba(51, 102, 255, 0.1);
+}
+
+.sort-direction {
+  background: white;
+  border: 1px solid #ced4da;
+  border-radius: 3px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  color: #495057;
+  transition: all 0.2s;
+}
+
+.sort-direction:hover {
+  background-color: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.sort-direction.asc {
+  color: #28a745;
+}
+
+.sort-direction.desc {
+  color: #dc3545;
+}
+
+.sort-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.sort-button {
+  padding: 6px 12px;
+  border: 1px solid;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sort-button.apply {
+  background-color: #3366ff;
+  border-color: #3366ff;
+  color: white;
+}
+
+.sort-button.apply:hover {
+  background-color: #2951cc;
+  border-color: #2951cc;
+}
+
+.sort-button.reset {
+  background-color: white;
+  border-color: #6c757d;
+  color: #6c757d;
+}
+
+.sort-button.reset:hover {
+  background-color: #6c757d;
+  color: white;
+}
+
+/* Add Project Drawer */
+.add-project-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1002; /* Above navbar and sidebar */
+  display: flex;
+  justify-content: flex-end;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.add-project-drawer {
+  width: 480px;
+  height: 100vh;
+  background: white;
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  animation: slideInRight 0.3s ease-out;
+  overflow: hidden;
+}
+
+.drawer-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.drawer-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.drawer-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 3px;
+  transition: all 0.2s;
+}
+
+.drawer-close:hover {
+  background-color: #e9ecef;
+  color: #495057;
+}
+
+.drawer-form {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #495057;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-label.required::after {
+  content: ' *';
+  color: #dc3545;
+}
+
+.form-input,
+.form-select {
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #495057;
+  transition: border-color 0.2s;
+}
+
+.form-input:focus,
+.form-select:focus {
+  outline: none;
+  border-color: #3366ff;
+  box-shadow: 0 0 0 2px rgba(51, 102, 255, 0.1);
+}
+
+.form-input.error,
+.form-select.error {
+  border-color: #dc3545;
+}
+
+.form-error {
+  color: #dc3545;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.submit-error {
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-top: 8px;
+}
+
+.types-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.type-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 6px 0;
+}
+
+.type-checkbox input[type="checkbox"] {
+  margin: 0;
+}
+
+.checkbox-label {
+  font-size: 14px;
+  color: #495057;
+}
+
+.custom-types {
+  margin: 12px 0;
+}
+
+.custom-types-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6c757d;
+  margin-bottom: 6px;
+}
+
+.custom-type-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #e9ecef;
+  border-radius: 3px;
+  padding: 4px 8px;
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: #495057;
+}
+
+.remove-custom-type {
+  background: none;
+  border: none;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 2px;
+  font-size: 12px;
+}
+
+.remove-custom-type:hover {
+  color: #dc3545;
+}
+
+.add-custom-type {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.add-custom-type .form-input {
+  flex: 1;
+}
+
+.add-custom-btn {
+  padding: 8px 16px;
+  background-color: #6c757d;
+  color: white;
+  border: 1px solid #6c757d;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.add-custom-btn:hover:not(:disabled) {
+  background-color: #5a6268;
+  border-color: #5a6268;
+}
+
+.add-custom-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.form-actions {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid #e9ecef;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.cancel-btn,
+.create-btn {
+  padding: 10px 20px;
+  border: 1px solid;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cancel-btn {
+  background-color: white;
+  border-color: #6c757d;
+  color: #6c757d;
+}
+
+.cancel-btn:hover:not(:disabled) {
+  background-color: #6c757d;
+  color: white;
+}
+
+.create-btn {
+  background-color: #3366ff;
+  border-color: #3366ff;
+  color: white;
+}
+
+.create-btn:hover:not(:disabled) {
+  background-color: #2951cc;
+  border-color: #2951cc;
+}
+
+.cancel-btn:disabled,
+.create-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Animations for drawer */
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* Admin Roles Page */
+.admin-roles-page {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+.page-header {
+  margin-bottom: 24px;
+}
+
+.page-header h1 {
+  margin: 0 0 8px 0;
+  font-size: 28px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.page-header p {
+  margin: 0;
+  font-size: 14px;
+  color: #6c757d;
+  line-height: 1.4;
+}
+
+.admin-roles-container {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 24px;
+  height: calc(100vh - 200px);
+  min-height: 600px;
+}
+
+/* Left Panel - Roles List */
+.roles-panel {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.panel-header {
+  padding: 20px;
+  border-bottom: 1px solid #e9ecef;
+  background-color: #f8f9fa;
+}
+
+.panel-header h2 {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.search-container {
+  position: relative;
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #495057;
+  background-color: white;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #3366ff;
+  box-shadow: 0 0 0 2px rgba(51, 102, 255, 0.1);
+}
+
+.roles-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.roles-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.roles-list::-webkit-scrollbar-track {
+  background: #f8f9fa;
+  border-radius: 3px;
+}
+
+.roles-list::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.roles-list::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+.role-item {
+  padding: 16px;
+  margin-bottom: 8px;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: white;
+}
+
+.role-item:hover {
+  border-color: #3366ff;
+  box-shadow: 0 2px 4px rgba(51, 102, 255, 0.1);
+}
+
+.role-item.selected {
+  border-color: #3366ff;
+  background-color: #f0f4ff;
+  box-shadow: 0 2px 8px rgba(51, 102, 255, 0.15);
+}
+
+.role-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.role-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.role-badge {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.role-badge.system {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.role-badge.custom {
+  background-color: #fff3e0;
+  color: #f57c00;
+}
+
+.role-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.user-count {
+  font-size: 12px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.status {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status.active {
+  color: #28a745;
+}
+
+.status.inactive {
+  color: #dc3545;
+}
+
+.role-description {
+  font-size: 13px;
+  color: #6c757d;
+  line-height: 1.4;
+}
+
+/* Right Panel - Role Details */
+.role-details-panel {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.role-details-panel .panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  border-bottom: 1px solid #e9ecef;
+  flex-shrink: 0;
+}
+
+.role-details-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 20px 20px;
+}
+
+/* Scroll bar styling */
+.role-details-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.role-details-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.role-details-content::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.role-details-content::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.save-btn,
+.duplicate-btn,
+.delete-btn {
+  padding: 6px 12px;
+  border: 1px solid;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.save-btn {
+  background-color: #28a745;
+  border-color: #28a745;
+  color: white;
+}
+
+.save-btn:hover {
+  background-color: #218838;
+  border-color: #218838;
+}
+
+.duplicate-btn {
+  background-color: white;
+  border-color: #6c757d;
+  color: #6c757d;
+}
+
+.duplicate-btn:hover {
+  background-color: #6c757d;
+  color: white;
+}
+
+.delete-btn {
+  background-color: white;
+  border-color: #dc3545;
+  color: #dc3545;
+}
+
+.delete-btn:hover:not(:disabled) {
+  background-color: #dc3545;
+  color: white;
+}
+
+.delete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.role-info-section {
+  padding: 20px 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.form-input,
+.form-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #495057;
+  transition: border-color 0.2s;
+}
+
+.form-input:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: #3366ff;
+  box-shadow: 0 0 0 2px rgba(51, 102, 255, 0.1);
+}
+
+.form-input:disabled {
+  background-color: #f8f9fa;
+  color: #6c757d;
+  cursor: not-allowed;
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #495057;
+}
+
+.checkbox-label input[type="checkbox"] {
+  margin: 0;
+}
+
+/* Permissions Section */
+.permissions-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin-top: 20px;
+}
+
+.permissions-header {
+  padding: 20px;
+  border-bottom: 1px solid #e9ecef;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.permissions-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.checkbox-label.select-all {
+  font-weight: 600;
+  color: #3366ff;
+}
+
+.permissions-matrix {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 20px 20px;
+  max-height: 300px;
+}
+
+.permissions-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.permissions-table th {
+  background-color: #f8f9fa;
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 2px solid #e9ecef;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.module-header {
+  width: 180px;
+}
+
+.actions-header {
+  width: auto;
+}
+
+.all-header {
+  width: 60px;
+  text-align: center;
+}
+
+.permissions-table td {
+  padding: 12px;
+  border-bottom: 1px solid #e9ecef;
+  vertical-align: top;
+}
+
+.module-name {
+  font-weight: 600;
+  color: #495057;
+}
+
+.actions-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.permission-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #495057;
+  white-space: nowrap;
+}
+
+.permission-checkbox input[type="checkbox"] {
+  margin: 0;
+}
+
+.all-cell {
+  text-align: center;
+}
+
+.no-selection {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6c757d;
+  font-size: 16px;
+}
+
+/* Main Content - Normal page flow */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  /* No height restrictions - allow content to determine height */
+}
+
+/* Legacy styles replaced by TopBar - keeping for reference */
+/* Old main-container is now main-content - defined above */
+
+/* Project Block - Full Screen Board */
+.project-block {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 2px solid #D9D9D9;
+  background-color: white;
+}
+
+.project-block:last-child {
+  border-bottom: none;
+}
+
+/* Project Header */
+.project-header {
+  background-color: #404040;
+  color: white;
+  padding: 12px 16px;
+  border-bottom: 1px solid #D9D9D9;
+  flex-shrink: 0;
+  text-align: center;
+  width: 100%; /* Constrained by .board parent width (2210px), not viewport */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 60px;
+  justify-content: center;
+}
+
+.project-header h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 2px;
+  line-height: 1.2;
+}
+
+/* SUPPLIER P: Project headers must match accounting labels height */
+.supplierPLeftCol .project-header {
+  height: var(--project-header-height) !important;
+  min-height: var(--project-header-height) !important;
+  max-height: var(--project-header-height) !important;
+  box-sizing: border-box !important;
+}
+
+.project-header p {
+  font-size: 12px;
+  opacity: 0.85;
+  line-height: 1.1;
+}
+
+/* Board Content Layout */
+.board-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Per-Project Horizontal Scroll Container */
+.project-scroll {
+  display: flex;
+  flex-direction: column;
+  overflow-x: visible; /* No internal horizontal scroll - global scrollbar handles this */
+  overflow-y: hidden;
+}
+
+/* GLOBAL SCROLL SYSTEM - For Operational Board */
+.global-scroll-container {
+  width: 100%;
+  height: 100%;
+  overflow-x: auto !important; /* Enable horizontal scrolling */
+  overflow-y: visible !important;
+  min-width: 100%; /* Ensure minimum width */
+  padding-bottom: 24px; /* Space for fixed bottom scrollbar */
+  scrollbar-width: none; /* Firefox: hide native scrollbar */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+.global-scroll-container::-webkit-scrollbar {
+  display: none; /* Chrome/Safari: hide native scrollbar */
+}
+
+/* Fixed bottom scrollbar - always visible at viewport bottom */
+.global-scroll-bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 14px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  z-index: 999;
+  background-color: #f0f0f0;
+  border-top: 1px solid #ccc;
+}
+.global-scroll-bottom-content {
+  height: 1px;
+}
+
+/* Content naturally expands in scroll container */
+.global-scroll-container .project-block,
+.global-scroll-container .board,
+.global-scroll-container .supplierPSheet {
+  width: max-content; /* Allow content to expand naturally */
+}
+
+/* Fixed left section should stay in place during scroll */
+.global-scroll-container .scroll-left {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 10 !important;
+  background: white !important;
+  border-right: 1px solid #e0e0e0 !important;
+}
+
+/* Remove individual project scrollbars when in global scroll mode */
+.global-scroll-container .project-block,
+.global-scroll-container .project-scroll,
+.global-scroll-container .board,
+.global-scroll-container .scroll-right,
+.global-scroll-container .data-grid-container,
+.global-scroll-container .data-grid-scrollable,
+.global-scroll-container .supplierPSheet,
+.global-scroll-container .supplierPProjectRow,
+.global-scroll-container .supplierPLeftCol,
+.global-scroll-container .supplierPRightCol,
+.global-scroll-container .supplierPPaymentsCol {
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+}
+
+
+/* SUPPLIER PAGES: Parent handles scroll, inner containers are visible */
+.supplier-tracking-page .global-scroll-container {
+  overflow-x: visible !important; /* Parent handles horizontal scroll */
+  overflow-y: visible !important;
+}
+
+.supplier-scroll-container {
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+  width: 100% !important;
+  height: auto !important;
+}
+
+/* Ensure supplier content is wide and scrollable */
+.supplier-scroll-container .supplierPSheet,
+.supplier-scroll-container .supplierPProjectRow {
+  width: max-content !important;
+  min-width: 5000px !important; /* Force wide to always need scrolling */
+}
+
+/* Hide native scrollbar on supplier content - fixed bottom bar handles it */
+.supplier-content-scroll {
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE/Edge */
+}
+.supplier-content-scroll::-webkit-scrollbar {
+  display: none !important; /* Chrome/Safari */
+}
+
+/* Board Container - Two Section Layout */
+.board {
+  display: flex;
+  min-width: 2210px; /* 110 + 140 + (180+220+200+140+140+140+140+140+140+140+160+160+140) = 2210px */
+  width: max-content;
+}
+
+/* Fixed Left Section - Always Visible */
+.fixed-left {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  width: 250px; /* 110 + 140 = PROJECT_NO + TYPE */
+  flex-shrink: 0;
+  overflow: visible; /* Ensure total-fixed is not clipped */
+}
+
+/* Scroll Right Section - Normal Flow */
+.scroll-right {
+  display: flex;
+  flex-direction: column;
+  width: fit-content; /* Prevent expansion beyond column widths */
+  flex-shrink: 0;
+}
+
+/* Header Sections */
+.header-fixed,
+.header-right {
+  display: flex;
+  background-color: #000000;
+  color: white;
+  height: 32px;
+  border-bottom: 1px solid #D9D9D9;
+  flex-shrink: 0;
+}
+
+/* Body Row Sections */
+.rows-fixed {
+  display: flex;
+  flex: 1;
+}
+
+.rows-right {
+  display: flex;
+  flex-direction: column;
+  width: fit-content; /* Constrain to exact column widths */
+}
+
+/* Total Row - ONE continuous row spanning entire board */
+.total-row {
+  height: 32px; /* TOTAL_ROW_HEIGHT */
+  border-top: 2px solid #333;
+  border-bottom: none;
+  background-color: transparent;
+}
+
+/* Total Row - Sticky left columns (same as normal rows) */
+.total-row .col-project-no {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  background: transparent; /* No grey under project number */
+  width: 110px;
+}
+
+.total-row .col-type {
+  position: sticky;
+  left: 110px; /* After project-no column */
+  z-index: 4;
+  width: 140px;
+}
+
+/* Total Grey Background - starts from TYPE column */
+.total-grey {
+  background: #404040 !important;
+  color: white;
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Total Project Number - transparent background */
+.total-projectno {
+  background: transparent;
+}
+
+/* TOTAL label - only in FTD cell */
+.total-label {
+  justify-content: flex-end;
+  padding-right: 12px;
+}
+
+/* Column Header - Sticky below section separator */
+.column-header {
+  display: flex;
+  background-color: #000000;
+  color: white;
+  height: var(--column-header-height); /* 32px */
+  border-bottom: 1px solid #D9D9D9;
+  flex-shrink: 0;
+  position: sticky;
+  top: var(--column-header-top); /* 164px - Below section separator */
+  z-index: var(--z-column-header); /* 10 */
+}
+
+.column-header-fixed {
+  display: flex;
+  flex-shrink: 0;
+  z-index: var(--z-column-header); /* 10 */
+  position: sticky;
+  left: 0; /* Only horizontal sticking - vertical handled by parent .column-header */
+  background-color: #000000;
+}
+
+.column-header-scrollable {
+  display: flex;
+  flex: 1;
+  /* No overflow here - the parent project-scroll handles scrolling */
+}
+
+.column-header-cell {
+  padding: 0 8px;
+  font-weight: 600;
+  font-size: 11px;
+  text-align: center;
+  border-right: 1px solid #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  box-sizing: border-box; /* Match body cells */
+  height: 32px; /* Fixed height */
+  flex-shrink: 0; /* Match body cells */
+}
+
+.column-header-cell:last-child {
+  border-right: none;
+}
+
+/* Unified Grid Template - Single Source of Truth */
+:root {
+  --fixed-grid-template: 110px 140px; /* Project No + Type */
+  --scrollable-grid-template: 180px 220px 200px 140px 140px 140px 140px 140px 140px 140px 160px 160px 180px 140px; /* PF Code -> Container */
+}
+
+/* Fixed Column Widths */
+.col-project-no { width: 110px; }
+.col-type { width: 140px; }
+
+/* Scrollable Column Classes - Exact Width Matching */
+.col-pf-code { width: 180px; flex-shrink: 0; }
+.col-vendor { width: 220px; flex-shrink: 0; }
+.col-order-type { width: 200px; flex-shrink: 0; }
+.col-po-sign-status { width: 140px; flex-shrink: 0; }
+.col-pf-sign-status { width: 140px; flex-shrink: 0; }
+.col-status { width: 140px; flex-shrink: 0; }
+.col-std { width: 140px; flex-shrink: 0; }
+.col-etd { width: 140px; flex-shrink: 0; }
+.col-rtr { width: 140px; flex-shrink: 0; }
+.col-rtd { width: 140px; flex-shrink: 0; }
+.col-rdy { width: 140px; flex-shrink: 0; }
+.col-ftd { width: 140px; flex-shrink: 0; }
+.col-snd { width: 140px; flex-shrink: 0; }
+.col-pf-usd { width: 160px; flex-shrink: 0; }
+.col-pf-tl { width: 160px; flex-shrink: 0; }
+.col-invoice { width: 160px; flex-shrink: 0; }
+.col-invoice-tl { width: 160px; flex-shrink: 0; }
+.col-payment-rule { width: 180px; flex-shrink: 0; }
+.col-container-no { width: 140px; flex-shrink: 0; }
+.col-container-date { width: 140px; flex-shrink: 0; }
+.col-expenses-usd { width: 160px; flex-shrink: 0; }
+.col-expenses-tl { width: 160px; flex-shrink: 0; }
+
+/* ===================== TRUST EXPENSE COLUMN WIDTHS ===================== */
+.col-te-color-box { width: 50px; flex-shrink: 0; }
+.col-te-type { width: 140px; flex-shrink: 0; }
+.col-te-vendor { width: 200px; flex-shrink: 0; }
+.col-te-order-type { width: 160px; flex-shrink: 0; }
+.col-te-status { width: 140px; flex-shrink: 0; }
+.col-te-std { width: 120px; flex-shrink: 0; }
+.col-te-etd { width: 120px; flex-shrink: 0; }
+.col-te-rtrd { width: 120px; flex-shrink: 0; }
+.col-te-rdy { width: 120px; flex-shrink: 0; }
+.col-te-ftd { width: 120px; flex-shrink: 0; }
+.col-te-snd { width: 120px; flex-shrink: 0; }
+.col-te-expenses-usd { width: 140px; flex-shrink: 0; }
+.col-te-expenses-tl { width: 140px; flex-shrink: 0; }
+.col-te-shelves { width: 140px; flex-shrink: 0; }
+.col-te-container-no { width: 140px; flex-shrink: 0; }
+.col-te-invoice { width: 140px; flex-shrink: 0; }
+
+/* Trust Expense header - red band */
+.te-section-header {
+  height: 44px;
+  background-color: #c41e3a;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 1px;
+  border-radius: 6px 6px 0 0;
+}
+
+/* Trust Expense sub-header columns (EXPENSES/USD, EXPENSES/TL etc.) - dark red */
+.te-expense-header {
+  background-color: #8b0000 !important;
+  color: white !important;
+}
+
+/* Trust Expense content scroll - hide native scrollbar, use fixed bottom bar */
+.te-content-scroll {
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE/Edge */
+}
+.te-content-scroll::-webkit-scrollbar {
+  display: none !important; /* Chrome/Safari */
+}
+
+/* Trust Expense fixed-left override (only color box, 50px) */
+.trust-expenses-page .fixed-left {
+  width: 50px;
+}
+
+/* Trust Expense total row */
+.te-total-row .row-cell {
+  background-color: #404040;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.te-total-row .col-te-expenses-usd,
+.te-total-row .col-te-expenses-tl {
+  font-weight: 800;
+  font-size: 13px;
+}
+
+/* ===================== ACCOUNTING COLUMNS (SUPPLIER MODE ONLY) ===================== */
+
+/* ===================== SUPPLIER PROJECTS SHEET (P TAB ONLY) ===================== */
+
+/* ===================== SUPPLIER P TAB - CLEAN LAYOUT ===================== */
+
+/* ========== SUPPLIER P VIEWPORT - FORCE HORIZONTAL OVERFLOW ========== */
+
+/* Viewport is the scroller (scrollbar hidden via CSS) */
+.supplierPViewport {
+  width: 100%;
+  overflow-x: auto !important; /* CRITICAL: auto (not hidden) for actual scrolling */
+  overflow-y: visible !important;
+  padding-bottom: 22px !important; /* Room for fixed bottom scrollbar */
+
+  /* Hide the scrollbar visually but keep scrolling enabled */
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE/Edge */
+}
+
+/* Hide scrollbar for Chrome/Safari/Opera */
+.supplierPViewport::-webkit-scrollbar {
+  height: 0 !important;
+  width: 0 !important;
+  display: none !important;
+}
+
+/* Scroll area MUST expand beyond viewport */
+.supplierPScrollArea {
+  width: max-content !important; /* CRITICAL: Forces content width > viewport */
+  min-width: 100% !important;
+  display: inline-block !important; /* Prevents flex shrink issues */
+  overflow: visible !important; /* No clipping */
+}
+
+/* ========== PIXEL-PERFECT CSS GRID LAYOUT WITH VARIABLES ========== */
+
+/* CSS Variables for pixel-perfect alignment */
+:root {
+  --accounting-paid-width: 120px;
+  --accounting-remaining-width: 140px;
+  --accounting-not-ordered-width: 140px;
+  --accounting-gap-width: 30px;
+  --accounting-total-width: calc(
+    (2 * var(--accounting-paid-width)) +  /* PaidUSD columns: 2×120 = 240px */
+    (2 * var(--accounting-paid-width)) +  /* PaidTL columns: 2×120 = 240px */
+    (2 * var(--accounting-remaining-width)) +  /* Remaining columns: 2×140 = 280px */
+    (2 * var(--accounting-not-ordered-width)) +  /* NotOrdered columns: 2×140 = 280px */
+    (3 * var(--accounting-gap-width))  /* Gaps: 3×20 = 60px */
+  ); /* Total: 240 + 240 + 280 + 280 + 60 = 1100px */
+
+  --layout-gap: 24px;
+  --gapWidth: 24px; /* Pixel-perfect gap for grid alignment */
+  /* Note: --leftWidth and --rightWidth are set dynamically via React inline styles */
+  --section-header-height: 44px;
+  --project-header-height: 54px;
+  --column-header-height: 32px;
+  --data-row-height: 39px;
+  --totals-row-height: 36px;
+}
+
+/* SUPPLIER-ONLY SCOPE: Global box-sizing reset for pixel-perfect alignment */
+.supplierPViewport,
+.supplierPViewport * {
+  box-sizing: border-box !important;
+}
+
+/* SUPPLIER P: Ensure accounting inputs are editable and focusable */
+.supplierPViewport .accountingRow input {
+  pointer-events: auto !important;
+  z-index: 10 !important;
+  position: relative !important;
+}
+
+.supplierPViewport .accountingRow input:focus {
+  outline: 2px solid #2563eb !important;
+  outline-offset: -2px !important;
+  background-color: #ffffff !important;
+}
+
+/* SUPPLIER P: Prevent row containers from interfering with input focus */
+.supplierPViewport .accountingRow {
+  pointer-events: auto !important;
+}
+
+/* Main wrapper for entire supplier sheet */
+.supplierPSheet {
+  width: max-content !important;
+  min-width: 100% !important;
+}
+
+/* ========== PIXEL-PERFECT ROW HEIGHT TOKENS ========== */
+/* Applied to all three blocks: Project Tracking, Accounting, Payments */
+.supplierPSheet {
+  --supplier-section-header: 44px;
+  --supplier-topgroup-row: 52px;   /* Top group labels: Remaining/Not Ordered & DUE PAYMENT/PAYMENTS 1/2 */
+  --supplier-colhead-row: 34px;    /* Column headers: Paid/USD/TL & USD/TL */
+  --supplier-data-row: 40px;       /* Data rows */
+  --supplier-totals-row: 32px;     /* Totals row */
+  --supplier-gap: 40px;            /* Gap between Accounting and Payments */
+
+  /* ========== INVOICE & RECEIPT ALIGNMENT HEIGHTS ========== */
+  --invoice-title-height: 44px;    /* Same as section header */
+  --invoice-header-spacer: calc(var(--supplier-topgroup-row) + var(--supplier-colhead-row)); /* 52px + 34px = 86px */
+  --invoice-table-header-height: var(--supplier-colhead-row);  /* 34px */
+  --invoice-row-height: var(--supplier-data-row);              /* 40px */
+
+  /* ========== REGION GRID LAYOUT ========== */
+  --accounting-width: calc(var(--leftWidth) + var(--rightWidth) + var(--gapWidth)); /* Project + Accounting combined */
+  --payments-width: var(--paymentsWidth, 752px);
+  --invoice-width: 420px;
+
+  /* ========== GREEN COLOR TOKENS FOR PAYMENTS TABLES ========== */
+  /* Pure green tones - NO YELLOW/GOLD in payments tables */
+  --payments-header-bg: #2f5233;      /* Dark green for main headers (replaces #D4AF37) */
+  --payments-header-border: #1f3515;   /* Darker green for borders (replaces #c9a832) */
+  --payments-section-bg: #2f4b1f;     /* Green section background */
+  --payments-light-bg: #e8f5e9;       /* Light green for data cells */
+  --payments-totals-bg: #1f3515;      /* Dark green for totals */
+}
+
+/* ========== PIXEL-PERFECT ROW ALIGNMENT (Excel-style) ========== */
+
+/* CSS Variables for consistent row heights across all grids */
+:root {
+  --gridRowHeight: 38px;        /* Standard data row height */
+  --gridHeaderH1: 48px;         /* PAYMENTS/ACCOUNTING TLINES header */
+  --gridHeaderH2: 44px;         /* DUE PAYMENT / PAYMENTS 1 / PAYMENTS 2 */
+  --gridHeaderH3: 34px;         /* USD TL header */
+  --gridTotalRowHeight: 36px;   /* Total/summary row height */
+}
+
+/* Region container - holds header row + project rows */
+.supplierRegionContainer {
+  margin-bottom: 32px !important;
+}
+
+/* Region header row - no longer used (replaced by flex blocks layout) */
+.regionInvoiceHeaderRow {
+  display: none !important;
+}
+
+/* Invoice region header (only once per region) */
+.invoiceRegionHeader {
+  height: var(--gridHeaderH1) !important; /* Same as payments title bar height */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: #6b737b !important; /* Grey */
+  color: #fff !important;
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  border-radius: 6px !important;
+  letter-spacing: 0.5px !important;
+  display: none;
+}
+
+/* Each project row - no longer used (replaced by flex blocks layout) */
+.regionProjectRow {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 24px !important;
+  align-items: flex-start !important;
+  margin-bottom: 18px !important;
+  width: fit-content !important;
+}
+
+/* Column containers within each project row */
+.colAccounting, .colPayments, .colInvoice {
+  height: 100% !important; /* Take full height of the row */
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Grid column positioning after adding spacer */
+.colPayments {
+  grid-column: 3 !important; /* Skip spacer column */
+}
+.colInvoice {
+  grid-column: 4 !important; /* Move to 4th column */
+}
+
+/* Individual project components within stacks */
+.supplierProjectAccountingGrid {
+  /* Each project's accounting grid */
+}
+
+.supplierProjectPaymentsGrid {
+  /* Each project's payments grid */
+}
+
+.supplierProjectInvoiceTable {
+  /* Each project's invoice table */
+}
+
+/* Legacy classes for backward compatibility */
+.supplierProjectRow {
+  display: grid !important;
+  grid-template-columns: var(--accounting-width) var(--payments-width) !important;
+  column-gap: 24px !important;
+  align-items: start !important;
+}
+
+/* Projects + Accounting sub-layout: flex so hidden accounting collapses */
+.supplierAccountingCol {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: var(--gapWidth) !important;
+  align-items: flex-start !important;
+  flex-wrap: nowrap !important;
+  width: fit-content !important;
+}
+
+.supplierPaymentsCol {
+  align-self: start !important;
+}
+
+/* Per-project row: Each project gets its own left+middle+right alignment */
+.supplierPProjectRow,
+.supplierPSectionTotalRow,
+.supplierPTotalsRow {
+  display: grid !important;
+  grid-template-columns: var(--leftWidth) var(--rightWidth) var(--paymentsWidth, 752px) !important; /* PIXEL-PERFECT: Payments only, invoice in separate row */
+  gap: var(--gapWidth) !important; /* Fixed gap between all three blocks */
+  align-items: start !important;
+  margin-bottom: 16px !important; /* Smaller gap between projects */
+  width: max-content !important;
+  min-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Section total rows have more spacing */
+.supplierPSectionTotalRow,
+.supplierPTotalsRow {
+  margin-bottom: 32px !important;
+}
+
+/* Left column - project tables (FIXED WIDTH for pixel-perfect alignment) */
+.supplierPLeftCol {
+  width: var(--leftWidth) !important;
+  min-width: var(--leftWidth) !important;
+  max-width: var(--leftWidth) !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+}
+
+/* Right column - accounting blocks (dynamic width based on visible columns) */
+.supplierPRightCol {
+  flex: 0 0 auto !important;
+  box-sizing: border-box !important;
+}
+
+/* Payments column - green payments blocks (FIXED WIDTH for pixel-perfect alignment) */
+.supplierPPaymentsCol {
+  width: var(--paymentsWidth, 752px) !important;
+  min-width: var(--paymentsWidth, 752px) !important;
+  max-width: var(--paymentsWidth, 752px) !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  align-self: stretch !important;
+}
+
+/* Invoice & Receipt column - grey invoice receipt blocks (FIXED WIDTH for pixel-perfect alignment) */
+.supplierPInvoiceReceiptCol {
+  width: var(--invoiceReceiptWidth, 480px) !important;
+  min-width: var(--invoiceReceiptWidth, 480px) !important;
+  max-width: var(--invoiceReceiptWidth, 480px) !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  align-self: stretch !important;
+}
+
+.supplierPLeftCol{
+  margin-top: -0px !important;
+}
+/* Ensure all four columns (left, middle, payments, invoice-receipt) start from same baseline */
+
+.supplierPRightCol,
+.supplierPPaymentsCol,
+.supplierPInvoiceReceiptCol {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* ========== SECTIONED ACCOUNTING + TOTALS ========== */
+
+/* Accounting section per company */
+.accountingSection {
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Gold header bar for accounting sections - NOW CONSTRAINED TO RIGHT COLUMN */
+.accountingHeaderBar {
+  width: 100% !important; /* 100% of right column (520px) */
+  background: #b88900 !important; /* gold */
+  color: #fff !important;
+  font-weight: 700 !important;
+  text-align: center !important;
+  padding: 10px 0 !important;
+  border: 1px solid #000 !important;
+  letter-spacing: 0.5px !important;
+  font-size: 14px !important;
+  box-sizing: border-box !important;
+}
+
+/* ========== GRAND TOTALS STYLING ========== */
+
+/* Projects grand total bar (left side) */
+.projectsGrandTotalBar {
+  width: 100% !important;
+  background: #c41e3a !important; /* red */
+  color: #fff !important;
+  font-weight: 700 !important;
+  text-align: center !important;
+  padding: 10px 0 !important;
+  border: 1px solid #000 !important;
+  letter-spacing: 0.5px !important;
+  font-size: 14px !important;
+  box-sizing: border-box !important;
+}
+
+/* Projects grand total values */
+.projectsGrandTotalValues {
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 12px !important;
+  padding: 10px 12px !important;
+  border: 1px solid #000 !important;
+  border-top: none !important;
+  background: #fff !important;
+  font-weight: 700 !important;
+  font-size: 15px !important;
+}
+
+/* Accounting grand total bar (right side) */
+.accountingGrandTotalBar {
+  width: 100% !important;
+  background: #b88900 !important; /* gold */
+  color: #fff !important;
+  font-weight: 700 !important;
+  text-align: center !important;
+  padding: 10px 0 !important;
+  border: 1px solid #000 !important;
+  letter-spacing: 0.5px !important;
+  font-size: 14px !important;
+  box-sizing: border-box !important;
+}
+
+/* Accounting grand total values */
+.accountingGrandTotalValues {
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 12px !important;
+  padding: 10px 12px !important;
+  border: 1px solid #000 !important;
+  border-top: none !important;
+  background: #fff !important;
+  font-weight: 700 !important;
+  font-size: 15px !important;
+}
+
+/* Total label and amounts */
+.totalLabel {
+  margin-right: auto !important;
+  font-weight: 700 !important;
+}
+
+.totalUsd,
+.totalTl {
+  min-width: 140px !important;
+  text-align: right !important;
+  font-weight: 700 !important;
+}
+
+/* Supplier P Sheet - Legacy wrapper */
+.supplier-p-sheet {
+  width: 100%;
+  min-width: fit-content;
+  overflow: visible; /* No internal scrolling */
+}
+
+.supplier-p-sheet .supplier-section {
+  margin-bottom: 24px;
+}
+
+/* CRITICAL: Remove internal scrollbars from ProjectBlock in Supplier P mode */
+.supplierPViewport .project-block-container,
+.supplierPViewport .project-scroll,
+.supplierPViewport .board,
+.supplierPViewport .scroll-right,
+.supplierPViewport .data-grid-container,
+.supplierPViewport .data-grid-scrollable {
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+}
+
+/* PIXEL-PERFECT: Constrain ProjectBlock to exact left column width */
+.supplierPLeftCol .project-block,
+.supplierPLeftCol .project-block-container,
+.supplierPLeftCol .board {
+  width: var(--leftWidth) !important;
+  min-width: var(--leftWidth) !important;
+  max-width: var(--leftWidth) !important;
+  box-sizing: border-box !important;
+}
+
+/* ALIGNMENT FIX: Ensure ProjectBlock starts from same top position as accounting blocks */
+.supplierPLeftCol .project-block {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* PIXEL-PERFECT: Constrain section separators to exact grid width in Supplier P */
+.supplierPLeftCol .section-separator {
+  width: var(--leftWidth) !important;
+  min-width: var(--leftWidth) !important;
+  max-width: var(--leftWidth) !important;
+  height: var(--section-header-height) !important; /* Use consistent height */
+  box-sizing: border-box !important;
+}
+
+/* ALIGNMENT FIX: Remove sticky positioning and top offset in Supplier P */
+.supplierPSheet .section-separator {
+  position: static !important; /* Remove sticky positioning */
+  top: 0 !important; /* Remove top offset */
+  margin-top: 0 !important; /* Ensure no extra top margin */
+  padding-top: 0 !important; /* Ensure no extra top padding */
+}
+
+/* ========== RESPONSIVE HEADERS FOR PROJECTS & MISSING PAGES ========== */
+/* SUPER SIMPLE APPROACH: Full width headers with centered text */
+
+@media (max-width: 1400px) {
+  /* RED SECTION HEADER - Full viewport width + centered text */
+  .board-page--projects .section-separator,
+  .board-page--missing .section-separator {
+    position: sticky !important;
+    left: 0 !important;
+    width: 100vw !important;
+    margin-left: -50vw !important;
+    margin-right: -50vw !important;
+
+    /* Center the text */
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+
+  .board-page--projects .section-separator h1,
+  .board-page--missing .section-separator h1 {
+    text-align: center !important;
+    margin: 0 !important;
+  }
+
+  /* GRAY PROJECT HEADER - Full viewport width + centered text */
+  .board-page--projects .project-header,
+  .board-page--missing .project-header {
+    position: sticky !important;
+    left: 0 !important;
+    width: 100vw !important;
+    margin-left: -50vw !important;
+    margin-right: -50vw !important;
+
+    /* Center the text */
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+
+  .board-page--projects .project-header h2,
+  .board-page--missing .project-header h2,
+  .board-page--projects .project-header p,
+  .board-page--missing .project-header p {
+    text-align: center !important;
+    margin: 0 auto !important;
+  }
+}
+
+/* ========== SIMPLE FIXED BOTTOM SCROLLBAR ========== */
+
+/* Fixed bottom scrollbar - always visible */
+.supplierPBottomScrollbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 18px;
+  overflow-x: scroll; /* MUST BE scroll */
+  overflow-y: hidden;
+  z-index: 99999;
+  background: #f2f2f2;
+  border-top: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+/* Spacer div - width set dynamically to match table content */
+.supplierPBottomScrollbarInner {
+  height: 1px;
+}
+
+/* OLD STYLES BELOW - KEEPING FOR BACKWARD COMPATIBILITY */
+.supplier-p-sheet-old {
+  overflow-x: auto;
+  overflow-y: visible;
+  width: 100%;
+  padding: 20px;
+}
+
+.supplier-section-wrapper {
+  margin-bottom: 32px;
+}
+
+.supplier-project-block {
+  margin-bottom: 24px;
+}
+
+/* Unified row layout - all headers in same row context */
+.supplier-row {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+}
+
+.supplier-gap {
+  width: 24px;
+  flex-shrink: 0;
+  background-color: #ffffff;
+}
+
+/* ROW 1: Section bars (red + gold) */
+.supplier-row--section {
+  height: 56px;
+  margin-bottom: 0;
+}
+
+.supplier-left-sectionbar {
+  flex: 0 0 1800px;
+  background-color: #dc2626;
+  color: white;
+  display: flex;
+  align-items: center;
+  padding-left: 20px;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: 2px solid #991b1b;
+}
+
+.supplier-right-sectionbar {
+  flex: 0 0 1116px;
+  background-color: #d4af37;
+  border: 2px solid #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #000000;
+}
+
+/* ROW 2: Title + Top labels */
+.supplier-row--title {
+  min-height: 70px;
+}
+
+.supplier-left-title {
+  flex: 0 0 1800px;
+  background-color: #e5e7eb;
+  padding: 12px 20px;
+  border-bottom: 1px solid #d1d5db;
+}
+
+.project-name-text {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.project-number-text {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.supplier-right-toplabels {
+  flex: 0 0 1116px;
+  background-color: #e5e7eb;
+  border-bottom: 1px solid #d1d5db;
+  display: flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  gap: 0;
+}
+
+.supplier-right-toplabels span {
+  width: 120px;
+  text-align: center;
+}
+
+.supplier-right-toplabels span:nth-child(7),
+.supplier-right-toplabels span:nth-child(8),
+.supplier-right-toplabels span:nth-child(10),
+.supplier-right-toplabels span:nth-child(11) {
+  width: 140px;
+}
+
+/* ROW 3: Column headers (black) */
+.supplier-row--headers {
+  height: 40px;
+}
+
+.supplier-left-headers {
+  flex: 0 0 1800px;
+  background-color: #000000;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+}
+
+.supplier-left-headers .col-hdr {
+  flex: 1;
+  min-width: 100px;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  border-right: 1px solid #333;
+}
+
+.supplier-right-headers {
+  flex: 0 0 1116px;
+  background-color: #000000;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+}
+
+.supplier-right-headers .acct-hdr {
+  width: 120px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.supplier-right-headers .acct-hdr:nth-child(7),
+.supplier-right-headers .acct-hdr:nth-child(8),
+.supplier-right-headers .acct-hdr:nth-child(10),
+.supplier-right-headers .acct-hdr:nth-child(11) {
+  width: 140px;
+}
+
+/* ROW 4+: Data rows */
+.supplier-row--data {
+  min-height: 36px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.supplier-left-cells {
+  flex: 0 0 1800px;
+  display: flex;
+  align-items: center;
+  background-color: #ffffff;
+}
+
+.supplier-left-cells .data-cell {
+  flex: 1;
+  min-width: 100px;
+  padding: 4px 8px;
+  font-size: 13px;
+  border-right: 1px solid #e5e7eb;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.supplier-right-cells {
+  flex: 0 0 1116px;
+  display: flex;
+  align-items: center;
+  background-color: #ffffff;
+}
+
+/* LAST ROW: Totals */
+.supplier-row--total {
+  height: 45px;
+  margin-top: 8px;
+}
+
+.supplier-left-total {
+  flex: 0 0 1800px;
+  background-color: #1e40af;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  font-weight: 700;
+}
+
+.supplier-left-total .total-label {
+  font-size: 14px;
+  margin-right: 24px;
+  letter-spacing: 1px;
+}
+
+.supplier-left-total .total-val {
+  margin-right: 24px;
+  font-size: 13px;
+  padding: 4px 12px;
+  background-color: #1d4ed8;
+  border-radius: 4px;
+  border: 1px solid #1e40af;
+}
+
+.supplier-right-total {
+  flex: 0 0 1116px;
+  background-color: #1e40af;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.supplier-right-total .total-val {
+  width: 120px;
+  text-align: center;
+}
+
+.supplier-right-total .total-val:nth-child(7),
+.supplier-right-total .total-val:nth-child(8),
+.supplier-right-total .total-val:nth-child(10),
+.supplier-right-total .total-val:nth-child(11) {
+  width: 140px;
+}
+
+.supplier-section {
+  margin-bottom: 32px;
+}
+
+/* Section header row: Red bar + Gold bar (same line) */
+.supplier-section-header-row {
+  display: flex;
+  align-items: stretch;
+  height: 56px;
+  margin-bottom: 0;
+}
+
+.supplier-section-bar-left {
+  flex: 0 0 auto;
+  width: 1800px;
+  background-color: #dc2626;
+  color: white;
+  display: flex;
+  align-items: center;
+  padding-left: 20px;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: 2px solid #991b1b;
+}
+
+.supplier-gap-cell {
+  width: 24px;
+  flex-shrink: 0;
+  background-color: #ffffff;
+}
+
+.supplier-section-bar-right {
+  width: 1116px;
+  flex-shrink: 0;
+  background-color: #d4af37;
+  border: 2px solid #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #000000;
+}
+
+.supplier-project-block {
+  margin-bottom: 24px;
+}
+
+/* Project title row: Gray title + Gray labels (same line) */
+.supplier-project-header-row {
+  display: flex;
+  align-items: stretch;
+  min-height: 70px;
+  margin-bottom: 0;
+}
+
+.supplier-project-title-left {
+  flex: 0 0 auto;
+  width: 1800px;
+  background-color: #e5e7eb;
+  padding: 12px 20px;
+  border-bottom: 1px solid #d1d5db;
+}
+
+.project-name-large {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.project-number {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.supplier-project-labels-right {
+  width: 1116px;
+  flex-shrink: 0;
+  background-color: #e5e7eb;
+  border-bottom: 1px solid #d1d5db;
+  display: flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.acct-label {
+  width: 120px;
+  text-align: center;
+}
+
+.acct-label:nth-child(7),
+.acct-label:nth-child(8),
+.acct-label:nth-child(10),
+.acct-label:nth-child(11) {
+  width: 140px;
+}
+
+/* Column headers row: Black headers */
+.supplier-column-headers-row {
+  display: flex;
+  align-items: stretch;
+  height: 40px;
+}
+
+.supplier-column-headers-left {
+  flex: 0 0 auto;
+  width: 1800px;
+  background-color: #000000;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+}
+
+.supplier-column-headers-left .col-header {
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  border-right: 1px solid #333;
+  flex: 1;
+  min-width: 100px;
+}
+
+.supplier-column-headers-right {
+  width: 1116px;
+  flex-shrink: 0;
+  background-color: #000000;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+}
+
+.col-header-acct {
+  width: 120px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.col-header-acct:nth-child(7),
+.col-header-acct:nth-child(8),
+.col-header-acct:nth-child(10),
+.col-header-acct:nth-child(11) {
+  width: 140px;
+}
+
+/* Data rows */
+.supplier-data-row {
+  display: flex;
+  align-items: stretch;
+  min-height: 36px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.supplier-data-cells-left {
+  flex: 0 0 auto;
+  width: 1800px;
+  display: flex;
+  align-items: center;
+  background-color: #ffffff;
+}
+
+.supplier-data-cells-left .data-cell {
+  padding: 4px 8px;
+  font-size: 13px;
+  border-right: 1px solid #e5e7eb;
+  flex: 1;
+  min-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.supplier-data-cells-right {
+  width: 1116px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  background-color: #ffffff;
+}
+
+/* Totals row */
+.supplier-totals-row {
+  display: flex;
+  align-items: stretch;
+  height: 45px;
+  margin-top: 8px;
+  margin-bottom: 16px;
+}
+
+.supplier-totals-left {
+  flex: 0 0 auto;
+  width: 1800px;
+  background-color: #1e40af;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  font-weight: 700;
+}
+
+.total-label {
+  font-size: 14px;
+  margin-right: 24px;
+  letter-spacing: 1px;
+}
+
+.total-value {
+  margin-right: 24px;
+  font-size: 13px;
+  padding: 4px 12px;
+  background-color: #1d4ed8;
+  border-radius: 4px;
+  border: 1px solid #1e40af;
+}
+
+.supplier-totals-right {
+  width: 1116px;
+  flex-shrink: 0;
+  background-color: #1e40af;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.total-value-acct {
+  width: 120px;
+  text-align: center;
+}
+
+.total-value-acct:nth-child(7),
+.total-value-acct:nth-child(8),
+.total-value-acct:nth-child(10),
+.total-value-acct:nth-child(11) {
+  width: 140px;
+}
+
+/* ===================== SUPPLIER UNIFIED SHEET LAYOUT ===================== */
+
+/* Supplier sheet row - contains left grid + gap + right accounting */
+.supplier-sheet-row {
+  display: flex;
+  width: 100%;
+  align-items: stretch;
+}
+
+.supplier-left {
+  flex: 0 0 auto;
+  width: fit-content;
+  max-width: 1800px;
+}
+
+.supplier-gap {
+  width: 24px;
+  flex-shrink: 0;
+  background-color: #ffffff;
+}
+
+.supplier-right {
+  width: 1116px;
+  flex-shrink: 0;
+}
+
+/* Accounting section header bar for supplier mode */
+.accounting-section-header-bar {
+  height: 56px;
+  background-color: #d4af37;
+  border: 2px solid #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #000000;
+}
+
+/* Accounting top labels row */
+.accounting-top-labels {
+  height: 70px;
+  background-color: #e5e7eb;
+  border-bottom: 1px solid #d1d5db;
+  display: flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Hide ProjectBlock header when inside supplier grid container */
+.supplier-grid-container .project-header {
+  display: none;
+}
+
+.supplier-grid-container .project-block {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+/* Main spacer column after Container No - creates visual separation */
+.col-accounting-spacer { 
+  width: 24px; 
+  flex-shrink: 0; 
+  background-color: #ffffff;
+  border: none;
+}
+
+/* Internal gap spacers within accounting zone (Excel-like separation) */
+.col-accounting-gap-paid { 
+  width: 18px; 
+  flex-shrink: 0; 
+  background-color: #ffffff;
+  border: none;
+}
+
+.col-accounting-gap-group { 
+  width: 18px; 
+  flex-shrink: 0; 
+  background-color: #ffffff;
+  border: none;
+}
+
+/* Accounting column widths */
+.col-accounting-paid-usd-1 { width: 120px; flex-shrink: 0; }
+.col-accounting-paid-usd-2 { width: 120px; flex-shrink: 0; }
+.col-accounting-paid-tl-1 { width: 120px; flex-shrink: 0; }
+.col-accounting-paid-tl-2 { width: 120px; flex-shrink: 0; }
+.col-accounting-remaining-usd { width: 140px; flex-shrink: 0; }
+.col-accounting-remaining-tl { width: 140px; flex-shrink: 0; }
+.col-accounting-not-ordered-usd { width: 140px; flex-shrink: 0; }
+.col-accounting-not-ordered-tl { width: 140px; flex-shrink: 0; }
+
+/* Gold accounting section header bar (per section) */
+.accounting-section-header-row {
+  display: flex;
+  height: 40px;
+  background-color: #d4af37;
+  border: 2px solid #000000;
+  border-top: 3px solid #000000;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #000000;
+  margin-bottom: 0;
+}
+
+/* Accounting group headers (PAID / REMAINING / NOT ORDERED) - Excel style */
+.accounting-group-headers {
+  display: flex;
+  height: 28px;
+  background-color: #d4af37;
+  border-left: 2px solid #000000;
+  border-right: 2px solid #000000;
+  border-bottom: 1px solid #000000;
+}
+
+.accounting-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #000000;
+  background-color: #d4af37;
+  border-right: 1px solid #000000;
+}
+
+.accounting-group-header-paid-usd {
+  width: 240px; /* 2 columns × 120px */
+}
+
+.accounting-group-header-paid-tl {
+  width: 240px; /* 2 columns × 120px */
+}
+
+.accounting-group-header-remaining {
+  width: 280px; /* 2 columns × 140px */
+}
+
+.accounting-group-header-not-ordered {
+  width: 280px; /* 2 columns × 140px */
+}
+
+/* Accounting column headers - black background with white text */
+.accounting-column-header {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  text-align: center;
+  border: 1px solid #000000;
+}
+
+/* Accounting data cells - gold background */
+.accounting-data-cell {
+  background-color: #f4e4b7;
+  border: 1px solid #caa233;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.accounting-data-cell-editable {
+  background-color: #fef3c7;
+  cursor: pointer;
+}
+
+.accounting-data-cell-editable:hover {
+  background-color: #fde68a;
+}
+
+/* Currency icon in accounting cells */
+.accounting-currency-icon {
+  font-weight: 700;
+  margin-right: 4px;
+  color: #92400e;
+  font-size: 12px;
+}
+
+/* NOT SIGNED indicator in accounting cells */
+.accounting-not-signed {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: 1px solid #000000;
+}
+
+/* Data Grid Layout */
+.data-grid {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-width: 2210px; /* 110 + 140 + (180+220+200+140+140+140+140+140+140+140+160+160+140) = 2210px */
+}
+
+.data-grid-fixed {
+  display: flex;
+  flex-shrink: 0;
+  border-right: 2px solid #D9D9D9;
+  background-color: #fafbfc;
+}
+
+.data-grid-scrollable {
+  flex: 1;
+  overflow: visible; /* No scroll here - handled at project level */
+}
+
+/* Project Number Cell - Visible Color Block */
+.projectno-cell {
+  width: 110px;
+  padding: 0;
+  overflow: visible;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative; /* NOT transparent */
+  z-index: 6; /* above any overlays */
+  border-right: 1px solid #D9D9D9;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  box-sizing: border-box;
+}
+
+.projectno-text {
+  width: 100%;
+  text-align: center;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.projectno-cell:hover {
+  opacity: 0.9;
+}
+
+.project-number-orange { background-color: #DE8244; }
+.project-number-blue { background-color: #6A99D1; }
+.project-number-green { background-color: #9FCF63; }
+.project-number-red { background-color: #E53E3E; }
+
+/* Type Stack - Fixed Left Section */
+.type-stack {
+  width: 140px;
+  background-color: #ffffff;
+  border-right: 1px solid #D9D9D9;
+  flex-shrink: 0; /* Prevent compression */
+}
+
+/* Row System - Strict Heights */
+.row-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.row-item {
+  display: flex;
+  height: 40px; /* Exact ROW_HEIGHT */
+  border-bottom: 1px solid #E8E9EA;
+  box-sizing: border-box;
+}
+
+.row-item:hover {
+  background-color: #f8f9fa;
+}
+
+/* Row Cells - Unified Alignment */
+.row-cell {
+  padding: 6px 8px;
+  border-right: 1px solid #E8E9EA;
+  border-bottom: 1px solid #E8E9EA; /* Add horizontal grid lines for Excel-like appearance */
+  font-size: 12px;
+  background-color: white;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  height: 40px; /* Exact ROW_HEIGHT */
+  box-sizing: border-box; /* Strict box model */
+  overflow: hidden;
+  position: relative; /* For dropdown positioning */
+  min-width: 0; /* Prevent flex item overflow */
+  flex-shrink: 0; /* Prevent compression */
+}
+
+.row-cell:hover {
+  background-color: #e3f2fd;
+}
+
+.row-cell:last-child {
+  border-right: none;
+}
+
+/* Interactive States */
+.row-cell.clickable {
+  cursor: pointer;
+}
+
+.row-cell.clickable:hover {
+  background-color: #e1f5fe;
+}
+
+.row-cell.clickable:active {
+  background-color: #b3e5fc;
+}
+
+/* Type Group Container */
+.type-group-container {
+  display: block;
+  /* Removed position: relative to avoid creating positioning context */
+}
+
+/* Type Cells */
+.type-cell {
+  background-color: #f5f6fa;
+  font-weight: 600;
+  border-left: 3px solid #3368F5;
+  color: #2c3e50;
+  border-right: 1px solid #E8E9EA;
+  border-bottom: 1px solid #E8E9EA;
+  cursor: pointer;
+  height: 40px; /* Single row height by default */
+  min-height: 40px; /* Enforce minimum height */
+  box-sizing: border-box;
+  overflow: hidden;
+  flex-shrink: 0; /* Prevent compression */
+}
+
+.type-cell.spanning {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  writing-mode: horizontal-tb;
+  font-weight: 700;
+  border-top: 1px solid #D9D9D9;
+  border-bottom: 1px solid #D9D9D9;
+  box-sizing: border-box;
+  overflow: hidden;
+  flex-shrink: 0; /* Prevent compression */
+  min-height: 40px; /* Enforce minimum height for spanning cells */
+}
+
+.type-cell:hover {
+  background-color: #e8eaf6;
+}
+
+/* Tüm itemları SENT TO TLINES olan type grupları için yeşil renk */
+.type-cell.sent-to-tlines-complete {
+  background-color: #15803d !important;
+  color: white !important;
+  border-left: 3px solid #052e16 !important;
+}
+
+.type-cell.sent-to-tlines-complete:hover {
+  background-color: #166534 !important;
+}
+
+/* PO Sign Status Spanning */
+.po-sign-status-cell {
+  font-weight: 600;
+  border-right: 1px solid #E8E9EA;
+  border-bottom: 1px solid #E8E9EA;
+  color: black;
+  height: 40px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.po-sign-status-spanning {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  writing-mode: horizontal-tb;
+  font-weight: 700;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-top: 1px solid #D9D9D9;
+  border-bottom: 1px solid #D9D9D9;
+  /* Height is set inline via style attribute */
+  /* No absolute positioning - stays in normal flow */
+}
+
+/* Total Row - Starts from TYPE column only */
+.total-row {
+  display: flex;
+  height: 32px; /* TOTAL_ROW_HEIGHT */
+  background-color: #404040;
+  border-top: 2px solid #333;
+  box-sizing: border-box;
+}
+
+/* Old type-total-row styles removed - using new total-fixed-type structure */
+
+.total-row .row-cell {
+  background-color: #404040;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-right: 1px solid #555;
+  border-bottom: 1px solid #555; /* Add bottom border for complete Excel grid */
+  height: 32px; /* TOTAL_ROW_HEIGHT */
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.total-row .row-cell:last-child {
+  border-right: none;
+}
+
+/* Override for currency cells in total row */
+.total-row .col-pf-usd,
+.total-row .col-pf-tl {
+  justify-content: flex-end;
+  padding-right: 12px;
+}
+
+.total-row .total-label {
+  justify-content: flex-end;
+  padding-right: 12px;
+}
+
+/* Ensure FTD column shows TOTAL text properly */
+.total-row .col-ftd.total-label {
+  background-color: #404040;
+  color: #ffffff;
+  font-weight: 700;
+  justify-content: flex-end;
+  padding-right: 12px;
+}
+
+/* Status Indicators */
+.status-approved {
+  color: #2e7d32;
+  font-weight: 600;
+}
+
+.status-pending {
+  color: #f57c00;
+  font-weight: 600;
+}
+
+.status-review {
+  color: #c62828;
+  font-weight: 600;
+}
+
+.status-in-progress {
+  color: #1565c0;
+  font-weight: 600;
+}
+
+/* Scrollbar Customization - Removed internal scrollbars, using global scrollbar only */
+
+/* Inline Editors */
+.inline-text-editor,
+.inline-date-editor {
+  width: 100%;
+  height: 100%;
+  border: 2px solid #2196f3;
+  background-color: #ffffff;
+  font-size: 12px;
+  padding: 4px 6px;
+  font-family: inherit;
+  outline: none;
+  border-radius: 2px;
+}
+
+.inline-text-editor:focus,
+.inline-date-editor:focus {
+  border-color: #1976d2;
+  box-shadow: 0 0 0 1px #1976d2;
+}
+
+.inline-select-editor {
+  position: absolute;
+  z-index: 1000;
+  border: 2px solid #2196f3;
+  background-color: #ffffff;
+  font-size: 12px;
+  padding: 2px;
+  font-family: inherit;
+  outline: none;
+  border-radius: 2px;
+  min-width: 140px;
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.inline-select-editor:focus {
+  border-color: #1976d2;
+}
+
+.inline-select-editor option {
+  padding: 4px 8px;
+  background-color: #ffffff;
+  color: #333;
+}
+
+.inline-select-editor option:hover {
+  background-color: #e3f2fd;
+}
+
+/* Portal Dropdown - Rendered in document.body */
+.portal-dropdown {
+  /* Position is set inline via JavaScript */
+  border: 2px solid #1976d2;
+  background-color: #ffffff;
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  border-radius: 4px;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.3);
+  box-sizing: border-box;
+  pointer-events: auto; /* Ensure dropdown receives pointer events */
+  z-index: 10000; /* High z-index to ensure it's above everything */
+}
+
+/* Status Dropdown Editor - Professional Board UX */
+.status-dropdown-editor {
+  max-height: 280px; /* Tall enough for most options */
+  overflow-y: auto;
+}
+
+.status-option {
+  padding: 8px 12px;
+  background-color: #ffffff;
+  color: #333;
+  cursor: pointer;
+  border-bottom: 1px solid #e8e9ea;
+  transition: background-color 0.15s ease;
+  font-weight: 500;
+  pointer-events: auto; /* Ensure options receive pointer events */
+}
+
+.status-option:last-child {
+  border-bottom: none;
+}
+
+.status-option:hover {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.status-option.current-status {
+  background-color: #1976d2;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.status-option.current-status:hover {
+  background-color: #1565c0;
+  color: #ffffff;
+}
+
+/* Utility Classes */
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+
+.font-bold { font-weight: 700; }
+.font-semibold { font-weight: 600; }
+.text-xs { font-size: 11px; }
+.text-sm { font-size: 12px; }
+
+/* ============================================
+   RBAC - Enhanced Roles & Permissions
+   ============================================ */
+
+/* New Role Button */
+.new-role-btn {
+  background: linear-gradient(135deg, #1976d2, #1565c0);
+  color: #ffffff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 16px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(25, 118, 210, 0.2);
+}
+
+.new-role-btn:hover {
+  background: linear-gradient(135deg, #1565c0, #0d47a1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(25, 118, 210, 0.3);
+}
+
+.new-role-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(25, 118, 210, 0.2);
+}
+
+/* Role Badge - Locked Admin Badge */
+.role-badge.locked {
+  background: linear-gradient(135deg, #ff6b35, #f7931e);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 12px;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 2px 4px rgba(255, 107, 53, 0.3);
+}
+
+/* Update existing role-badge for consistency */
+.role-badge.system {
+  background: linear-gradient(135deg, #4caf50, #45a049);
+  color: #ffffff;
+}
+
+.role-badge.custom {
+  background: linear-gradient(135deg, #2196f3, #1976d2);
+  color: #ffffff;
+}
+
+/* Board Columns Section */
+.board-columns-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 2px solid #e8e9ea;
+}
+
+.board-columns-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e8e9ea;
+}
+
+.board-columns-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+/* Select All Columns Buttons */
+.select-all-columns {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.select-all-btn {
+  padding: 6px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #ffffff;
+}
+
+.select-all-btn.visible {
+  color: #059669;
+  border-color: #d1fae5;
+}
+
+.select-all-btn.visible:hover {
+  background: #d1fae5;
+  border-color: #059669;
+}
+
+.select-all-btn.readonly {
+  color: #d97706;
+  border-color: #fef3c7;
+}
+
+.select-all-btn.readonly:hover {
+  background: #fef3c7;
+  border-color: #d97706;
+}
+
+.select-all-btn.editable {
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+.select-all-btn.editable:hover {
+  background: #fecaca;
+  border-color: #dc2626;
+}
+
+/* Board Columns Matrix */
+.board-columns-matrix {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #e8e9ea;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.board-columns-matrix::-webkit-scrollbar,
+.permissions-matrix::-webkit-scrollbar {
+  width: 6px;
+}
+
+.board-columns-matrix::-webkit-scrollbar-track,
+.permissions-matrix::-webkit-scrollbar-track {
+  background: #f8f9fa;
+  border-radius: 3px;
+}
+
+.board-columns-matrix::-webkit-scrollbar-thumb,
+.permissions-matrix::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.board-columns-matrix::-webkit-scrollbar-thumb:hover,
+.permissions-matrix::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+.board-columns-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.board-columns-table thead {
+  background: #f8f9fa;
+  border-bottom: 2px solid #e8e9ea;
+  position: sticky;
+  top: var(--column-header-top); /* 164px - Below section separator */
+  z-index: var(--z-column-header); /* 10 */
+}
+
+.board-columns-table th {
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  text-align: left;
+  border-right: 1px solid #e8e9ea;
+}
+
+.board-columns-table th:last-child {
+  border-right: none;
+}
+
+.board-columns-table th.column-header {
+  width: 40%;
+  min-width: 140px;
+}
+
+.board-columns-table th.visible-header,
+.board-columns-table th.readonly-header,
+.board-columns-table th.editable-header {
+  width: 20%;
+  text-align: center;
+  min-width: 80px;
+}
+
+.board-columns-table td {
+  padding: 10px 16px;
+  border-bottom: 1px solid #f3f4f6;
+  border-right: 1px solid #f3f4f6;
+  font-size: 13px;
+}
+
+.board-columns-table td:last-child {
+  border-right: none;
+}
+
+.board-columns-table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.column-name {
+  font-weight: 500;
+  color: #374151;
+}
+
+.visible-cell,
+.readonly-cell,
+.editable-cell {
+  text-align: center;
+}
+
+.visible-cell input[type="checkbox"],
+.readonly-cell input[type="checkbox"],
+.editable-cell input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #1976d2;
+}
+
+.visible-cell input[type="checkbox"]:disabled,
+.readonly-cell input[type="checkbox"]:disabled,
+.editable-cell input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Enhanced Permissions Section */
+.permissions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e8e9ea;
+}
+
+.permissions-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+/* Disabled state styling for admin role */
+input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.form-input:disabled,
+.form-textarea:disabled {
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+/* Enhanced role item styling */
+.role-item {
+  transition: all 0.2s ease;
+}
+
+.role-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.role-item.selected {
+  border-color: #1976d2;
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.15);
+}
+
+/* Users in Role Section */
+.users-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 2px solid #e8e9ea;
+  margin-bottom: 24px;
+}
+
+.users-header {
+  margin-bottom: 20px;
+}
+
+.users-header h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.users-helper {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.users-input-section {
+  margin-bottom: 20px;
+}
+
+.users-input-group {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.users-email-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.add-user-btn {
+  background: linear-gradient(135deg, #1976d2, #1565c0);
+  color: #ffffff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(25, 118, 210, 0.2);
+}
+
+.add-user-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #1565c0, #0d47a1);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(25, 118, 210, 0.3);
+}
+
+.add-user-btn:disabled {
+  background: #e0e0e0;
+  color: #9e9e9e;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.email-error {
+  font-size: 12px;
+  color: #dc3545;
+  margin-top: 4px;
+  margin-left: 2px;
+}
+
+.users-list-section {
+  min-height: 60px;
+}
+
+.users-count {
+  margin-bottom: 12px;
+}
+
+.no-users {
+  font-size: 13px;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.user-count-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.users-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.user-chip {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+  border: 1px solid #2196f3;
+  border-radius: 16px;
+  padding: 6px 4px 6px 12px;
+  font-size: 12px;
+  color: #1565c0;
+  transition: all 0.2s ease;
+  max-width: 100%;
+}
+
+.user-chip:hover {
+  background: linear-gradient(135deg, #bbdefb, #90caf9);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(33, 150, 243, 0.2);
+}
+
+.user-email {
+  margin-right: 6px;
+  font-weight: 500;
+  word-break: break-all;
+  line-height: 1.2;
+}
+
+.remove-user-btn {
+  background: #f44336;
+  color: #ffffff;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  transition: all 0.2s ease;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.remove-user-btn:hover {
+  background: #d32f2f;
+  transform: scale(1.1);
+}
+
+.remove-user-btn:active {
+  transform: scale(0.95);
+}
+
+/* ===================== ACCOUNTING PANEL STYLES ===================== */
+
+/* Accounting Panel - Gold Theme */
+.accounting-panel {
+  width: 900px;
+  min-width: 900px;
+  background-color: #ffffff;
+  border: 1px solid #d4d4d8;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.accounting-panel-header {
+  background-color: #b88900;
+  color: white;
+  padding: 12px 16px;
+  border-bottom: 1px solid #a67700;
+}
+
+.accounting-panel-header h3 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.accounting-panel-header p {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.accounting-sections {
+  padding: 16px;
+}
+
+/* Accounting Section */
+.accounting-section {
+  margin-bottom: 24px;
+}
+
+.accounting-section:last-child {
+  margin-bottom: 0;
+}
+
+.accounting-section-title {
+  background-color: #b88900;
+  color: white;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  text-align: center;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.accounting-mini-tables-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+/* Mini Table */
+.accounting-mini-table {
+  border: 1px solid #d4d4d8;
+  border-radius: 4px;
+  overflow: hidden;
+  background-color: #ffffff;
+}
+
+.accounting-mini-table-title {
+  background-color: #f3f4f6;
+  color: #374151;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #d4d4d8;
+}
+
+.accounting-mini-table-header {
+  background-color: #000000;
+  color: white;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.accounting-mini-table-header-cell {
+  padding: 6px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-right: 1px solid #333;
+}
+
+.accounting-mini-table-header-cell:last-child {
+  border-right: none;
+}
+
+.accounting-mini-table-body {
+  background-color: #fffbeb; /* Light gold background */
+}
+
+.accounting-mini-table-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid #fbbf24;
+}
+
+.accounting-mini-table-row:last-child {
+  border-bottom: none;
+}
+
+.accounting-mini-table-cell {
+  padding: 6px 8px;
+  font-size: 12px;
+  border-right: 1px solid #fbbf24;
+}
+
+.accounting-mini-table-cell:last-child {
+  border-right: none;
+}
+
+.accounting-mini-table-cell.currency-cell {
+  text-align: center;
+  font-weight: 700;
+  color: #92400e;
+  background-color: #fef3c7; /* Slightly darker gold */
+}
+
+.accounting-mini-table-cell.amount-cell {
+  text-align: right;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* Summary boxes at bottom */
+.accounting-summary-boxes {
+  background-color: #f9f9f9;
+  padding: 16px;
+  border-top: 1px solid #d4d4d8;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.accounting-summary-box {
+  background-color: #b88900;
+  color: white;
+  padding: 12px;
+  border-radius: 6px;
+  text-align: left;
+}
+
+.accounting-summary-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+  opacity: 0.9;
+}
+
+.accounting-summary-value {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
+/* ===================== SUPPLIER SHEET LAYOUT ===================== */
+
+/* Supplier sheet container - main scrollable area */
+.supplier-sheet-container {
+  position: relative;
+  width: 100%;
+}
+
+/* Supplier Accounting Gap Separator Rules - Make gaps pure white space */
+.acct-topgroup-row div[style*="var(--accounting-gap-width)"],
+.acct-colhead-row div[style*="var(--accounting-gap-width)"],
+.acct-data-row div[style*="var(--accounting-gap-width)"],
+.acct-totals-row div[style*="var(--accounting-gap-width)"],
+div[style*="accounting-gap-width"] {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Payments Table Gap Separator Rules - Make gaps pure white space (same as accounting) */
+.pay-topgroup-row div[style*="16px"],
+.pay-colhead-row div[style*="16px"],
+div[style*="16px"][style*="white"],
+div[style*="16px"][style*="background-color: white"],
+div[style*="16px"][style*="backgroundColor: 'white'"] {
+
+
+  border: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Supplier ME Section Total Blue Background */
+.supplierMESectionTotal {
+  background: #2563eb !important;
+  background-color: #2563eb !important;
+  color: white !important;
+}
+
+.supplierMESectionTotal * {
+  color: white !important;
+}
+
+/* Remove all borders from cells adjacent to gaps */
+/* Pattern: Remove borders from ALL cells that touch gaps */
+
+/* Top Labels Row - Remove borders around gaps */
+.acct-topgroup-row > div:nth-child(2),
+.acct-topgroup-row > div:nth-child(5),
+.acct-topgroup-row > div:nth-child(8) {
+  border-right: none !important;
+}
+
+.acct-topgroup-row > div:nth-child(4),
+.acct-topgroup-row > div:nth-child(7),
+.acct-topgroup-row > div:nth-child(10) {
+  border-left: none !important;
+}
+
+/* Column Headers Row - Same pattern */
+.acct-colhead-row > div:nth-child(2),
+.acct-colhead-row > div:nth-child(5),
+.acct-colhead-row > div:nth-child(8) {
+  border-right: none !important;
+}
+
+.acct-colhead-row > div:nth-child(4),
+.acct-colhead-row > div:nth-child(7),
+.acct-colhead-row > div:nth-child(10) {
+  border-left: none !important;
+}
+
+/* Data Rows - Handle both div containers and inputs */
+.acct-data-row > div:nth-child(2),
+.acct-data-row > div:nth-child(5),
+.acct-data-row > div:nth-child(8) {
+  border-right: none !important;
+}
+
+.acct-data-row > div:nth-child(2) input,
+.acct-data-row > div:nth-child(5) input,
+.acct-data-row > div:nth-child(8) input {
+  border-right: none !important;
+}
+
+.acct-data-row > div:nth-child(4),
+.acct-data-row > div:nth-child(7),
+.acct-data-row > div:nth-child(10) {
+  border-left: none !important;
+}
+
+/* Section Totals Row */
+.acct-totals-row > div:nth-child(2),
+.acct-totals-row > div:nth-child(5),
+.acct-totals-row > div:nth-child(8) {
+  border-right: none !important;
+}
+
+.acct-totals-row > div:nth-child(4),
+.acct-totals-row > div:nth-child(7),
+.acct-totals-row > div:nth-child(10) {
+  border-left: none !important;
+}
+
+/* Fixed bottom scrollbar styling - removed empty rule */
+
+/* Accounting sheet styling */
+.accounting-sheet {
+  width: 100%;
+}
+
+.accounting-section-aligned {
+  margin-bottom: 0; /* No gap between sections for perfect alignment */
+  padding: 0;
+}
+
+.accounting-section-aligned .accounting-section-title {
+  background-color: #b88900;
+  color: white;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.accounting-section-aligned .accounting-mini-tables-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 0 8px;
+}
+
+/* ================================================================
+   Supplier Total Page — 4 side-by-side blocks (st- prefix)
+   ================================================================ */
+
+.st-container {
+  padding: 20px 24px;
+}
+
+.st-loading,
+.st-error {
+  text-align: center;
+  padding: 60px 20px;
+  font-size: 16px;
+  color: #6b7280;
+}
+
+.st-error {
+  color: #dc2626;
+}
+
+.st-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.st-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.st-export-btn {
+  padding: 8px 20px;
+  background: #059669;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.st-export-btn:hover {
+  background: #047857;
+}
+
+/* Horizontal scroll area */
+.st-scroll-area {
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+/* Flex row holding the 4 blocks side-by-side */
+.st-blocks-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 80px;
+  flex-wrap: nowrap;
+  width: fit-content;
+}
+
+/* Individual block */
+.st-block {
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #d1d5db;
+}
+
+/* Block section header (colored title bar) — title always centered */
+.st-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 0 8px;
+}
+
+.st-block-title {
+  text-align: center;
+}
+
+/* Column headers row */
+.st-col-headers {
+  display: flex;
+  align-items: center;
+  background: #374151;
+  border-bottom: 1px solid #4b5563;
+}
+
+.st-col-header-label {
+  background: #374151;
+  color: #d1d5db;
+  font-size: 10px;
+}
+
+.st-col-hdr {
+  flex: 0 0 auto;
+  text-align: center;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0 4px;
+}
+
+/* Shared row-label column (first block only) */
+.st-row-label {
+  width: 170px;
+  flex: 0 0 170px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+}
+
+/* Vendor name row */
+.st-vendor-row {
+  display: flex;
+  align-items: center;
+  background: #4b5563;
+  border-top: 1px solid #6b7280;
+}
+
+.st-vendor-name-full {
+  width: 100%;
+  padding: 0 10px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.st-vendor-name-bar {
+  width: 100%;
+  height: 100%;
+}
+
+/* Vendor sub-header row - repeats column labels within each vendor block */
+.st-vendor-subheader {
+  display: flex;
+  align-items: center;
+  background: #374151;
+  border-top: 1px solid #4b5563;
+}
+
+.st-vendor-subheader-label {
+  background: #374151;
+}
+
+.st-vendor-subheader-col {
+  flex: 0 0 auto;
+  text-align: center;
+  color: #d1d5db;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+/* Data rows */
+.st-data-row {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-top: 1px solid #e5e7eb;
+}
+
+.st-data-row:nth-child(odd) {
+  background: #f9fafb;
+}
+
+/* Money cells */
+.st-cell {
+  flex: 0 0 auto;
+  text-align: right;
+  padding: 0 10px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: #111827;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  box-sizing: border-box;
+}
+
+/* Vendor total row */
+.st-vtotal-row {
+  display: flex;
+  align-items: center;
+  background: #1e293b;
+  border-top: 1px solid #334155;
+}
+
+.st-vtotal-label {
+  color: #fff;
+  font-weight: 700;
+}
+
+.st-vtotal-cell {
+  color: #fff;
+  font-weight: 700;
+}
+
+/* Grand total row */
+.st-grand-row {
+  display: flex;
+  align-items: center;
+  background: #111827;
+  border-top: 2px solid #374151;
+}
+
+.st-grand-label {
+  color: #fff;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.st-grand-cell {
+  color: #fff;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+/* Spacer row between vendor blocks — transparent, no borders */
+.st-spacer-row {
+  background: transparent;
+  margin: 20px;
+  border: none;
+}
+
+/* ================================================================
+   PROJECT TOTAL PAGE — .pt-* classes
+   ================================================================ */
+
+/* Two-block wrapper: side-by-side on desktop, stacked on narrow */
+.pt-blocks-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 48px;
+  overflow-x: auto;
+  padding-bottom: 12px;
+}
+@media (max-width: 1100px) {
+  .pt-blocks-wrapper {
+    flex-direction: column;
+    gap: 32px;
+  }
+}
+
+/* Individual block */
+.pt-block {
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+
+/* Block header bar (centered title) */
+.pt-block-header {
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+/* Column header row */
+.pt-col-headers {
+  display: flex;
+  align-items: center;
+  background: #374151;
+  height: 32px;
+  border-bottom: 1px solid #4b5563;
+}
+.pt-col-hdr {
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+}
+.pt-col-hdr-empty {
+  background: #374151;
+}
+
+/* Shared cell sizes */
+.pt-label-cell {
+  width: 170px;
+  flex: 0 0 170px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+}
+.pt-data-cell {
+  width: 130px;
+  flex: 0 0 130px;
+  text-align: right;
+  padding: 0 10px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: #111827;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  box-sizing: border-box;
+}
+.pt-rate-cell {
+  width: 100px;
+  flex: 0 0 100px;
+  text-align: center;
+  padding: 0 8px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+/* Company card (with bottom margin for spacing) */
+.pt-company-card {
+  margin-bottom: 22px;
+}
+
+/* Company name bar */
+.pt-company-name {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  background: #4b5563;
+  padding: 0 10px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  border-top: 1px solid #6b7280;
+}
+
+/* Data row */
+.pt-data-row {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  background: #fff;
+  border-top: 1px solid #e5e7eb;
+}
+.pt-data-row:nth-child(odd) {
+  background: #f9fafb;
+}
+
+/* Company total row (dark navy) */
+.pt-total-row {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  background: #1e293b;
+  border-top: 1px solid #334155;
+}
+.pt-total-row .pt-label-cell,
+.pt-total-row .pt-data-cell {
+  color: #fff;
+  font-weight: 700;
+}
+
+/* ── Grand Total section ── */
+.pt-grand-section {
+  border-top: 2px solid #374151;
+  margin-top: 4px;
+}
+
+/* Green category subtotal rows */
+.pt-grand-sub-row {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  background: #166534;
+  border-top: 1px solid #15803d;
+}
+.pt-grand-sub-row .pt-label-cell,
+.pt-grand-sub-row .pt-data-cell {
+  color: #fff;
+  font-weight: 700;
+}
+
+/* TOTAL / TOTAL DOLAR row (dark) */
+.pt-grand-total-row {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  background: #1e293b;
+  border-top: 1px solid #334155;
+}
+.pt-grand-total-row .pt-label-cell,
+.pt-grand-total-row .pt-data-cell {
+  color: #fff;
+  font-weight: 700;
+}
+.pt-total-dolar-row {
+  background: #0f172a;
+}
+
+/* GRAND TOTAL DOLAR row (darkest) */
+.pt-grand-final-row {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  background: #111827;
+  border-top: 2px solid #374151;
+}
+.pt-grand-final-row .pt-label-cell,
+.pt-grand-final-row .pt-data-cell {
+  color: #fff;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+/* Per-card column header row (inside each company card) */
+.pt-card-col-headers {
+  display: flex;
+  align-items: center;
+  background: #374151;
+  height: 26px;
+  border-bottom: 1px solid #4b5563;
+}
+.pt-card-col-hdr {
+  color: #fff !important;
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+  justify-content: center;
+}
+
+/* Exchange rate display inside grand total */
+.pt-rate-display {
+  color: #fbbf24;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+/* Bottom rate input (yellow cell in grand total row) */
+.pt-rate-input-bottom {
+  width: 70px;
+  padding: 3px 6px;
+  border: 1px solid #fbbf24;
+  border-radius: 3px;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+  color: #111827;
+  background: #fbbf24;
+}
+.pt-rate-input-bottom:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.5);
+}
+
+/* Exchange rate input in page header */
+.pt-rate-input-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+.pt-rate-input {
+  width: 80px;
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: right;
+  color: #111827;
+  background: #fff;
+}
+.pt-rate-input:focus {
+  outline: none;
+  border-color: #4472C4;
+  box-shadow: 0 0 0 2px rgba(68, 114, 196, 0.2);
+}

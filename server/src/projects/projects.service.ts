@@ -940,7 +940,11 @@ export class ProjectsService {
     const poJustAllowed = updateItemDto.pfSignStatus !== undefined && !wasPoAllowed && poAllowsCode && !existingItem.pfCode;
     const poJustBlocked = updateItemDto.pfSignStatus !== undefined && wasPoAllowed && !poAllowsCode;
 
-    const needsPfCodeRegen = (isVendorChanging || isFirstTimeVendorAssign || orderTypeTrigger || poJustAllowed) && effectiveVendorId && poAllowsCode;
+    // Self-heal: an item whose PF sign status already allows a code but never got one
+    // (e.g. it was signed while the rule still depended on PO status) gets it on its next edit.
+    const missingCode = !existingItem.pfCode && !poJustBlocked;
+
+    const needsPfCodeRegen = (isVendorChanging || isFirstTimeVendorAssign || orderTypeTrigger || poJustAllowed || missingCode) && effectiveVendorId && poAllowsCode;
 
     if (needsPfCodeRegen) {
       try {

@@ -27,7 +27,7 @@ function isTransient(err: unknown): boolean {
 }
 
 // Running as a Vercel Function: many short-lived instances, each must hold at most
-// one pooled connection (Supabase's pooler does the real pooling) and no timers.
+// a few pooled connections (Supabase's pooler does the real pooling) and no timers.
 const IS_SERVERLESS = !!process.env.VERCEL;
 
 function buildDatabaseUrl(): string {
@@ -39,7 +39,7 @@ function buildDatabaseUrl(): string {
     // connections; 10 per server instance leaves headroom for multiple deploys / workers.
     // Supabase transaction pooler (6543) needs pgbouncer mode (no prepared statements).
     if (url.port === '6543' && !url.searchParams.has('pgbouncer')) url.searchParams.set('pgbouncer', 'true');
-    if (!url.searchParams.has('connection_limit')) url.searchParams.set('connection_limit', IS_SERVERLESS ? '1' : '10');
+    if (!url.searchParams.has('connection_limit')) url.searchParams.set('connection_limit', IS_SERVERLESS ? '5' : '10');
     if (!url.searchParams.has('pool_timeout'))    url.searchParams.set('pool_timeout', '20');
     if (!url.searchParams.has('connect_timeout')) url.searchParams.set('connect_timeout', '15');
     if (!url.searchParams.has('socket_timeout'))  url.searchParams.set('socket_timeout', '30');

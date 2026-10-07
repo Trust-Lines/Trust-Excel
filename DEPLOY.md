@@ -14,8 +14,7 @@ One Vercel project serves everything:
 
 ## Local
     npm install
-    cd server && node dist/main.js        # API on :3001 (after npm run build:server)
-    npm run dev                           # frontend on :5173, proxies /api
+    npm run dev        # API on :3001 + frontend on :5173 (open http://localhost:5173)
 
 ## Schema changes
     npx prisma db push --schema server/prisma/schema.prisma   # uses DIRECT_URL (5432)

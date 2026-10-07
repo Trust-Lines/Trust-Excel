@@ -95,7 +95,6 @@ export const getStatusStyle = (status: string | null | undefined): StatusStyle =
 
     case 'SENT TO TLINES':
     case 'SENT_TO_TLINES':
-    case 'SENT TO TLINES':
       return {
         backgroundColor: '#15803d', // Koyu yeşil
         color: 'white'

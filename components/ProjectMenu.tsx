@@ -118,7 +118,10 @@ const ProjectMenu: React.FC<ProjectMenuProps> = ({
         const data = await res.json().catch(() => ({}));
         throw new Error(data.message || 'Failed to create custom type');
       }
-      setEditTypes(prev => [...prev, name]);
+      // Server returns the existing type when the name is already known — use its spelling
+      const saved = await res.json().catch(() => null);
+      const savedName: string = saved?.name || name;
+      setEditTypes(prev => prev.some(t => t.toLowerCase() === savedName.toLowerCase()) ? prev : [...prev, savedName]);
       setNewCustomType('');
     } catch (err) {
       setCustomTypeError(err instanceof Error ? err.message : 'Failed to create custom type');

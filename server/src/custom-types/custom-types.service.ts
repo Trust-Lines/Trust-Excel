@@ -85,10 +85,11 @@ export class CustomTypesService {
     const normalizedName = createDto.name.trim();
     const normalizedCode = createDto.code.trim().toUpperCase();
 
-    // Check for duplicates
+    // Custom types are global: removing one from a project leaves it active, so
+    // "creating" it again for another (or the same) project just reuses it.
     const existingByName = await this.findByName(normalizedName);
     if (existingByName) {
-      throw new ConflictException(`Custom type with name "${normalizedName}" already exists`);
+      return existingByName;
     }
 
     const existingByCode = await this.findByCode(normalizedCode);

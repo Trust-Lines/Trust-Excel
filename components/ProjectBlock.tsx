@@ -1169,18 +1169,16 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
           : mode === 'expenses-me' ? `/api/expenses-missing-extra/projects/${projectId}/items`
           : `/api/projects/${projectId}/items`;
 
-        // Remove items of unchecked types
-        const removedItemIds: string[] = [];
-        for (const typeName of typesToRemove) {
-          const items = Array.from(itemsById.values()).filter(item => {
-            const itemType = mapBackendTypeToFrontend(item.type, item.customType);
-            return itemType === typeName;
-          });
-          for (const item of items) {
-            await apiFetch(`${itemDeleteBase}/${item.id}`, { method: 'DELETE' });
-            removedItemIds.push(item.id);
-          }
-        }
+        // Remove items of unchecked types (in parallel — one round trip instead of N)
+        const itemsToRemove = Array.from(itemsById.values()).filter(item =>
+          typesToRemove.includes(mapBackendTypeToFrontend(item.type, item.customType))
+        );
+        const deleteResults = await Promise.all(itemsToRemove.map(item =>
+          apiFetch(`${itemDeleteBase}/${item.id}`, { method: 'DELETE' })
+            .then(res => (res.ok ? item.id : null))
+            .catch(() => null)
+        ));
+        const removedItemIds = deleteResults.filter((id): id is string => !!id);
 
         // Optimistic: remove deleted items from local + global state immediately
         if (removedItemIds.length > 0) {
@@ -1191,46 +1189,43 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
           });
         }
 
-        // Add empty items for newly checked types - parse response to get real items
-        const createdItems: BackendProjectItem[] = [];
-        for (const typeName of typesToAdd) {
+        // Add empty items for newly checked types (in parallel) - parse response to get real items
+        const standardTypes = ['MILLWORK', 'SHELVING', 'CEILING', 'IMAGE', 'FURNITURE', 'DECORATION'];
+        const needsCustomTypes = typesToAdd.some(t => !standardTypes.includes(mapTypeToEnum(t)));
+        let customTypes: Array<{ id: string; name: string; code?: string }> = [];
+        if (needsCustomTypes) {
+          const customRes = await apiFetch('/api/custom-types');
+          customTypes = customRes.ok ? await customRes.json() : [];
+        }
+        const createResults = await Promise.all(typesToAdd.map(async (typeName): Promise<BackendProjectItem | null> => {
           const backendType = mapTypeToEnum(typeName);
-          const standardTypes = ['MILLWORK', 'SHELVING', 'CEILING', 'IMAGE', 'FURNITURE', 'DECORATION'];
+          let body: Record<string, string>;
+          let customType: { id: string; name: string; code?: string } | undefined;
           if (standardTypes.includes(backendType)) {
+            body = { type: backendType };
+          } else {
+            // Custom type: create the item against the custom type's id
+            customType = customTypes.find(ct => ct.name.toLowerCase() === typeName.toLowerCase());
+            if (!customType) return null;
+            body = { customTypeId: customType.id };
+          }
+          try {
             const response = await apiFetch(itemCreateBase, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ type: backendType }),
+              body: JSON.stringify(body),
             });
-            if (response.ok) {
-              try {
-                const newItem = await response.json();
-                if (newItem && newItem.id) {
-                  createdItems.push(newItem as BackendProjectItem);
-                }
-              } catch { /* ignore parse errors */ }
-            }
+            if (!response.ok) return null;
+            const newItem = await response.json();
+            if (!newItem?.id) return null;
+            // Make sure the row renders under the right custom type name right away
+            if (customType && !newItem.customType) newItem.customType = customType;
+            return newItem as BackendProjectItem;
+          } catch {
+            return null;
           }
-        else {
-            // Custom type: create the item against the custom type's id
-            const customRes = await apiFetch('/api/custom-types');
-            const customTypes: Array<{ id: string; name: string }> = customRes.ok ? await customRes.json() : [];
-            const match = customTypes.find(ct => ct.name.toLowerCase() === typeName.toLowerCase());
-            if (match) {
-              const response = await apiFetch(itemCreateBase, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ customTypeId: match.id }),
-              });
-              if (response.ok) {
-                try {
-                  const newItem = await response.json();
-                  if (newItem && newItem.id) createdItems.push(newItem as BackendProjectItem);
-                } catch { /* ignore parse errors */ }
-              }
-            }
-          }
-        }
+        }));
+        const createdItems = createResults.filter((i): i is BackendProjectItem => !!i);
 
         // Optimistic: add new items to local state immediately
         if (createdItems.length > 0) {
@@ -1253,6 +1248,14 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ types: selectedTypes }),
         });
+
+        // The parent list decides which rows this block renders — tell it about the
+        // change so the new type shows up without a page refresh. Our own socket
+        // events are excluded by the server, so nothing else would do it.
+        removedItemIds.forEach(id => updateGlobalItem?.(id, { __deleted: true } as any));
+        createdItems.forEach(item => onItemCreated?.(projectId, item));
+        // Background re-sync with the server (doesn't block closing the menu)
+        if (onProjectUpdate) Promise.resolve(onProjectUpdate(projectId)).catch(() => {});
       } else {
         // name or address
         const apiEndpoint = mode === 'directOrder' ? `/api/direct-orders/${projectId}`

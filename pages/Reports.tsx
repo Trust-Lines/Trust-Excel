@@ -371,16 +371,22 @@ const Reports: React.FC = () => {
       })
       .filter(g => g.tiers.length > 0);
 
+    // Group view only shows rows that belong to a PF Group — count and total just those
+    const groupedRows = new Set(byGroup.flatMap(g => g.tiers.flatMap(t => t.members.flatMap(m => m.rows))));
+    const shownRowCount = groupMode === 'group'
+      ? byGroup.reduce((n, g) => n + g.tiers.reduce((m, t) => m + t.members.reduce((k, mem) => k + mem.rows.length, 0), 0), 0)
+      : rows.length;
+
     // Totals (split by currency)
     let priceUsd = 0, priceTl = 0, invoiceUsd = 0, invoiceTl = 0, paidUsd = 0, paidTl = 0, remUsd = 0, remTl = 0;
-    for (const r of rows) {
+    for (const r of groupMode === 'group' ? [...groupedRows] : rows) {
       priceUsd += r.priceUsd; priceTl += r.priceTl;
       invoiceUsd += r.invoiceUsd; invoiceTl += r.invoiceTl;
       paidUsd += r.payment.paidUsd; paidTl += r.payment.paidTl;
       remUsd += r.payment.remUsd; remTl += r.payment.remTl;
     }
 
-    return { template: tmpl, rows, grouped, groupedBySupplier: bySupplier, groupedByGroup: byGroup, totals: { priceUsd, priceTl, invoiceUsd, invoiceTl, paidUsd, paidTl, remUsd, remTl } };
+    return { template: tmpl, rows, grouped, groupedBySupplier: bySupplier, groupedByGroup: byGroup, shownRowCount, totals: { priceUsd, priceTl, invoiceUsd, invoiceTl, paidUsd, paidTl, remUsd, remTl } };
   };
 
   // One report per active template (1 for a single selection, 4 for "all")
@@ -389,7 +395,7 @@ const Reports: React.FC = () => {
     [allItems, selectedTemplate, typeFilter, groupMode, paymentFilter, supplierFilter, pfGroups, statusFilter],
   );
 
-  const totalRowCount = reports.reduce((acc, r) => acc + r.rows.length, 0);
+  const totalRowCount = reports.reduce((acc, r) => acc + r.shownRowCount, 0);
 
   // Distinct types available for the type-filter dropdown (union across active templates)
   const availableTypes = useMemo(() => {
@@ -705,7 +711,7 @@ const Reports: React.FC = () => {
           </div>
 
           {/* One section per active report (1 for single, 4 for "All (Combined)") */}
-          {(selectedTemplate === 'all' ? reports.filter(r => r.rows.length > 0) : reports).map((report, idx) => (
+          {(selectedTemplate === 'all' ? reports.filter(r => r.shownRowCount > 0) : reports).map((report, idx) => (
             <div
               key={report.template.key}
               className="report-section"
@@ -877,7 +883,11 @@ const Reports: React.FC = () => {
                   </thead>
                   <tbody>
                     {report.groupedByGroup.length === 0 && (
-                      <tr><td colSpan={6 + (report.template.statusOptions ? 1 : 0) + (showOrderedDate ? 1 : 0) + (showPrice ? 1 : 0) + (showInvoice ? 1 : 0)} style={{ padding: '24px', color: '#9ca3af' }}>No grouped records for this status.</td></tr>
+                      <tr><td colSpan={6 + (report.template.statusOptions ? 1 : 0) + (showOrderedDate ? 1 : 0) + (showPrice ? 1 : 0) + (showInvoice ? 1 : 0)} style={{ padding: '24px', color: '#9ca3af' }}>
+                        {report.rows.length > 0
+                          ? `None of the ${report.rows.length} items in this report belong to a PF Group yet. Add types to a group from the Projects page (project menu → Create Group).`
+                          : 'No grouped records for this status.'}
+                      </td></tr>
                     )}
                     {report.groupedByGroup.map(grp => {
                       const groupRowCount = grp.tiers.reduce((n, t) => n + t.members.reduce((m, mem) => m + mem.rows.length, 0), 0);
@@ -926,7 +936,7 @@ const Reports: React.FC = () => {
 
           {/* ── COMBINED GRAND TOTAL (all templates together) ── */}
           {selectedTemplate === 'all' && (() => {
-            const vis = reports.filter(r => r.rows.length > 0);
+            const vis = reports.filter(r => r.shownRowCount > 0);
             if (vis.length === 0) return null;
             const g = vis.reduce((acc, r) => ({
               priceUsd: acc.priceUsd + r.totals.priceUsd,

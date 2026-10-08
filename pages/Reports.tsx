@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { getProjects } from '../lib/projects';
 import { getMissingExtraCases } from '../lib/missing-extra';
 import { getDirectOrders } from '../lib/direct-orders';
-import { mapBackendTypeToFrontend } from '../lib/projects';
+import { mapBackendTypeToFrontend, mapItemStatusToFrontend } from '../lib/projects';
+import { getStatusStyle } from '../utils/statusStyles';
 import { TYPE_ORDER } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useColumnPermissions } from '../hooks/useColumnPermissions';
@@ -25,6 +26,7 @@ interface ReportRow {
   type: string;
   pfCode: string;
   orderType: string;
+  status: string;         // backend status enum (STATUS column of mixed-status reports)
   priceText: string;      // "$1,800.00" | "₺8,100.00" | "-"
   priceSort: number;      // for stable sorting if needed
   priceUsd: number;       // pf price split by currency (for totals)
@@ -51,6 +53,11 @@ interface ReportTemplate {
   statuses: string[];
   /** banner color */
   color: string;
+  /**
+   * Mixed-status reports: adds a STATUS column so rows can be told apart, and
+   * lets the user narrow the report to some of these statuses at the top.
+   */
+  statusOptions?: string[];
 }
 
 // Report templates. "On Hold" is the first/active one (red).
@@ -59,8 +66,8 @@ interface ReportTemplate {
 const REPORT_TEMPLATES: ReportTemplate[] = [
   { key: 'to_order',      label: 'To Order',         statuses: ['TO_ORDER'], color: '#b91c1c' },
   { key: 'in_production', label: 'Ordered',           statuses: ['ORDERED', 'WAITING_PAYMENT', 'ASSEMBLY'], color: '#16a34a' },
-  { key: 'new_orders',    label: 'Not Ordered',       statuses: ['NOT_ORDERED'], color: '#f59e0b' },
-  { key: 'on_hold',       label: 'On Hold',          statuses: ['HOLD_T', 'HOLD_PM'], color: '#dc2626' },
+  { key: 'new_orders',    label: 'Not Ordered',       statuses: ['NOT_ORDERED', 'BOOKS_IN_PROGRESS'], color: '#f59e0b', statusOptions: ['NOT_ORDERED', 'BOOKS_IN_PROGRESS'] },
+  { key: 'on_hold',       label: 'On Hold',          statuses: ['HOLD_T', 'HOLD_PM', 'HOLD_BOOKS'], color: '#dc2626', statusOptions: ['HOLD_T', 'HOLD_PM', 'HOLD_BOOKS'] },
   { key: 'received_sent', label: 'Received and Sent', statuses: ['READY_TO_RECEIVE', 'RECEIVED', 'READY', 'SENT_TO_TLINES', 'PARTIAL_SENT', 'SENT'], color: '#15803d' },
 ];
 
@@ -183,6 +190,7 @@ const Reports: React.FC = () => {
   const [pfGroups, setPfGroups] = useState<PfGroup[]>([]);
   const [paymentFilter, setPaymentFilter] = useState<'' | 'paid' | 'unpaid'>(''); // supplier mode only
   const [supplierFilter, setSupplierFilter] = useState<string>(''); // '' = all suppliers
+  const [statusFilter, setStatusFilter] = useState<string[]>([]); // [] = every status of the selected report
 
   // Force the price/invoice toggles off (and keep them off) for roles that don't have
   // pfUsd/pfTl/invoice/invoiceTl visibility — otherwise a restricted role could just
@@ -260,7 +268,9 @@ const Reports: React.FC = () => {
 
   // Build a full report (rows + groupings + totals) for one template, honoring filters
   const buildReport = (tmpl: ReportTemplate) => {
-    const statusSet = new Set(tmpl.statuses);
+    // Sub-status selection only applies to the single selected report (not the combined view)
+    const narrowed = selectedTemplate !== 'all' && !!tmpl.statusOptions && statusFilter.length > 0;
+    const statusSet = new Set(narrowed ? tmpl.statuses.filter(st => statusFilter.includes(st)) : tmpl.statuses);
     const rows: ReportRow[] = [];
 
     for (const entry of allItems) {
@@ -290,6 +300,7 @@ const Reports: React.FC = () => {
         type: displayType,
         pfCode: entry.item.pfCode || '',
         orderType: entry.item.orderType || '',
+        status: entry.status,
         priceText: price.text,
         priceSort: price.sort,
         priceUsd: price.usd,
@@ -375,7 +386,7 @@ const Reports: React.FC = () => {
   // One report per active template (1 for a single selection, 4 for "all")
   const reports = useMemo(
     () => activeTemplates.map(buildReport),
-    [allItems, selectedTemplate, typeFilter, groupMode, paymentFilter, supplierFilter, pfGroups],
+    [allItems, selectedTemplate, typeFilter, groupMode, paymentFilter, supplierFilter, pfGroups, statusFilter],
   );
 
   const totalRowCount = reports.reduce((acc, r) => acc + r.rows.length, 0);
@@ -411,7 +422,7 @@ const Reports: React.FC = () => {
   }, [allItems, selectedTemplate]);
 
   // Reset type filter when switching template (types differ)
-  useEffect(() => { setTypeFilter(''); }, [selectedTemplate]);
+  useEffect(() => { setTypeFilter(''); setStatusFilter([]); }, [selectedTemplate]);
   // Reset payment filter when leaving supplier mode
   useEffect(() => { if (groupMode !== 'supplier') setPaymentFilter(''); }, [groupMode]);
 
@@ -496,6 +507,52 @@ const Reports: React.FC = () => {
             All (Combined)
           </button>
         </div>
+
+        {/* Sub-status picker for mixed-status reports (e.g. On Hold → Hold T / Hold PM / Hold Books) */}
+        {(() => {
+          const tmpl = REPORT_TEMPLATES.find(t => t.key === selectedTemplate);
+          if (!tmpl?.statusOptions) return null;
+          const options = tmpl.statusOptions;
+          const countOf = (st: string) => allItems.filter(e => e.status === st && (e.item.pfCode || '').trim()).length;
+          const chip = (key: string, label: string, active: boolean, onClick: () => void, colors?: { backgroundColor: string; color: string }) => {
+            const colored = active && colors && colors.backgroundColor !== 'white';
+            return (
+              <button
+                key={key}
+                onClick={onClick}
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: '999px',
+                  border: active ? '2px solid #1f2937' : '1px solid #d1d5db',
+                  background: colored ? colors!.backgroundColor : active ? '#1f2937' : '#fff',
+                  color: colored ? colors!.color : active ? '#fff' : '#374151',
+                  fontWeight: active ? 700 : 500,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                }}
+              >
+                {label}
+              </button>
+            );
+          };
+          return (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
+              <span style={{ fontSize: '13px', color: '#374151', fontWeight: 600 }}>Status:</span>
+              {chip('all', `All (${options.reduce((sum, st) => sum + countOf(st), 0)})`, statusFilter.length === 0, () => setStatusFilter([]))}
+              {options.map(st => chip(
+                st,
+                `${mapItemStatusToFrontend(st)} (${countOf(st)})`,
+                statusFilter.includes(st),
+                () => setStatusFilter(prev => {
+                  const next = prev.includes(st) ? prev.filter(x => x !== st) : [...prev, st];
+                  // picking every option is the same as "All"
+                  return next.length === options.length ? [] : next;
+                }),
+                getStatusStyle(st),
+              ))}
+            </div>
+          );
+        })()}
 
         {/* Group mode: split by Project or by Supplier */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
@@ -667,6 +724,11 @@ const Reports: React.FC = () => {
               }}>
                 <span style={{ fontWeight: 800, fontSize: '16px', letterSpacing: '.5px' }}>{report.template.label}</span>
                 <span style={{ display: 'flex', gap: '8px' }}>
+                  {selectedTemplate !== 'all' && report.template.statusOptions && statusFilter.length > 0 && (
+                    <span style={{ fontSize: '13px', fontWeight: 600, background: 'rgba(255,255,255,0.2)', padding: '3px 10px', borderRadius: '4px' }}>
+                      {statusFilter.map(st => mapItemStatusToFrontend(st)).join(' · ')}
+                    </span>
+                  )}
                   {typeFilter && (
                     <span style={{ fontSize: '13px', fontWeight: 600, background: 'rgba(255,255,255,0.2)', padding: '3px 10px', borderRadius: '4px' }}>
                       Type: {typeFilter}
@@ -694,6 +756,7 @@ const Reports: React.FC = () => {
                       <th style={{ width: showPrice || showInvoice ? '16%' : '18%' }}>TYPE</th>
                       <th style={{ width: showPrice || showInvoice ? '26%' : '32%' }}>PF CODE</th>
                       <th style={{ width: showPrice || showInvoice ? '26%' : '34%' }}>ORDER TYPE</th>
+                      {report.template.statusOptions && <th style={{ width: '14%' }}>STATUS</th>}
                       {showOrderedDate && <th style={{ width: '14%' }}>ORDERED DATE</th>}
                       {showPrice && <th style={{ width: '18%' }}>PF PRICE</th>}
                       {showInvoice && <th style={{ width: '18%' }}>INVOICE PRICE</th>}
@@ -701,7 +764,7 @@ const Reports: React.FC = () => {
                   </thead>
                   <tbody>
                     {report.grouped.length === 0 && (
-                      <tr><td colSpan={4 + (showOrderedDate ? 1 : 0) + (showPrice ? 1 : 0) + (showInvoice ? 1 : 0)} style={{ padding: '24px', color: '#9ca3af' }}>No records for this status.</td></tr>
+                      <tr><td colSpan={4 + (report.template.statusOptions ? 1 : 0) + (showOrderedDate ? 1 : 0) + (showPrice ? 1 : 0) + (showInvoice ? 1 : 0)} style={{ padding: '24px', color: '#9ca3af' }}>No records for this status.</td></tr>
                     )}
                     {report.grouped.map(g => {
                       let projectCellRendered = false;
@@ -716,6 +779,7 @@ const Reports: React.FC = () => {
                             )}
                             <td className="left">{r.pfCode || '-'}</td>
                             <td>{r.orderType || '-'}</td>
+                            {report.template.statusOptions && <td style={{ ...getStatusStyle(r.status), fontWeight: 700, fontSize: '11px' }}>{mapItemStatusToFrontend(r.status)}</td>}
                             {showOrderedDate && <td>{r.orderedDate}</td>}
                             {showPrice && <td style={{ fontWeight: 600 }}>{r.priceText}</td>}
                             {showInvoice && <td style={{ fontWeight: 600 }}>{r.invoiceText}</td>}
@@ -727,7 +791,7 @@ const Reports: React.FC = () => {
                   {(showPrice || showInvoice) && report.grouped.length > 0 && (
                     <tfoot>
                       <tr className="report-total">
-                        <td className="left" colSpan={4 + (showOrderedDate ? 1 : 0)}>TOTAL</td>
+                        <td className="left" colSpan={4 + (report.template.statusOptions ? 1 : 0) + (showOrderedDate ? 1 : 0)}>TOTAL</td>
                         {showPrice && <td>{totalText(report.totals.priceUsd, report.totals.priceTl)}</td>}
                         {showInvoice && <td>{totalText(report.totals.invoiceUsd, report.totals.invoiceTl)}</td>}
                       </tr>
@@ -744,6 +808,7 @@ const Reports: React.FC = () => {
                       <th style={{ width: showPrice || showInvoice ? '20%' : '26%' }}>SUPPLIER</th>
                       <th style={{ width: showPrice || showInvoice ? '22%' : '28%' }}>PF CODE</th>
                       <th style={{ width: showPrice || showInvoice ? '14%' : '18%' }}>TYPE</th>
+                      {report.template.statusOptions && <th style={{ width: '12%' }}>STATUS</th>}
                       {showOrderedDate && <th style={{ width: '12%' }}>ORDERED DATE</th>}
                       {showPrice && <th style={{ width: '14%' }}>PF PRICE</th>}
                       {showInvoice && <th style={{ width: '14%' }}>INVOICE PRICE</th>}
@@ -752,7 +817,7 @@ const Reports: React.FC = () => {
                   </thead>
                   <tbody>
                     {report.groupedBySupplier.length === 0 && (
-                      <tr><td colSpan={3 + (showOrderedDate ? 1 : 0) + (showPrice ? 1 : 0) + (showInvoice ? 1 : 0) + (showPayment ? 1 : 0)} style={{ padding: '24px', color: '#9ca3af' }}>No records for this status.</td></tr>
+                      <tr><td colSpan={3 + (report.template.statusOptions ? 1 : 0) + (showOrderedDate ? 1 : 0) + (showPrice ? 1 : 0) + (showInvoice ? 1 : 0) + (showPayment ? 1 : 0)} style={{ padding: '24px', color: '#9ca3af' }}>No records for this status.</td></tr>
                     )}
                     {report.groupedBySupplier.map(g =>
                       g.rows.map((r, ri) => (
@@ -762,6 +827,7 @@ const Reports: React.FC = () => {
                           )}
                           <td className="left">{r.pfCode || '-'}</td>
                           <td>{r.type}</td>
+                          {report.template.statusOptions && <td style={{ ...getStatusStyle(r.status), fontWeight: 700, fontSize: '11px' }}>{mapItemStatusToFrontend(r.status)}</td>}
                           {showOrderedDate && <td>{r.orderedDate}</td>}
                           {showPrice && <td style={{ fontWeight: 600 }}>{r.priceText}</td>}
                           {showInvoice && <td style={{ fontWeight: 600 }}>{r.invoiceText}</td>}
@@ -777,7 +843,7 @@ const Reports: React.FC = () => {
                   {report.groupedBySupplier.length > 0 && (
                     <tfoot>
                       <tr className="report-total">
-                        <td className="left" colSpan={3 + (showOrderedDate ? 1 : 0)}>TOTAL</td>
+                        <td className="left" colSpan={3 + (report.template.statusOptions ? 1 : 0) + (showOrderedDate ? 1 : 0)}>TOTAL</td>
                         {showPrice && <td>{totalText(report.totals.priceUsd, report.totals.priceTl)}</td>}
                         {showInvoice && <td>{totalText(report.totals.invoiceUsd, report.totals.invoiceTl)}</td>}
                         {showPayment && (
@@ -803,6 +869,7 @@ const Reports: React.FC = () => {
                       <th style={{ width: showPrice || showInvoice ? '14%' : '16%' }}>TYPE</th>
                       <th style={{ width: showPrice || showInvoice ? '20%' : '26%' }}>PF CODE</th>
                       <th style={{ width: showPrice || showInvoice ? '20%' : '26%' }}>ORDER TYPE</th>
+                      {report.template.statusOptions && <th style={{ width: '12%' }}>STATUS</th>}
                       {showOrderedDate && <th style={{ width: '12%' }}>ORDERED DATE</th>}
                       {showPrice && <th style={{ width: '16%' }}>PF PRICE</th>}
                       {showInvoice && <th style={{ width: '16%' }}>INVOICE PRICE</th>}
@@ -810,7 +877,7 @@ const Reports: React.FC = () => {
                   </thead>
                   <tbody>
                     {report.groupedByGroup.length === 0 && (
-                      <tr><td colSpan={6 + (showOrderedDate ? 1 : 0) + (showPrice ? 1 : 0) + (showInvoice ? 1 : 0)} style={{ padding: '24px', color: '#9ca3af' }}>No grouped records for this status.</td></tr>
+                      <tr><td colSpan={6 + (report.template.statusOptions ? 1 : 0) + (showOrderedDate ? 1 : 0) + (showPrice ? 1 : 0) + (showInvoice ? 1 : 0)} style={{ padding: '24px', color: '#9ca3af' }}>No grouped records for this status.</td></tr>
                     )}
                     {report.groupedByGroup.map(grp => {
                       const groupRowCount = grp.tiers.reduce((n, t) => n + t.members.reduce((m, mem) => m + mem.rows.length, 0), 0);
@@ -834,6 +901,7 @@ const Reports: React.FC = () => {
                             )}
                             <td className="left">{r.pfCode || '-'}</td>
                             <td>{r.orderType || '-'}</td>
+                            {report.template.statusOptions && <td style={{ ...getStatusStyle(r.status), fontWeight: 700, fontSize: '11px' }}>{mapItemStatusToFrontend(r.status)}</td>}
                             {showOrderedDate && <td>{r.orderedDate}</td>}
                             {showPrice && <td style={{ fontWeight: 600 }}>{r.priceText}</td>}
                             {showInvoice && <td style={{ fontWeight: 600 }}>{r.invoiceText}</td>}
@@ -845,7 +913,7 @@ const Reports: React.FC = () => {
                   {(showPrice || showInvoice) && report.groupedByGroup.length > 0 && (
                     <tfoot>
                       <tr className="report-total">
-                        <td className="left" colSpan={6 + (showOrderedDate ? 1 : 0)}>TOTAL</td>
+                        <td className="left" colSpan={6 + (report.template.statusOptions ? 1 : 0) + (showOrderedDate ? 1 : 0)}>TOTAL</td>
                         {showPrice && <td>{totalText(report.totals.priceUsd, report.totals.priceTl)}</td>}
                         {showInvoice && <td>{totalText(report.totals.invoiceUsd, report.totals.invoiceTl)}</td>}
                       </tr>

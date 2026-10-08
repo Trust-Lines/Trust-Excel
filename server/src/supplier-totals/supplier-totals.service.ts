@@ -5,6 +5,7 @@ import {
   SupplierTotalTab,
   SupplierTotalVendor,
   SupplierTotalResponse,
+  SupplierTotalIssue,
 } from './dto/supplier-total.dto';
 
 function toNum(v: any): number {
@@ -110,6 +111,32 @@ function aggregateItems(items: RawItem[]): SupplierTotalMoney {
   return money;
 }
 
+/** Payments that don't fit the item's (invoice-or-PF) price — see SupplierTotalIssue */
+function findIssues(
+  source: SupplierTotalIssue['source'],
+  items: Array<RawItem & { pfCode?: string | null; projectNo?: string }>,
+  vendorCodeById: Map<string, string>,
+): SupplierTotalIssue[] {
+  const issues: SupplierTotalIssue[] = [];
+  for (const item of items) {
+    const priceUsd = toNum(item.invoice) > 0 ? toNum(item.invoice) : toNum(item.pfUsd);
+    const priceTl = toNum(item.invoiceTl) > 0 ? toNum(item.invoiceTl) : toNum(item.pfTl);
+    const paidUsd = toNum(item.paidUsd1) + toNum(item.paidUsd2);
+    const paidTl = toNum(item.paidTl1) + toNum(item.paidTl2);
+    const base = {
+      source,
+      projectNo: item.projectNo || '',
+      pfCode: item.pfCode || '',
+      vendorCode: vendorCodeById.get(item.vendorId) || '',
+    };
+    for (const [currency, price, paid] of [['USD', priceUsd, paidUsd], ['TL', priceTl, paidTl]] as const) {
+      if (paid <= price + 0.01) continue;
+      issues.push({ ...base, kind: price > 0 ? 'OVERPAID' : 'PAID_WITHOUT_PRICE', currency, price, paid });
+    }
+  }
+  return issues;
+}
+
 const CACHE_TTL_MS = 30_000; // 30 seconds
 
 @Injectable()
@@ -161,6 +188,7 @@ export class SupplierTotalsService {
       status: true,
       pfSignStatus: true,
       paymentRule: true,
+      pfCode: true,
     };
 
     // Exclude soft-deleted items AND items whose parent (project/case) is soft-deleted,
@@ -168,15 +196,15 @@ export class SupplierTotalsService {
     const [projectItems, directOrderItems, missingExtraItems] = await Promise.all([
       this.prisma.projectItem.findMany({
         where: { vendorId: { not: null }, deletedAt: null, project: { deletedAt: null } },
-        select: selectFields,
+        select: { ...selectFields, project: { select: { projectNo: true } } },
       }),
       this.prisma.directOrderItem.findMany({
         where: { vendorId: { not: null }, deletedAt: null, project: { deletedAt: null } },
-        select: selectFields,
+        select: { ...selectFields, project: { select: { projectNo: true } } },
       }),
       this.prisma.missingExtraItem.findMany({
         where: { vendorId: { not: null }, deletedAt: null, case: { deletedAt: null } },
-        select: selectFields,
+        select: { ...selectFields, case: { select: { derivedProjectCode: true } } },
       }),
     ]);
 
@@ -225,7 +253,14 @@ export class SupplierTotalsService {
       gt = sumMoney(gt, v.total);
     }
 
-    const result: SupplierTotalResponse = { vendors: vendorResults, grandTotal: gt };
+    const vendorCodeById = new Map(vendors.map(v => [v.id, v.code]));
+    const issues = [
+      ...findIssues('P', projectItems.map(i => ({ ...i, projectNo: i.project?.projectNo })) as any, vendorCodeById),
+      ...findIssues('DO', directOrderItems.map(i => ({ ...i, projectNo: i.project?.projectNo })) as any, vendorCodeById),
+      ...findIssues('ME', missingExtraItems.map(i => ({ ...i, projectNo: i.case?.derivedProjectCode })) as any, vendorCodeById),
+    ];
+
+    const result: SupplierTotalResponse = { vendors: vendorResults, grandTotal: gt, issues };
     this.cache = { data: result, cachedAt: Date.now() };
     return result;
   }

@@ -212,13 +212,11 @@ const SupplierTotal: React.FC = () => {
 
   if (!data) return null;
 
-  // Sanity check: production − paid − remaining − future must equal 0 per currency
-  const checkUsd = data.grandTotal.productionUsd - data.grandTotal.paidUsd
-    - data.grandTotal.remainingUsd - data.grandTotal.futureUsd;
-  const checkTl = data.grandTotal.productionTl - data.grandTotal.paidTl
-    - data.grandTotal.remainingTl - data.grandTotal.futureTl;
-  const usdOk = Math.abs(checkUsd) < 0.01;
-  const tlOk = Math.abs(checkTl) < 0.01;
+  // Real check: items whose payments don't fit their price. (The old
+  // "production − paid − remaining − future" check was always 0 by construction.)
+  const issues = data.issues || [];
+  const sourceLabel = { P: 'Projects', DO: 'Direct Order', ME: 'Missing & Extra' } as const;
+  const fmtMoney = (currency: 'USD' | 'TL', v: number) => (currency === 'USD' ? fmtUsd(v) : fmtTl(v));
 
   return (
     <div className="st-container">
@@ -242,39 +240,53 @@ const SupplierTotal: React.FC = () => {
           ))}
         </div>
 
-        {/* Sanity check: Production − Payments − Remaining − Future = 0 */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '16px',
-          marginTop: '16px',
-          padding: '10px 16px',
-          borderRadius: '6px',
-          fontWeight: 600,
-          fontSize: '14px',
-          color: '#fff',
-          width: 'fit-content',
-          backgroundColor: usdOk && tlOk ? '#15803d' : '#b91c1c',
-        }}>
-          <span>CHECK (Production − Payments − Remaining − Future)</span>
-          <span style={{
-            backgroundColor: 'rgba(0,0,0,0.25)',
-            padding: '4px 12px',
-            borderRadius: '4px',
-            minWidth: '110px',
-            textAlign: 'center',
+        {/* Payment check: overpaid items and payments without a price */}
+        <div style={{ marginTop: '16px', width: 'fit-content', maxWidth: '100%' }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px',
+            padding: '10px 16px',
+            borderRadius: issues.length ? '6px 6px 0 0' : '6px',
+            fontWeight: 600,
+            fontSize: '14px',
+            color: '#fff',
+            backgroundColor: issues.length ? '#b91c1c' : '#15803d',
           }}>
-            {usdOk ? 'USD OK ✓' : 'USD DIFF: ' + fmtUsd(checkUsd)}
-          </span>
-          <span style={{
-            backgroundColor: 'rgba(0,0,0,0.25)',
-            padding: '4px 12px',
-            borderRadius: '4px',
-            minWidth: '110px',
-            textAlign: 'center',
-          }}>
-            {tlOk ? 'TL OK ✓' : 'TL DIFF: ' + fmtTl(checkTl)}
-          </span>
+            <span>CHECK (Payments vs Prices)</span>
+            <span style={{ backgroundColor: 'rgba(0,0,0,0.25)', padding: '4px 12px', borderRadius: '4px' }}>
+              {issues.length === 0
+                ? 'All payments fit their prices ✓'
+                : `${issues.length} item${issues.length === 1 ? '' : 's'} to fix`}
+            </span>
+          </div>
+          {issues.length > 0 && (
+            <table style={{ borderCollapse: 'collapse', fontSize: '13px', background: '#fff', border: '1px solid #e5e7eb', width: '100%' }}>
+              <thead>
+                <tr style={{ background: '#f3f4f6', textAlign: 'left' }}>
+                  {['Problem', 'Page', 'Project', 'PF Code', 'Supplier', 'Price', 'Paid', 'Difference'].map(h => (
+                    <th key={h} style={{ padding: '6px 10px', borderBottom: '1px solid #e5e7eb', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {issues.map((it, i) => (
+                  <tr key={`${it.pfCode}-${it.currency}-${i}`}>
+                    <td style={{ padding: '6px 10px', borderBottom: '1px solid #f3f4f6', color: '#b91c1c', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                      {it.kind === 'OVERPAID' ? 'Paid more than price' : `Paid in ${it.currency}, no ${it.currency} price`}
+                    </td>
+                    <td style={{ padding: '6px 10px', borderBottom: '1px solid #f3f4f6' }}>{sourceLabel[it.source]}</td>
+                    <td style={{ padding: '6px 10px', borderBottom: '1px solid #f3f4f6' }}>{it.projectNo || '-'}</td>
+                    <td style={{ padding: '6px 10px', borderBottom: '1px solid #f3f4f6', fontFamily: 'monospace' }}>{it.pfCode || '-'}</td>
+                    <td style={{ padding: '6px 10px', borderBottom: '1px solid #f3f4f6' }}>{it.vendorCode}</td>
+                    <td style={{ padding: '6px 10px', borderBottom: '1px solid #f3f4f6', textAlign: 'right' }}>{it.price > 0 ? fmtMoney(it.currency, it.price) : '-'}</td>
+                    <td style={{ padding: '6px 10px', borderBottom: '1px solid #f3f4f6', textAlign: 'right' }}>{fmtMoney(it.currency, it.paid)}</td>
+                    <td style={{ padding: '6px 10px', borderBottom: '1px solid #f3f4f6', textAlign: 'right', fontWeight: 600 }}>{fmtMoney(it.currency, it.paid - it.price)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>

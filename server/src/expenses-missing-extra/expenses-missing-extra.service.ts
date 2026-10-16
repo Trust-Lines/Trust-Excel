@@ -11,7 +11,7 @@ import { EventsGateway } from '../events/events.gateway';
 import { CreateExpensesMEProjectDto } from './dto/create-expenses-me-project.dto';
 import { CreateExpensesMEItemDto } from './dto/create-expenses-me-item.dto';
 import { UpdateExpensesMEItemDto } from './dto/update-expenses-me-item.dto';
-import { reservedMillworkIndex, nextOpenMillworkIndex, keepOwnOpenCode, formatIndex } from '../common/helpers/fixed-millwork-codes';
+import { reservedMillworkIndex, nextOpenMillworkIndex, formatIndex } from '../common/helpers/fixed-millwork-codes';
 
 const ITEM_INCLUDE = {
   vendor: { select: { id: true, code: true, name: true } },
@@ -365,13 +365,11 @@ export class ExpensesMissingExtraService {
     if (vendor.fixedMillworkCodes && type === 'MILLWORK') {
       const reserved = reservedMillworkIndex(orderType);
       if (reserved) return `${vendor.code}-${projectNo}-${typeLetter}${formatIndex(reserved)}`;
-      const kept = keepOwnOpenCode(currentPfCode, `${vendor.code}-${projectNo}-${typeLetter}`);
-      if (kept) return kept;
       const siblings = await this.prisma.expensesMissingExtraItem.findMany({
         where: { project: { projectNo }, type: 'MILLWORK' as any, vendorId, deletedAt: null },
         select: { pfCode: true },
       });
-      return `${vendor.code}-${projectNo}-${typeLetter}${formatIndex(nextOpenMillworkIndex(siblings.map(s => s.pfCode), typeLetter))}`;
+      return `${vendor.code}-${projectNo}-${typeLetter}${formatIndex(nextOpenMillworkIndex(siblings.map(s => s.pfCode).filter(c => c !== currentPfCode), typeLetter))}`;
     }
 
     // Default: auto-increment logic

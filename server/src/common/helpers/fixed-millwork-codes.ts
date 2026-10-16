@@ -47,16 +47,6 @@ export function nextOpenMillworkIndex(existingCodes: Array<string | null | undef
   return n;
 }
 
-/**
- * An item that already holds its own open code (M04+) under `prefix` keeps it when it
- * moves between non-standard order types, instead of jumping to a new number.
- */
-export function keepOwnOpenCode(currentPfCode: string | null | undefined, prefix: string): string | null {
-  if (!currentPfCode?.startsWith(prefix)) return null;
-  const m = currentPfCode.slice(prefix.length).match(/^(\d+)$/);
-  return m && parseInt(m[1], 10) >= FIRST_OPEN_MILLWORK_INDEX ? currentPfCode : null;
-}
-
 export function formatIndex(n: number): string {
   return n.toString().padStart(2, '0');
 }

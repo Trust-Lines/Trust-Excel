@@ -23,7 +23,7 @@ import { ProjectScopeService } from '../permissions/services/project-scope.servi
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { SupplierTotalsService } from '../supplier-totals/supplier-totals.service';
 import { EventsGateway } from '../events/events.gateway';
-import { reservedMillworkIndex, nextOpenMillworkIndex, keepOwnOpenCode, formatIndex } from '../common/helpers/fixed-millwork-codes';
+import { reservedMillworkIndex, nextOpenMillworkIndex, formatIndex } from '../common/helpers/fixed-millwork-codes';
 
 @Injectable()
 export class MissingExtraService {
@@ -983,13 +983,11 @@ export class MissingExtraService {
     if (vendor.fixedMillworkCodes && type === 'MILLWORK') {
       const reserved = reservedMillworkIndex(orderType);
       if (reserved) return `${vendor.code}-${derivedProjectCode}-${typeLetter}${formatIndex(reserved)}`;
-      const kept = keepOwnOpenCode(currentPfCode, `${vendor.code}-${derivedProjectCode}-${typeLetter}`);
-      if (kept) return kept;
       const siblings = await this.prismaService.missingExtraItem.findMany({
         where: { case: { derivedProjectCode }, type: 'MILLWORK' as any, vendorId, deletedAt: null },
         select: { pfCode: true },
       });
-      return `${vendor.code}-${derivedProjectCode}-${typeLetter}${formatIndex(nextOpenMillworkIndex(siblings.map(s => s.pfCode), typeLetter))}`;
+      return `${vendor.code}-${derivedProjectCode}-${typeLetter}${formatIndex(nextOpenMillworkIndex(siblings.map(s => s.pfCode).filter(c => c !== currentPfCode), typeLetter))}`;
     }
 
     // Default: auto-increment logic for non-YSM or non-MILLWORK

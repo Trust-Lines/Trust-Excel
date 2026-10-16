@@ -3,7 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { VendorsService } from '../../vendors/vendors.service';
 import { CustomTypesService } from '../../custom-types/custom-types.service';
 import { ProjectItemType } from '@prisma/client';
-import { reservedMillworkIndex, nextOpenMillworkIndex, keepOwnOpenCode, formatIndex } from '../../common/helpers/fixed-millwork-codes';
+import { reservedMillworkIndex, nextOpenMillworkIndex, formatIndex } from '../../common/helpers/fixed-millwork-codes';
 
 interface ItemTypeInfo {
   enumType?: ProjectItemType;
@@ -60,13 +60,12 @@ export class DirectOrderPfCodeGenerationService {
       if (vendor.fixedMillworkCodes && itemTypeInfo.enumType === ProjectItemType.MILLWORK) {
         const reserved = reservedMillworkIndex(orderType);
         if (reserved) return `${pfCodePrefix}${formatIndex(reserved)}`;
-        if (currentItemId) {
-          const self = await prisma.directOrderItem.findUnique({ where: { id: currentItemId }, select: { pfCode: true } });
-          const kept = keepOwnOpenCode(self?.pfCode, pfCodePrefix);
-          if (kept) return kept;
-        }
         const siblings = await prisma.directOrderItem.findMany({
-          where: { pfCode: { startsWith: pfCodePrefix }, deletedAt: null }, // items in the trash give their number back
+          where: {
+            pfCode: { startsWith: pfCodePrefix },
+            deletedAt: null, // items in the trash give their number back
+            ...(currentItemId ? { id: { not: currentItemId } } : {}), // the item being re-coded can drop to a lower free number
+          },
           select: { pfCode: true },
         });
         return `${pfCodePrefix}${formatIndex(nextOpenMillworkIndex(siblings.map(s => s.pfCode), typeShort))}`;

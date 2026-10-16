@@ -3,7 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { VendorsService } from '../../vendors/vendors.service';
 import { CustomTypesService } from '../../custom-types/custom-types.service';
 import { ProjectItemType } from '@prisma/client';
-import { reservedMillworkIndex, nextOpenMillworkIndex, keepOwnOpenCode, formatIndex } from '../../common/helpers/fixed-millwork-codes';
+import { reservedMillworkIndex, nextOpenMillworkIndex, formatIndex } from '../../common/helpers/fixed-millwork-codes';
 
 interface ItemTypeInfo {
   enumType?: ProjectItemType;
@@ -55,11 +55,7 @@ export class PfCodeGenerationService {
       if (vendor.fixedMillworkCodes && itemTypeInfo.enumType === ProjectItemType.MILLWORK) {
         const reserved = reservedMillworkIndex(orderType);
         if (reserved) return `${pfCodePrefix}${formatIndex(reserved)}`;
-        if (excludeItemId) {
-          const self = await prisma.projectItem.findUnique({ where: { id: excludeItemId }, select: { pfCode: true } });
-          const kept = keepOwnOpenCode(self?.pfCode, pfCodePrefix);
-          if (kept) return kept;
-        }
+        // The item being re-coded is left out, so it can drop to a lower free number
         const siblings = await prisma.projectItem.findMany({
           where: {
             pfCode: { startsWith: pfCodePrefix },

@@ -425,6 +425,7 @@ export class TrustStockService implements OnModuleInit {
           kind: u.kind,
           quantity: Number(u.quantity),
           note: u.note,
+          takenBy: u.takenBy,
           createdAt: u.createdAt,
           projectItemId: u.projectItemId,
           projectNo: u.projectItem.project.projectNo,
@@ -474,6 +475,7 @@ export class TrustStockService implements OnModuleInit {
       kind: u.kind,
       quantity: Number(u.quantity),
       note: u.note,
+      takenBy: u.takenBy,
       createdAt: u.createdAt,
       productId: u.productId,
       itemCode: u.product.itemCode,
@@ -502,6 +504,8 @@ export class TrustStockService implements OnModuleInit {
   async applyMovements(dto: StockMovementsDto, userId?: string) {
     const row = await this.getStockRow(dto.projectItemId);
     const lines = dto.lines.filter(l => (l.take || 0) > 0 || (l.reserve || 0) > 0 || (l.return || 0) > 0);
+    const takenBy = dto.takenBy.trim();
+    if (!takenBy) throw new BadRequestException('Enter who is taking the stock.');
     if (!lines.length) throw new BadRequestException('Nothing to save.');
 
     await this.prisma.$transaction(async (tx) => {
@@ -519,7 +523,7 @@ export class TrustStockService implements OnModuleInit {
         if (line.return) {
           const net = sumMine('TAKEN') - sumMine('RETURNED');
           if (line.return > net + 1e-9) throw new BadRequestException(`${product.itemCode}: this row has only ${net} to return.`);
-          await tx.trustStockUsage.create({ data: { productId: product.id, projectItemId: row.id, kind: 'RETURNED', quantity: line.return, note: line.note ?? null, createdByUserId: userId ?? null } });
+          await tx.trustStockUsage.create({ data: { productId: product.id, projectItemId: row.id, kind: 'RETURNED', quantity: line.return, note: line.note ?? null, takenBy, createdByUserId: userId ?? null } });
         }
 
         // Take: first from this row's own reservation, the rest from what's free
@@ -531,14 +535,14 @@ export class TrustStockService implements OnModuleInit {
             throw new BadRequestException(`${product.itemCode}: only ${Math.max(0, free) + myReserved} can be taken.`);
           }
           if (fromReservation > 0) await this.releaseReservation(tx, mine.filter(u => u.kind === 'RESERVED'), fromReservation);
-          await tx.trustStockUsage.create({ data: { productId: product.id, projectItemId: row.id, kind: 'TAKEN', quantity: line.take, note: line.note ?? null, createdByUserId: userId ?? null } });
+          await tx.trustStockUsage.create({ data: { productId: product.id, projectItemId: row.id, kind: 'TAKEN', quantity: line.take, note: line.note ?? null, takenBy, createdByUserId: userId ?? null } });
         }
 
         // Reserve: hold for this row without taking it out yet
         if (line.reserve) {
           const free = s.takeable + (line.return || 0) - (line.take ? Math.max(0, line.take - sumMine('RESERVED')) : 0);
           if (line.reserve > free + 1e-9) throw new BadRequestException(`${product.itemCode}: only ${Math.max(0, free)} can be reserved.`);
-          await tx.trustStockUsage.create({ data: { productId: product.id, projectItemId: row.id, kind: 'RESERVED', quantity: line.reserve, note: line.note ?? null, createdByUserId: userId ?? null } });
+          await tx.trustStockUsage.create({ data: { productId: product.id, projectItemId: row.id, kind: 'RESERVED', quantity: line.reserve, note: line.note ?? null, takenBy, createdByUserId: userId ?? null } });
         }
       }
     });
@@ -563,9 +567,15 @@ export class TrustStockService implements OnModuleInit {
     }
   }
 
+  /** Names entered before as "taken by" — offered in the dropdown. */
+  async listPeople(): Promise<string[]> {
+    const rows = await this.prisma.trustStockUsage.findMany({ where: { takenBy: { not: null } }, distinct: ['takenBy'], select: { takenBy: true } });
+    return rows.map(r => r.takenBy!.trim()).filter(Boolean).sort((a, b) => a.localeCompare(b, 'tr'));
+  }
+
   /** Single take (kept for API compatibility). */
   async addUsage(dto: CreateStockUsageDto, userId?: string) {
-    await this.applyMovements({ projectItemId: dto.projectItemId, lines: [{ productId: dto.productId, take: dto.quantity }] } as StockMovementsDto, userId);
+    await this.applyMovements({ projectItemId: dto.projectItemId, takenBy: '—', lines: [{ productId: dto.productId, take: dto.quantity }] } as StockMovementsDto, userId);
     return this.prisma.trustStockUsage.findFirst({ where: { projectItemId: dto.projectItemId, productId: dto.productId, kind: 'TAKEN', deletedAt: null }, orderBy: { createdAt: 'desc' } });
   }
 

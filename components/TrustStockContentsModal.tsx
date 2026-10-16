@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import {
-  getStockProducts, openTrustStockPdf, updateStockProduct, productFamily,
+  getStockProducts, getAvailableStockProducts, openTrustStockPdf, updateStockProduct, productFamily,
   StockProduct, StockStatus, STOCK_STATUS_STYLE,
 } from '../lib/trust-stock';
 import { useSocketEvent } from '../hooks/useSocketEvent';
@@ -41,7 +41,8 @@ const ReceivedCell: React.FC<{ p: StockProduct; onError: (m: string) => void }> 
   );
 };
 
-const TrustStockContentsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+/** readOnly: opened from a Projects row (Projects access) — figures only, no receipt editing */
+const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolean }> = ({ onClose, readOnly = false }) => {
   const [products, setProducts] = useState<StockProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,10 +52,10 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void }> = ({ onClose })
   const [open, setOpen] = useState<Set<string>>(new Set());
 
   const load = useCallback(async () => {
-    try { setProducts(await getStockProducts()); }
+    try { setProducts(await (readOnly ? getAvailableStockProducts() : getStockProducts())); }
     catch (e) { setError(e instanceof Error ? e.message : 'Failed to load'); }
     finally { setLoading(false); }
-  }, []);
+  }, [readOnly]);
   useEffect(() => { load(); }, [load]);
   useSocketEvent('trust-stock:usage-changed', load);
   useSocketEvent('trust-stock:item-created', load);
@@ -67,7 +68,7 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void }> = ({ onClose })
     return products
       .filter(p => statusFilter === 'ALL' || p.status === statusFilter)
       .filter(p => !orderFilter || p.stockItem.group.code === orderFilter)
-      .filter(p => !q || [p.itemCode, p.description, p.dimensions, p.stockItem.pfCode, p.stockItem.group.code, p.stockItem.vendor?.name, ...p.usages.map(u => u.projectNo)]
+      .filter(p => !q || [p.itemCode, p.description, p.dimensions, p.stockItem.pfCode, p.stockItem.group.code, p.stockItem.vendor?.name, ...p.usages.map(u => u.projectNo), ...p.usages.map(u => u.takenBy || '')]
         .some(v => (v || '').toLowerCase().includes(q)))
       .sort((a, b) => a.stockItem.group.code.localeCompare(b.stockItem.group.code, undefined, { numeric: true }));
   }, [products, search, statusFilter, orderFilter]);
@@ -107,7 +108,7 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void }> = ({ onClose })
   const COLS = ['Stock Order', 'Item Code', 'Description', 'Dimensions', 'Ordered', 'Confirmed\nReceived', 'Taken', 'Returned', 'On Hand', 'Reserved', 'Available', 'Remaining %', 'Reorder at ≤', 'Status', 'Used by'];
 
   return (
-    <div onMouseDown={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', zIndex: 20000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }}>
+    <div onMouseDown={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', zIndex: readOnly ? 100001 : 20000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }}>
       <div onMouseDown={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 10, width: 1500, maxWidth: '100%', height: '94vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 40px rgba(0,0,0,.25)' }}>
         <div style={{ padding: '10px 18px', background: '#1e293b', color: '#fff', borderRadius: '10px 10px 0 0', display: 'flex', alignItems: 'center' }}>
           <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: '.4px' }}>TRUST LINES — STOCK OVERVIEW</div>
@@ -152,7 +153,7 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void }> = ({ onClose })
           </select>
           <div style={{ flex: 1 }} />
           {error && <span style={{ color: '#dc2626', fontSize: 12 }}>{error}</span>}
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Item, description, PF, project…"
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Item, description, PF, project, person…"
             style={{ width: 230, padding: '5px 10px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12 }} />
         </div>
 
@@ -189,7 +190,7 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void }> = ({ onClose })
                         <td style={{ ...td, textAlign: 'left', color: '#15803d', maxWidth: 280 }}>{p.description}</td>
                         <td style={{ ...td, whiteSpace: 'nowrap' }}>{p.dimensions || '—'}</td>
                         <td style={td}>{p.ordered}</td>
-                        <td style={td}><ReceivedCell p={p} onError={setError} /></td>
+                        <td style={td}>{readOnly ? dash(p.received) : <ReceivedCell p={p} onError={setError} />}</td>
                         <td style={td}>{p.taken}</td>
                         <td style={td}>{p.returned}</td>
                         <td style={{ ...td, fontWeight: 600 }}>{dash(p.onHand)}</td>
@@ -212,6 +213,7 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void }> = ({ onClose })
                           <td style={{ ...td, textAlign: 'left' }} colSpan={2}>
                             Project <b>{u.projectNo}</b> <span style={{ color: '#64748b' }}>{u.projectName}</span>
                             <span style={{ fontFamily: 'monospace', fontSize: 11, marginLeft: 8, color: '#475569' }}>{u.projectPfCode}</span>
+                            {u.takenBy && <span style={{ marginLeft: 8, color: '#0f172a' }}>· {u.takenBy}</span>}
                             {u.rowDeleted && <span style={{ color: '#dc2626', marginLeft: 6 }}>(row deleted)</span>}
                           </td>
                           <td style={td} colSpan={2} />

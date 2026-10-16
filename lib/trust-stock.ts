@@ -252,6 +252,7 @@ export interface StockProductUsage {
   kind: StockMoveKind;
   quantity: number;
   note: string | null;
+  takenBy: string | null;
   createdAt: string;
   projectItemId: string;
   projectNo: string;
@@ -323,6 +324,7 @@ export interface RowStockUsage {
   kind: StockMoveKind;
   quantity: number;
   note: string | null;
+  takenBy: string | null;
   createdAt: string;
   productId: string;
   itemCode: string;
@@ -346,9 +348,9 @@ export async function addStockUsage(projectItemId: string, productId: string, qu
 export interface StockMovementLine { productId: string; take?: number; reserve?: number; return?: number; note?: string }
 
 /** Take / reserve / return several products for one Projects row in one go. */
-export async function applyStockMovements(projectItemId: string, lines: StockMovementLine[]): Promise<RowStockUsage[]> {
+export async function applyStockMovements(projectItemId: string, lines: StockMovementLine[], takenBy: string): Promise<RowStockUsage[]> {
   return json(await apiFetch(`${API_BASE}/usage/movements`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectItemId, lines }),
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectItemId, takenBy, lines }),
   }), 'Failed to save stock movements');
 }
 
@@ -375,4 +377,9 @@ export async function removeStockUsage(id: string) {
 /** The Trust Stock company as a vendor in the Projects table ("TR-STOCK"). */
 export function isStockVendorCode(code?: string | null): boolean {
   return !!code && code.toUpperCase().replace(/[^A-Z]/g, '') === 'TRSTOCK';
+}
+
+/** Names entered before as "taken by" (for the dropdown). */
+export async function getStockPeople(): Promise<string[]> {
+  return json(await apiFetch(`${API_BASE}/usage/people`), 'Failed to load names');
 }

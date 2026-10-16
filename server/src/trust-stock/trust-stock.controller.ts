@@ -120,6 +120,13 @@ export class TrustStockController {
     return this.service.addUsage(dto, req.user?.id);
   }
 
+  /** Names used before as "taken by" */
+  @Get('usage/people')
+  @RequirePageAccess('operational_board')
+  people() {
+    return this.service.listPeople();
+  }
+
   /** Take / reserve / return several products for one row in one go */
   @Post('usage/movements')
   @RequirePageAccess('operational_board')

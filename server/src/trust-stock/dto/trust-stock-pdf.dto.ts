@@ -53,5 +53,7 @@ export class StockMovementLineDto {
 /** Several stock movements for one Projects row, saved together. */
 export class StockMovementsDto {
   @IsString() @IsNotEmpty() projectItemId: string;
+  /** Who took / returned / reserved the stock */
+  @IsString() @IsNotEmpty() takenBy: string;
   @IsArray() @ArrayMinSize(1) @ValidateNested({ each: true }) @Type(() => StockMovementLineDto) lines: StockMovementLineDto[];
 }

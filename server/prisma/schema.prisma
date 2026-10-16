@@ -1313,6 +1313,8 @@ model TrustStockUsage {
   kind            String            @default("TAKEN")
   quantity        Decimal           @db.Decimal(12, 2)
   note            String?
+  /// Person who took / returned / reserved it (free text; earlier names are offered in a dropdown)
+  takenBy         String?
   createdByUserId String?
   createdAt       DateTime          @default(now())
   deletedAt       DateTime?

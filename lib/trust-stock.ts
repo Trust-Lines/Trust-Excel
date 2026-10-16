@@ -244,9 +244,14 @@ export async function openTrustStockPdf(itemId: string): Promise<void> {
 
 /* ── Stock contents & usage ────────────────────────────────────────────────── */
 
+export type StockMoveKind = 'TAKEN' | 'RETURNED' | 'RESERVED';
+export type StockStatus = 'PENDING_VERIFICATION' | 'OUT_OF_STOCK' | 'REORDER_NOW' | 'WATCH' | 'HEALTHY';
+
 export interface StockProductUsage {
   id: string;
+  kind: StockMoveKind;
   quantity: number;
+  note: string | null;
   createdAt: string;
   projectItemId: string;
   projectNo: string;
@@ -259,10 +264,25 @@ export interface StockProduct {
   id: string;
   itemCode: string;
   description: string;
+  dimensions: string | null;
   category: string | null;
+  /** original ordered quantity */
   quantity: number;
-  used: number;
-  remaining: number;
+  receivedAt: string | null;
+  // stock-sheet figures (see TrustStockService.stats)
+  ordered: number;
+  received: number | null;
+  taken: number;
+  returned: number;
+  netUsed: number;
+  reserved: number;
+  onHand: number | null;
+  available: number | null;
+  remainingPct: number | null;
+  reorderThreshold: number | null;
+  status: StockStatus;
+  /** what can still be taken/reserved (ordered qty is the cap until the receipt is confirmed) */
+  takeable: number;
   unitPrice: number | null;
   totalPrice: number | null;
   currency: string;
@@ -288,7 +308,7 @@ export async function getAvailableStockProducts(): Promise<StockProduct[]> {
   return json(await apiFetch(`${API_BASE}/usage/products`), 'Failed to load stock');
 }
 
-export async function updateStockProduct(id: string, data: Partial<Pick<StockProduct, 'itemCode' | 'description' | 'quantity' | 'unitPrice' | 'totalPrice'>>) {
+export async function updateStockProduct(id: string, data: Partial<Pick<StockProduct, 'itemCode' | 'description' | 'dimensions' | 'quantity' | 'unitPrice' | 'totalPrice'>> & { receivedQuantity?: number | null }) {
   return json(await apiFetch(`${API_BASE}/products/${id}`, {
     method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data),
   }), 'Failed to update product');
@@ -300,7 +320,9 @@ export async function deleteStockProduct(id: string) {
 
 export interface RowStockUsage {
   id: string;
+  kind: StockMoveKind;
   quantity: number;
+  note: string | null;
   createdAt: string;
   productId: string;
   itemCode: string;
@@ -319,6 +341,31 @@ export async function addStockUsage(projectItemId: string, productId: string, qu
   return json(await apiFetch(`${API_BASE}/usage`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectItemId, productId, quantity }),
   }), 'Failed to use stock');
+}
+
+export interface StockMovementLine { productId: string; take?: number; reserve?: number; return?: number; note?: string }
+
+/** Take / reserve / return several products for one Projects row in one go. */
+export async function applyStockMovements(projectItemId: string, lines: StockMovementLine[]): Promise<RowStockUsage[]> {
+  return json(await apiFetch(`${API_BASE}/usage/movements`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectItemId, lines }),
+  }), 'Failed to save stock movements');
+}
+
+export const STOCK_STATUS_STYLE: Record<StockStatus, { label: string; bg: string; fg: string }> = {
+  HEALTHY: { label: 'HEALTHY', bg: '#dcfce7', fg: '#166534' },
+  WATCH: { label: 'WATCH', bg: '#fef3c7', fg: '#92400e' },
+  REORDER_NOW: { label: 'REORDER NOW', bg: '#fee2e2', fg: '#b91c1c' },
+  OUT_OF_STOCK: { label: 'OUT OF STOCK', bg: '#7f1d1d', fg: '#ffffff' },
+  PENDING_VERIFICATION: { label: 'PENDING VERIFICATION', bg: '#e5e7eb', fg: '#374151' },
+};
+
+/** Cabinet family from the item code: "FA 40" → FA, "IN-FC-48/F12 BODY" → FC */
+export function productFamily(itemCode: string): string {
+  const tokens = itemCode.toUpperCase().split(/[^A-Z0-9]+/).filter(Boolean);
+  const firstNum = tokens.findIndex(t => /^d/.test(t));
+  const alpha = (firstNum < 0 ? tokens : tokens.slice(0, firstNum)).filter(t => /^[A-Z]+$/.test(t));
+  return alpha[alpha.length - 1] || tokens[0] || '?';
 }
 
 export async function removeStockUsage(id: string) {

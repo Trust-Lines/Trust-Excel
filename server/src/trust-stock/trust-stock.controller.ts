@@ -6,7 +6,7 @@ import { PageAccessGuard } from '../auth/guards/page-access.guard';
 import { RequirePageAccess } from '../auth/decorators/page-access.decorator';
 import { TrustStockService } from './trust-stock.service';
 import { CreateTrustStockGroupDto, UpdateTrustStockGroupDto, TrustStockItemDto } from './dto/trust-stock.dto';
-import { UpdateStockProductDto, CreateStockUsageDto } from './dto/trust-stock-pdf.dto';
+import { UpdateStockProductDto, CreateStockUsageDto, StockMovementsDto } from './dto/trust-stock-pdf.dto';
 
 // Vercel caps request bodies at 4.5 MB
 const PDF_UPLOAD = FileInterceptor('file', { limits: { fileSize: 4 * 1024 * 1024 } });
@@ -118,6 +118,13 @@ export class TrustStockController {
   @RequirePageAccess('operational_board')
   addUsage(@Body() dto: CreateStockUsageDto, @Request() req: any) {
     return this.service.addUsage(dto, req.user?.id);
+  }
+
+  /** Take / reserve / return several products for one row in one go */
+  @Post('usage/movements')
+  @RequirePageAccess('operational_board')
+  applyMovements(@Body() dto: StockMovementsDto, @Request() req: any) {
+    return this.service.applyMovements(dto, req.user?.id);
   }
 
   @Delete('usage/:id')

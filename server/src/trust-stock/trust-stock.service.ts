@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EventsGateway } from '../events/events.gateway';
 import { applyStatusDateAutomation } from '../common/helpers/status-date-automation';
 import { CreateTrustStockGroupDto, UpdateTrustStockGroupDto, TrustStockItemDto } from './dto/trust-stock.dto';
-import { ImportPfDto, UpdateStockProductDto, CreateStockUsageDto } from './dto/trust-stock-pdf.dto';
+import { ImportPfDto, UpdateStockProductDto, CreateStockUsageDto, StockMovementsDto } from './dto/trust-stock-pdf.dto';
 import { parsePfPdf, normalizeCode } from './pf-pdf-parser';
 import { FileStorage } from '../common/storage/file-storage';
 import { plainToInstance } from 'class-transformer';
@@ -319,7 +319,7 @@ export class TrustStockService implements OnModuleInit {
         data: dto.products.map((p, i) => ({
           stockItemId: created.id,
           itemCode: p.itemCode.trim(),
-          description: p.description?.trim() || '',
+          ...TrustStockService.splitDimensions(p.description?.trim() || ''),
           category: p.category ?? null,
           quantity: p.quantity,
           unitPrice: p.unitPrice ?? null,
@@ -344,8 +344,47 @@ export class TrustStockService implements OnModuleInit {
   }
 
   // ==================== STOCK CONTENTS & USAGE ====================
+  //
+  // Same rules as the "Cabinet Stock Management" sheet, per product (model):
+  //   on hand    = confirmed received − taken + returned     (none until received)
+  //   available  = on hand − reserved
+  //   remaining% = available ÷ received
+  //   reorder at ≤ ROUNDDOWN(25% × received)
+  //   status     = PENDING VERIFICATION (no receipt) | OUT OF STOCK (≤ 0) | REORDER NOW (≤ 25%)
+  //                | WATCH (≤ 40%) | HEALTHY
 
-  /** Every product in stock with purchased / used / remaining and who used it. */
+  private static stats(p: { quantity: any; receivedQuantity: any; usages: { kind: string; quantity: any; projectItemId?: string }[] }) {
+    const sum = (kind: string) => p.usages.filter(u => u.kind === kind).reduce((s, u) => s + Number(u.quantity), 0);
+    const ordered = Number(p.quantity);
+    const received = p.receivedQuantity != null ? Number(p.receivedQuantity) : null;
+    const taken = sum('TAKEN');
+    const returned = sum('RETURNED');
+    const reserved = sum('RESERVED');
+    const onHand = received != null ? received - taken + returned : null;
+    const available = onHand != null ? onHand - reserved : null;
+    const remainingPct = received ? (available as number) / received : null;
+    const reorderThreshold = received != null ? Math.floor(received * 0.25) : null;
+    let status: 'PENDING_VERIFICATION' | 'OUT_OF_STOCK' | 'REORDER_NOW' | 'WATCH' | 'HEALTHY';
+    if (received == null) status = 'PENDING_VERIFICATION';
+    else if ((available as number) <= 0) status = 'OUT_OF_STOCK';
+    else if ((remainingPct as number) <= 0.25) status = 'REORDER_NOW';
+    else if ((remainingPct as number) <= 0.4) status = 'WATCH';
+    else status = 'HEALTHY';
+    // What can still be handed out: before the warehouse receipt is confirmed, the ordered quantity is the cap
+    const takeable = (received ?? ordered) - taken + returned - reserved;
+    return { ordered, received, taken, returned, netUsed: taken - returned, reserved, onHand, available, remainingPct, reorderThreshold, status, takeable };
+  }
+
+  /** "( D=32.5"-W=40"-H=32.75")" at the end of a description → dimensions + clean description */
+  static splitDimensions(description: string, dimensions?: string | null) {
+    if (dimensions) return { description, dimensions };
+    const m = description.match(/\(?\s*(D\s*=\s*[\d.,]+"?[\s\-–x×]*W\s*=\s*[\d.,]+"?[\s\-–x×]*H\s*=\s*[\d.,]+"?)\s*\)?\s*$/i);
+    if (!m) return { description, dimensions: null };
+    const dims = m[1].replace(/\s*[-–x×]\s*(?=[WH]\s*=)/gi, ' ').replace(/\s+/g, ' ').replace(/\s*=\s*/g, '=').trim();
+    return { description: description.slice(0, m.index).trim(), dimensions: dims };
+  }
+
+  /** Every product in stock with the stock-sheet figures and who used it. */
   async listProducts() {
     const products = await this.prisma.trustStockProduct.findMany({
       where: { deletedAt: null, stockItem: { deletedAt: null, group: { deletedAt: null } } },
@@ -366,23 +405,26 @@ export class TrustStockService implements OnModuleInit {
       orderBy: [{ stockItemId: 'asc' }, { sortOrder: 'asc' }],
     });
     return products.map(p => {
-      const used = p.usages.reduce((s, u) => s + Number(u.quantity), 0);
       const { pdfFileKey, ...stockItem } = p.stockItem;
+      const split = TrustStockService.splitDimensions(p.description, p.dimensions);
       return {
         id: p.id,
         itemCode: p.itemCode,
-        description: p.description,
+        description: split.description,
+        dimensions: split.dimensions,
         category: p.category,
         quantity: Number(p.quantity),
-        used,
-        remaining: Number(p.quantity) - used,
+        receivedAt: p.receivedAt,
         unitPrice: p.unitPrice != null ? Number(p.unitPrice) : null,
         totalPrice: p.totalPrice != null ? Number(p.totalPrice) : null,
         currency: p.currency,
+        ...TrustStockService.stats(p),
         stockItem: { ...stockItem, hasPdf: !!pdfFileKey },
         usages: p.usages.map(u => ({
           id: u.id,
+          kind: u.kind,
           quantity: Number(u.quantity),
+          note: u.note,
           createdAt: u.createdAt,
           projectItemId: u.projectItemId,
           projectNo: u.projectItem.project.projectNo,
@@ -397,11 +439,16 @@ export class TrustStockService implements OnModuleInit {
   async updateProduct(id: string, dto: UpdateStockProductDto, userId?: string) {
     const product = await this.prisma.trustStockProduct.findFirst({ where: { id, deletedAt: null }, include: { usages: { where: { deletedAt: null } } } });
     if (!product) throw new NotFoundException('Stock product not found');
-    if (dto.quantity !== undefined) {
-      const used = product.usages.reduce((s, u) => s + Number(u.quantity), 0);
-      if (dto.quantity < used) throw new BadRequestException(`${used} already used — quantity can't go below that.`);
+    const s = TrustStockService.stats(product);
+    if (dto.quantity !== undefined && dto.quantity < s.netUsed + s.reserved) {
+      throw new BadRequestException(`${s.netUsed + s.reserved} already taken/reserved — ordered quantity can't go below that.`);
     }
-    const updated = await this.prisma.trustStockProduct.update({ where: { id }, data: dto as any });
+    if (dto.receivedQuantity != null && dto.receivedQuantity < s.netUsed + s.reserved) {
+      throw new BadRequestException(`${s.netUsed + s.reserved} already taken/reserved — received quantity can't go below that.`);
+    }
+    const data: any = { ...dto };
+    if (dto.receivedQuantity !== undefined) data.receivedAt = dto.receivedQuantity == null ? null : (product.receivedAt ?? new Date());
+    const updated = await this.prisma.trustStockProduct.update({ where: { id }, data });
     this.events.emitToRooms(['trust-stock', 'projects'], 'trust-stock:usage-changed', { productId: id }, userId);
     return updated;
   }
@@ -415,7 +462,7 @@ export class TrustStockService implements OnModuleInit {
     return { message: 'Product removed' };
   }
 
-  /** Stock used by one Projects-table row. */
+  /** Stock movements of one Projects-table row, plus its per-product balance. */
   async usageForProjectItem(projectItemId: string) {
     const usages = await this.prisma.trustStockUsage.findMany({
       where: { projectItemId, deletedAt: null },
@@ -424,11 +471,13 @@ export class TrustStockService implements OnModuleInit {
     });
     return usages.map(u => ({
       id: u.id,
+      kind: u.kind,
       quantity: Number(u.quantity),
+      note: u.note,
       createdAt: u.createdAt,
       productId: u.productId,
       itemCode: u.product.itemCode,
-      description: u.product.description,
+      description: TrustStockService.splitDimensions(u.product.description, u.product.dimensions).description,
       unitPrice: u.product.unitPrice != null ? Number(u.product.unitPrice) : null,
       currency: u.product.currency,
       stockPfCode: u.product.stockItem.pfCode,
@@ -436,40 +485,108 @@ export class TrustStockService implements OnModuleInit {
     }));
   }
 
-  async addUsage(dto: CreateStockUsageDto, userId?: string) {
+  private async getStockRow(projectItemId: string) {
     const row = await this.prisma.projectItem.findFirst({
-      where: { id: dto.projectItemId, deletedAt: null },
+      where: { id: projectItemId, deletedAt: null },
       include: { vendor: { select: { code: true } } },
     });
     if (!row) throw new NotFoundException('Project row not found');
-    if (!isStockVendor(row.vendor?.code)) {
-      throw new BadRequestException('Stock can only be used on rows whose vendor is TR-STOCK.');
-    }
-    const usage = await this.prisma.$transaction(async (tx) => {
-      const product = await tx.trustStockProduct.findFirst({
-        where: { id: dto.productId, deletedAt: null, stockItem: { deletedAt: null } },
-        include: { usages: { where: { deletedAt: null } } },
-      });
-      if (!product) throw new NotFoundException('Stock product not found');
-      const used = product.usages.reduce((s, u) => s + Number(u.quantity), 0);
-      const remaining = Number(product.quantity) - used;
-      if (dto.quantity > remaining + 1e-9) {
-        throw new BadRequestException(`Only ${remaining} left of ${product.itemCode}.`);
-      }
-      return tx.trustStockUsage.create({
-        data: { productId: product.id, projectItemId: row.id, quantity: dto.quantity, createdByUserId: userId ?? null },
-      });
-    });
-    this.events.emitToRooms(['trust-stock', 'projects'], 'trust-stock:usage-changed', { projectItemId: row.id }, userId);
-    return usage;
+    if (!isStockVendor(row.vendor?.code)) throw new BadRequestException('Stock can only be used on rows whose vendor is TR-STOCK.');
+    return row;
   }
 
+  /**
+   * Apply several movements for one project row in one go (the "Use from Trust Stock" screen):
+   * per product: take N, reserve N, return N. Taking first uses up this row's own reservation.
+   */
+  async applyMovements(dto: StockMovementsDto, userId?: string) {
+    const row = await this.getStockRow(dto.projectItemId);
+    const lines = dto.lines.filter(l => (l.take || 0) > 0 || (l.reserve || 0) > 0 || (l.return || 0) > 0);
+    if (!lines.length) throw new BadRequestException('Nothing to save.');
+
+    await this.prisma.$transaction(async (tx) => {
+      for (const line of lines) {
+        const product = await tx.trustStockProduct.findFirst({
+          where: { id: line.productId, deletedAt: null, stockItem: { deletedAt: null } },
+          include: { usages: { where: { deletedAt: null } } },
+        });
+        if (!product) throw new NotFoundException('Stock product not found');
+        const mine = product.usages.filter(u => u.projectItemId === row.id);
+        const sumMine = (kind: string) => mine.filter(u => u.kind === kind).reduce((s, u) => s + Number(u.quantity), 0);
+        const s = TrustStockService.stats(product);
+
+        // Return: at most what this row has taken (net)
+        if (line.return) {
+          const net = sumMine('TAKEN') - sumMine('RETURNED');
+          if (line.return > net + 1e-9) throw new BadRequestException(`${product.itemCode}: this row has only ${net} to return.`);
+          await tx.trustStockUsage.create({ data: { productId: product.id, projectItemId: row.id, kind: 'RETURNED', quantity: line.return, note: line.note ?? null, createdByUserId: userId ?? null } });
+        }
+
+        // Take: first from this row's own reservation, the rest from what's free
+        if (line.take) {
+          const myReserved = sumMine('RESERVED');
+          const fromReservation = Math.min(myReserved, line.take);
+          const free = s.takeable + (line.return || 0);
+          if (line.take - fromReservation > free + 1e-9) {
+            throw new BadRequestException(`${product.itemCode}: only ${Math.max(0, free) + myReserved} can be taken.`);
+          }
+          if (fromReservation > 0) await this.releaseReservation(tx, mine.filter(u => u.kind === 'RESERVED'), fromReservation);
+          await tx.trustStockUsage.create({ data: { productId: product.id, projectItemId: row.id, kind: 'TAKEN', quantity: line.take, note: line.note ?? null, createdByUserId: userId ?? null } });
+        }
+
+        // Reserve: hold for this row without taking it out yet
+        if (line.reserve) {
+          const free = s.takeable + (line.return || 0) - (line.take ? Math.max(0, line.take - sumMine('RESERVED')) : 0);
+          if (line.reserve > free + 1e-9) throw new BadRequestException(`${product.itemCode}: only ${Math.max(0, free)} can be reserved.`);
+          await tx.trustStockUsage.create({ data: { productId: product.id, projectItemId: row.id, kind: 'RESERVED', quantity: line.reserve, note: line.note ?? null, createdByUserId: userId ?? null } });
+        }
+      }
+    });
+
+    this.events.emitToRooms(['trust-stock', 'projects'], 'trust-stock:usage-changed', { projectItemId: row.id }, userId);
+    return this.usageForProjectItem(row.id);
+  }
+
+  /** Reduce reservation records by `qty` (newest first). */
+  private async releaseReservation(tx: any, reservations: { id: string; quantity: any }[], qty: number) {
+    let left = qty;
+    for (const r of [...reservations].reverse()) {
+      if (left <= 0) break;
+      const q = Number(r.quantity);
+      if (q <= left + 1e-9) {
+        await tx.trustStockUsage.update({ where: { id: r.id }, data: { deletedAt: new Date() } });
+        left -= q;
+      } else {
+        await tx.trustStockUsage.update({ where: { id: r.id }, data: { quantity: q - left } });
+        left = 0;
+      }
+    }
+  }
+
+  /** Single take (kept for API compatibility). */
+  async addUsage(dto: CreateStockUsageDto, userId?: string) {
+    await this.applyMovements({ projectItemId: dto.projectItemId, lines: [{ productId: dto.productId, take: dto.quantity }] } as StockMovementsDto, userId);
+    return this.prisma.trustStockUsage.findFirst({ where: { projectItemId: dto.projectItemId, productId: dto.productId, kind: 'TAKEN', deletedAt: null }, orderBy: { createdAt: 'desc' } });
+  }
+
+  /** Undo one movement (e.g. a wrong entry or a released reservation). */
   async removeUsage(id: string, userId?: string) {
-    const usage = await this.prisma.trustStockUsage.findFirst({ where: { id, deletedAt: null } });
+    const usage = await this.prisma.trustStockUsage.findFirst({ where: { id, deletedAt: null }, include: { product: { include: { usages: { where: { deletedAt: null } } } } } });
     if (!usage) throw new NotFoundException('Usage not found');
+    if (usage.kind === 'RETURNED') {
+      // Undoing a return puts those pieces back on the row — only possible if they're still free
+      const s = TrustStockService.stats(usage.product);
+      if (Number(usage.quantity) > s.takeable + 1e-9) throw new BadRequestException('Those pieces have been used elsewhere since — can\'t undo this return.');
+    }
+    if (usage.kind === 'TAKEN') {
+      const mine = usage.product.usages.filter(u => u.projectItemId === usage.projectItemId);
+      const net = mine.filter(u => u.kind === 'TAKEN').reduce((s, u) => s + Number(u.quantity), 0)
+        - mine.filter(u => u.kind === 'RETURNED').reduce((s, u) => s + Number(u.quantity), 0);
+      if (net - Number(usage.quantity) < -1e-9) throw new BadRequestException('Undo the return for this row first.');
+    }
     await this.prisma.trustStockUsage.update({ where: { id }, data: { deletedAt: new Date() } });
     this.events.emitToRooms(['trust-stock', 'projects'], 'trust-stock:usage-changed', { projectItemId: usage.projectItemId }, userId);
-    return { message: 'Usage removed' };
+    return { message: 'Removed' };
   }
 }
 

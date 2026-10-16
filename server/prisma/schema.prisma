@@ -1282,7 +1282,13 @@ model TrustStockProduct {
   itemCode    String
   description String            @default("")
   category    String?
+  /// e.g. D=32.5" W=40" H=32.75"
+  dimensions  String?
+  /// Original ordered quantity (from the PF)
   quantity    Decimal           @db.Decimal(12, 2)
+  /// Confirmed received in the warehouse; null = pending verification
+  receivedQuantity Decimal?     @db.Decimal(12, 2)
+  receivedAt  DateTime?
   unitPrice   Decimal?          @db.Decimal(12, 2)
   totalPrice  Decimal?          @db.Decimal(12, 2)
   currency    String            @default("USD")
@@ -1303,7 +1309,10 @@ model TrustStockUsage {
   id              String            @id @default(cuid())
   productId       String
   projectItemId   String
+  /// TAKEN (out of stock for the row), RETURNED (back into stock), RESERVED (held for the row, not taken yet)
+  kind            String            @default("TAKEN")
   quantity        Decimal           @db.Decimal(12, 2)
+  note            String?
   createdByUserId String?
   createdAt       DateTime          @default(now())
   deletedAt       DateTime?

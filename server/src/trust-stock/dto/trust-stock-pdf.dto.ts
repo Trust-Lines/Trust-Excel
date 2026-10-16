@@ -28,6 +28,9 @@ export class ImportPfDto {
 export class UpdateStockProductDto {
   @IsOptional() @IsString() @IsNotEmpty() itemCode?: string;
   @IsOptional() @IsString() description?: string;
+  @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() dimensions?: string | null;
+  /** Confirmed received in the warehouse; null = back to pending verification */
+  @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumber() @Min(0) receivedQuantity?: number | null;
   @IsOptional() @IsNumber() @Min(0) quantity?: number;
   @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumber() unitPrice?: number | null;
   @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumber() totalPrice?: number | null;
@@ -37,4 +40,18 @@ export class CreateStockUsageDto {
   @IsString() @IsNotEmpty() projectItemId: string;
   @IsString() @IsNotEmpty() productId: string;
   @IsNumber() @Min(0.01) quantity: number;
+}
+
+export class StockMovementLineDto {
+  @IsString() @IsNotEmpty() productId: string;
+  @IsOptional() @IsNumber() @Min(0) take?: number;
+  @IsOptional() @IsNumber() @Min(0) reserve?: number;
+  @IsOptional() @IsNumber() @Min(0) return?: number;
+  @IsOptional() @IsString() note?: string;
+}
+
+/** Several stock movements for one Projects row, saved together. */
+export class StockMovementsDto {
+  @IsString() @IsNotEmpty() projectItemId: string;
+  @IsArray() @ArrayMinSize(1) @ValidateNested({ each: true }) @Type(() => StockMovementLineDto) lines: StockMovementLineDto[];
 }

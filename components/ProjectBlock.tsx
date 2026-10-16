@@ -1366,7 +1366,17 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
 
   };
   // Handler for item updates from vendor edit panel
+  // A Projects row just switched to the TR-STOCK vendor → ask right away what it takes from stock.
+  // (Only for the user who made the change; the server response carries the new vendor.)
+  const openStockUsageIfNewStockRow = (item: BackendProjectItem, before?: BackendProjectItem) => {
+    if (mode !== 'projects' || !isStockVendorCode(item.vendor?.code)) return;
+    if (before && before.vendorId === item.vendorId && isStockVendorCode(before.vendor?.code)) return;
+    const typeLabel = mapBackendTypeToFrontend(item.type, item.customType);
+    setStockUsageFor({ itemId: item.id, label: `Project ${project.projectNumber} · ${typeLabel} · ${item.pfCode || 'no PF code'}` });
+  };
+
   const handleItemUpdated = async (updatedItem: BackendProjectItem) => {
+    openStockUsageIfNewStockRow(updatedItem, itemsById.get(updatedItem.id));
 
     // IMMEDIATE: Update main table state so changes appear instantly
     setItemsById(prevItemsById => {
@@ -1385,6 +1395,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
 
   // Handler for new items added from vendor edit panel
   const handleItemAdded = async (newItem: BackendProjectItem) => {
+    openStockUsageIfNewStockRow(newItem);
 
     // FIRST: Update vendorEditState immediately so user sees new item in panel
     if (vendorEditState && (

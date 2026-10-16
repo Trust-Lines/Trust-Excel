@@ -63,6 +63,7 @@ export class PfCodeGenerationService {
         const siblings = await prisma.projectItem.findMany({
           where: {
             pfCode: { startsWith: pfCodePrefix },
+            deletedAt: null, // items in the trash give their number back
             ...(excludeItemId ? { id: { not: excludeItemId } } : {}),
           },
           select: { pfCode: true },
@@ -126,6 +127,7 @@ export class PfCodeGenerationService {
         const existing = await this.prismaService.projectItem.findFirst({
           where: {
             pfCode,
+            deletedAt: null,
             ...(currentItemId ? { id: { not: currentItemId } } : {}),
           }
         });

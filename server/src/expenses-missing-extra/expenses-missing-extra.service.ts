@@ -368,7 +368,7 @@ export class ExpensesMissingExtraService {
       const kept = keepOwnOpenCode(currentPfCode, `${vendor.code}-${projectNo}-${typeLetter}`);
       if (kept) return kept;
       const siblings = await this.prisma.expensesMissingExtraItem.findMany({
-        where: { project: { projectNo }, type: 'MILLWORK' as any, vendorId },
+        where: { project: { projectNo }, type: 'MILLWORK' as any, vendorId, deletedAt: null },
         select: { pfCode: true },
       });
       return `${vendor.code}-${projectNo}-${typeLetter}${formatIndex(nextOpenMillworkIndex(siblings.map(s => s.pfCode), typeLetter))}`;

@@ -30,17 +30,21 @@ export function reservedMillworkIndex(orderType?: string | null): number | null 
 }
 
 /**
- * Next free index (≥ 4) after the existing codes that end in `<letter><digits>`.
- * `existingCodes` should already be limited to the same vendor + project + Millwork.
+ * Lowest unused index (≥ 4) among the codes that end in `<letter><digits>`, so a number
+ * freed by deleting or re-typing an item is handed out again.
+ * `existingCodes` should be limited to the same vendor + project + Millwork and to
+ * items that are NOT in the trash (deleted items don't hold their number).
  */
 export function nextOpenMillworkIndex(existingCodes: Array<string | null | undefined>, letter = 'M'): number {
   const re = new RegExp(`-${letter}(\\d+)$`);
-  let max = 0;
+  const used = new Set<number>();
   for (const code of existingCodes) {
     const m = code?.match(re);
-    if (m) max = Math.max(max, parseInt(m[1], 10));
+    if (m) used.add(parseInt(m[1], 10));
   }
-  return Math.max(FIRST_OPEN_MILLWORK_INDEX, max + 1);
+  let n = FIRST_OPEN_MILLWORK_INDEX;
+  while (used.has(n)) n++;
+  return n;
 }
 
 /**

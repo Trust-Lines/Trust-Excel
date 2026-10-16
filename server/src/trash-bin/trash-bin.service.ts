@@ -3,6 +3,12 @@ import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { AdminAlertService } from '../admin-alert/admin-alert.service';
+import { ModuleRef } from '@nestjs/core';
+import { reservedMillworkIndex } from '../common/helpers/fixed-millwork-codes';
+import { PfCodeGenerationService } from '../projects/services/pf-code-generation.service';
+import { DirectOrderPfCodeGenerationService } from '../direct-orders/services/direct-order-pf-code-generation.service';
+import { MissingExtraService } from '../missing-extra/missing-extra.service';
+import { ExpensesMissingExtraService } from '../expenses-missing-extra/expenses-missing-extra.service';
 
 export interface TrashQueryDto {
   moduleGroup?: string;
@@ -20,6 +26,7 @@ export class TrashBinService {
     private readonly prisma: PrismaService,
     private readonly auditLogService: AuditLogService,
     private readonly adminAlertService: AdminAlertService,
+    private readonly moduleRef: ModuleRef,
   ) {}
 
   // ── PUBLIC API ──────────────────────────────────────────────────────
@@ -63,6 +70,11 @@ export class TrashBinService {
       this.logger.error(`Failed to restore entity ${entry.entityType}:${entry.entityId}`, err);
       throw new BadRequestException('Failed to restore record. It may have been permanently deleted.');
     }
+
+    // Deleted items give their PF number back, so it may have been reused meanwhile
+    await this.reissueClashingPfCode(entry.entityType, entry.entityId).catch((err) =>
+      this.logger.warn(`PF code check after restore failed for ${entry.entityType}:${entry.entityId}: ${err?.message || err}`),
+    );
 
     await this.prisma.trashBin.delete({ where: { id: trashId } });
 
@@ -235,6 +247,57 @@ export class TrashBinService {
   }
 
   // ── PRIVATE ENTITY OPERATIONS ───────────────────────────────────────
+
+  /**
+   * A restored item whose PF code was handed to another item while it sat in the
+   * trash gets a fresh code. (Standard GOS/TDR/YSM Millwork codes M01–M03 are
+   * meant to be shared, so those are left alone.)
+   */
+  private async reissueClashingPfCode(entityType: string, entityId: string) {
+    const model = ({
+      ProjectItem: 'projectItem',
+      DirectOrderItem: 'directOrderItem',
+      MissingExtraItem: 'missingExtraItem',
+      ExpensesMissingExtraItem: 'expensesMissingExtraItem',
+    } as const)[entityType as 'ProjectItem'];
+    if (!model) return;
+
+    const repo = (this.prisma as any)[model];
+    const item = await repo.findUnique({ where: { id: entityId } });
+    if (!item?.pfCode || !item.vendorId) return;
+    const clash = await repo.findFirst({ where: { pfCode: item.pfCode, deletedAt: null, id: { not: entityId } }, select: { id: true } });
+    if (!clash) return;
+    if (item.type === 'MILLWORK' && reservedMillworkIndex(item.orderType)) {
+      const vendor = await this.prisma.vendor.findUnique({ where: { id: item.vendorId }, select: { fixedMillworkCodes: true } });
+      if (vendor?.fixedMillworkCodes) return;
+    }
+
+    // Drop the taken code first so the generator doesn't hand the same one back
+    await repo.update({ where: { id: entityId }, data: { pfCode: null } });
+    let code: string | null = null;
+    const get = <T>(t: new (...a: any[]) => T): T => this.moduleRef.get(t, { strict: false });
+    switch (entityType) {
+      case 'ProjectItem':
+        code = await get(PfCodeGenerationService).generatePfCodeSafe(
+          item.projectId, item.vendorId, { enumType: item.type || undefined, customTypeId: item.customTypeId || undefined }, 5, item.orderType, item.id);
+        break;
+      case 'DirectOrderItem':
+        code = await get(DirectOrderPfCodeGenerationService).regeneratePfCode(item.id);
+        break;
+      case 'MissingExtraItem': {
+        const meCase = await this.prisma.missingExtraCase.findUnique({ where: { id: item.caseId }, select: { derivedProjectCode: true } });
+        if (meCase) code = await (get(MissingExtraService) as any).generatePfCodeForItem(meCase.derivedProjectCode, item.vendorId, item.type, item.orderType);
+        break;
+      }
+      case 'ExpensesMissingExtraItem': {
+        const project = await this.prisma.expensesMissingExtraProject.findUnique({ where: { id: item.projectId }, select: { projectNo: true } });
+        if (project) code = await (get(ExpensesMissingExtraService) as any).generatePfCodeForItem(project.projectNo, item.vendorId, item.type, item.orderType);
+        break;
+      }
+    }
+    if (code) await repo.update({ where: { id: entityId }, data: { pfCode: code } });
+    this.logger.log(`Restored ${entityType}:${entityId} — PF code ${item.pfCode} was taken, reissued as ${code}`);
+  }
 
   private async restoreEntity(entityType: string, entityId: string) {
     const w = { where: { id: entityId }, data: { deletedAt: null } };

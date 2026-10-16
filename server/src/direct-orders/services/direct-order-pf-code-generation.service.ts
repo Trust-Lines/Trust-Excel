@@ -66,7 +66,7 @@ export class DirectOrderPfCodeGenerationService {
           if (kept) return kept;
         }
         const siblings = await prisma.directOrderItem.findMany({
-          where: { pfCode: { startsWith: pfCodePrefix } },
+          where: { pfCode: { startsWith: pfCodePrefix }, deletedAt: null }, // items in the trash give their number back
           select: { pfCode: true },
         });
         return `${pfCodePrefix}${formatIndex(nextOpenMillworkIndex(siblings.map(s => s.pfCode), typeShort))}`;
@@ -126,7 +126,7 @@ export class DirectOrderPfCodeGenerationService {
 
         // Double-check uniqueness
         const existing = await this.prismaService.directOrderItem.findFirst({
-          where: { pfCode, ...(currentItemId ? { id: { not: currentItemId } } : {}) }
+          where: { pfCode, deletedAt: null, ...(currentItemId ? { id: { not: currentItemId } } : {}) }
         });
 
         if (!existing) {

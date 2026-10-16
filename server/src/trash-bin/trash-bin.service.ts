@@ -316,6 +316,8 @@ export class TrashBinService {
       case 'ExpensesDirectOrderItem':     await this.prisma.expensesDirectOrderItem.update(w); break;
       case 'ExpensesMissingExtraProject': await this.prisma.expensesMissingExtraProject.update(w); break;
       case 'ExpensesMissingExtraItem':    await this.prisma.expensesMissingExtraItem.update(w); break;
+      case 'TrustStockGroup':             await this.prisma.trustStockGroup.update(w); break;
+      case 'TrustStockItem':              await this.prisma.trustStockItem.update(w); break;
       case 'User':                        await this.prisma.user.update(w); break;
       default: throw new BadRequestException(`Unknown entity type: ${entityType}`);
     }
@@ -338,6 +340,8 @@ export class TrashBinService {
       case 'ExpensesDirectOrderItem':     await this.prisma.expensesDirectOrderItem.delete(w); break;
       case 'ExpensesMissingExtraProject': await this.prisma.expensesMissingExtraProject.delete(w); break;
       case 'ExpensesMissingExtraItem':    await this.prisma.expensesMissingExtraItem.delete(w); break;
+      case 'TrustStockGroup':             await this.prisma.trustStockGroup.delete(w); break;
+      case 'TrustStockItem':              await this.prisma.trustStockItem.delete(w); break;
       case 'User':                        await this.prisma.user.delete(w); break;
       default: throw new BadRequestException(`Unknown entity type: ${entityType}`);
     }

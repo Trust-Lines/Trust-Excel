@@ -7,7 +7,7 @@ interface AccountingGridProps {
   items: BackendProjectItem[];
   sectionLabel: string;
   showSectionHeader?: boolean;
-  mode?: 'projects' | 'expenses-p' | 'expenses-do' | 'expenses-me';
+  mode?: 'projects' | 'expenses-p' | 'expenses-do' | 'expenses-me' | 'trust-stock';
   updateGlobalItem?: (itemId: string, patch: Partial<BackendProjectItem>) => void;
   onItemUpdated?: (updatedItem: BackendProjectItem) => void;
 }
@@ -38,6 +38,7 @@ const toNumber = (v: any): number => {
 const fmt = (v: number) => v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const getEndpoint = (mode: string, itemId: string) => {
+  if (mode === 'trust-stock') return `/api/trust-stock/items/${itemId}`;
   if (mode === 'expenses-p') return `/api/expenses-p/items/${itemId}`;
   if (mode === 'expenses-do') return `/api/expenses-direct-order/items/${itemId}`;
   if (mode === 'expenses-me') return `/api/expenses-missing-extra/items/${itemId}`;

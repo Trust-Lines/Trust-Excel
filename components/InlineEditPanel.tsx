@@ -10,13 +10,14 @@ import { updateDirectOrderItem, createDirectOrderItem } from '../lib/direct-orde
 import { createExpensesPItem, updateExpensesPItem } from '../lib/expenses-p';
 import { createExpensesDirectOrderItem, updateExpensesDirectOrderItem } from '../lib/expenses-direct-order';
 import { createExpensesMissingExtraItem, updateExpensesMissingExtraItem } from '../lib/expenses-missing-extra';
+import { createTrustStockItem, updateTrustStockItem } from '../lib/trust-stock';
 import { usePagePermissions } from '../hooks/usePagePermissions';
 
 interface InlineEditPanelProps {
   isOpen: boolean;
   onClose: () => void;
   clickedCellRect: DOMRect; // ✅ CRITICAL FIX: Exact clicked cell position
-  mode?: 'projects' | 'missingExtra' | 'directOrder' | 'expenses-p' | 'expenses-do' | 'expenses-me'; // Add mode prop for endpoint switching
+  mode?: 'projects' | 'missingExtra' | 'directOrder' | 'expenses-p' | 'expenses-do' | 'expenses-me' | 'trust-stock'; // Add mode prop for endpoint switching
   projectId: string;
   projectItems: BackendProjectItem[]; // All items in the type group
   currentItemId: string; // ✅ ID-based instead of index
@@ -54,6 +55,8 @@ const InlineEditPanel: React.FC<InlineEditPanelProps> = ({
       return await createExpensesDirectOrderItem(projectId, itemData);
     } else if (mode === 'expenses-me') {
       return await createExpensesMissingExtraItem(projectId, itemData);
+    } else if (mode === 'trust-stock') {
+      return await createTrustStockItem(projectId, itemData);
     } else {
       return await createProjectItem(projectId, itemData);
     }
@@ -70,6 +73,8 @@ const InlineEditPanel: React.FC<InlineEditPanelProps> = ({
       return await updateExpensesDirectOrderItem(itemId, itemData);
     } else if (mode === 'expenses-me') {
       return await updateExpensesMissingExtraItem(itemId, itemData);
+    } else if (mode === 'trust-stock') {
+      return await updateTrustStockItem(itemId, itemData);
     } else {
       return await updateProjectItem(itemId, itemData);
     }

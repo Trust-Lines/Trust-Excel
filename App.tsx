@@ -18,6 +18,7 @@ import ProjectTotal from './pages/ProjectTotal';
 import Reports from './pages/Reports';
 import TrustExpenses from './pages/TrustExpenses';
 import ExpensesP from './pages/ExpensesP';
+import TrustStock from './pages/TrustStock';
 import ExpensesDirectOrder from './pages/ExpensesDirectOrder';
 import ExpensesMissingExtra from './pages/ExpensesMissingExtra';
 import AccessDenied from './pages/AccessDenied';
@@ -277,6 +278,16 @@ const App: React.FC = () => {
                 element={
                   <RoleBasedRoute pageKey="trust_expenses">
                     <TrustExpenses />
+                  </RoleBasedRoute>
+                }
+              />
+
+              {/* Trust Stock */}
+              <Route
+                path="/trust-stock"
+                element={
+                  <RoleBasedRoute pageKey="trust_stock">
+                    <TrustStock />
                   </RoleBasedRoute>
                 }
               />

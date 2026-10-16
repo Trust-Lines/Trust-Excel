@@ -19,6 +19,7 @@ import {
   HardDrive,
   ClipboardList,
   ClipboardCheck,
+  Package,
   X,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -35,6 +36,10 @@ const NAV_GROUPS: { label: string | null; paths: string[] }[] = [
   {
     label: 'Expenses',
     paths: ['/trust-expenses', '/expenses-p', '/expenses-direct-order', '/expenses-missing-extra'],
+  },
+  {
+    label: 'Stock',
+    paths: ['/trust-stock'],
   },
   {
     label: 'Admin',
@@ -63,6 +68,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   HardDrive,
   ClipboardList,
   ClipboardCheck,
+  Package,
 };
 
 interface SidebarProps {

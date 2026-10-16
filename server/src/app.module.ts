@@ -35,6 +35,7 @@ import { PriceListModule } from './price-list/price-list.module';
 import { TodayPfModule } from './today-pf/today-pf.module';
 import { PfGroupsModule } from './pf-groups/pf-groups.module';
 import { CronModule } from './cron/cron.module';
+import { TrustStockModule } from './trust-stock/trust-stock.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -81,6 +82,7 @@ import { HealthController } from './health.controller';
     TodayPfModule,
     PfGroupsModule,
     CronModule,
+    TrustStockModule,
   ],
   controllers: [HealthController],
   providers: [

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '../lib/auth';
 
 export interface UndoEntry {
-  entityType: 'projectItem' | 'directOrderItem' | 'missingExtraItem' | 'expensesPItem';
+  entityType: 'projectItem' | 'directOrderItem' | 'missingExtraItem' | 'expensesPItem' | 'trustStockItem';
   entityId: string;
   parentId: string;
   previousValues: Record<string, any>;
@@ -39,6 +39,8 @@ function getEndpoint(entityType: UndoEntry['entityType'], entityId: string): str
       return `/api/missing-extra/items/${entityId}`;
     case 'expensesPItem':
       return `/api/expenses-p/items/${entityId}`;
+    case 'trustStockItem':
+      return `/api/trust-stock/items/${entityId}`;
   }
 }
 

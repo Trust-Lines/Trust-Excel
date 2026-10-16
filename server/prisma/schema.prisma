@@ -169,6 +169,7 @@ model Vendor {
   projectItems              ProjectItem[]
   invoiceReceiptRows        SupplierInvoiceReceiptRow[]
   trustExpenseItems         TrustExpenseItem[]
+  trustStockItems           TrustStockItem[]
 
   @@index([isActive])
   @@index([code])
@@ -430,6 +431,7 @@ model CustomProjectType {
   projectItems              ProjectItem[]
   roleTypeVisibility        RoleTypeVisibility[]
   trustExpenseItems         TrustExpenseItem[]
+  trustStockItems           TrustStockItem[]
   todayPfFlags              TodayPfFlag[]
   pfGroupMembers            PfGroupMember[]
 
@@ -1192,4 +1194,78 @@ model PriceListLookup {
   @@unique([field, value])
   @@index([field])
   @@map("price_list_lookups")
+}
+
+/// Trust Stock: goods Trust buys for its own stock (Trust Stock company).
+/// A group is one stock purchase ("STOCK 1", "STOCK 2" …) — the stock equivalent of a project.
+model TrustStockGroup {
+  id        String           @id @default(cuid())
+  code      String           @unique
+  name      String           @default("")
+  notes     String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  deletedAt DateTime?
+  items     TrustStockItem[]
+
+  @@index([deletedAt])
+  @@map("trust_stock_groups")
+}
+
+/// One purchased line (vendor + PF) inside a stock group. Field names mirror ProjectItem
+/// so the shared Projects table component can render and edit it.
+model TrustStockItem {
+  id           String             @id @default(cuid())
+  groupId      String
+  type         ProjectItemType?
+  customTypeId String?
+  vendorId     String?
+  pfCode       String?
+  orderNo      String?
+  orderType    String?
+  pfSignStatus SignStatus         @default(NOT_SIGNED)
+  poSignStatus SignStatus         @default(NOT_SIGNED)
+  status       ItemStatus?
+  std          DateTime?
+  etd          DateTime?
+  rtr          DateTime?
+  rtd          DateTime?
+  rdy          DateTime?
+  ftd          DateTime?
+  snd          DateTime?
+  pfUsd        Decimal?           @db.Decimal(12, 2)
+  pfTl         Decimal?           @db.Decimal(12, 2)
+  invoice      Decimal?           @db.Decimal(12, 2)
+  invoiceTl    Decimal?           @db.Decimal(12, 2)
+  paidUsd1     Decimal?           @db.Decimal(12, 2)
+  paidUsd2     Decimal?           @db.Decimal(12, 2)
+  paidTl1      Decimal?           @db.Decimal(12, 2)
+  paidTl2      Decimal?           @db.Decimal(12, 2)
+  paidUsd1Date DateTime?
+  paidUsd2Date DateTime?
+  paidTl1Date  DateTime?
+  paidTl2Date  DateTime?
+  paymentRule  String?
+  statusNote   String?
+  priceNotes   Json?
+  description  String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  deletedAt    DateTime?
+  group        TrustStockGroup    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  vendor       Vendor?            @relation(fields: [vendorId], references: [id])
+  customType   CustomProjectType? @relation(fields: [customTypeId], references: [id])
+
+  @@index([groupId])
+  @@index([vendorId])
+  @@index([deletedAt])
+  @@map("trust_stock_items")
+}
+
+/// Created at runtime by DropboxService (raw SQL) to keep Dropbox settings; declared here
+/// so `prisma db push` never treats it as unknown and drops it.
+model DropboxConfig {
+  key       String    @id
+  value     String
+  updatedAt DateTime? @default(now()) @db.Timestamp(6)
 }

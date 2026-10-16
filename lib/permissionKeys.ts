@@ -25,6 +25,7 @@ export const NAV_PAGES: NavPage[] = [
   { key: 'expenses_p', label: 'Expenses P', path: '/expenses-p', icon: 'Receipt' },
   { key: 'expenses_direct_order', label: 'Expenses Direct Order', path: '/expenses-direct-order', icon: 'FileText' },
   { key: 'expenses_missing_extra', label: 'Expenses Missing & Extra', path: '/expenses-missing-extra', icon: 'PackageX' },
+  { key: 'trust_stock', label: 'Trust Stock', path: '/trust-stock', icon: 'Package' },
   { key: 'admin_roles_permissions', label: 'Backup & Restore', path: '/admin/backup-restore', icon: 'DatabaseBackup' },
   { key: 'trash_bin', label: 'Trash Bin', path: '/admin/trash-bin', icon: 'Trash2' },
   { key: 'admin_roles_permissions', label: 'Dropbox Test', path: '/dropbox-test', icon: 'HardDrive' },

@@ -45,6 +45,11 @@ import {
 } from './AccountingColumns';
 import { getStatusStyle } from '../utils/statusStyles';
 import { useUndoStack } from '../hooks/useUndoStack';
+import { createTrustStockItem, updateTrustStockItem, deleteTrustStockItem } from '../lib/trust-stock';
+
+// Trust Stock page: columns shown (plus the Trust-Stock-only ORDER NO column)
+const TRUST_STOCK_COLS = ['projectNo', 'type', 'pfCode', 'vendor', 'pfSignStatus', 'status', 'std', 'etd', 'rtr', 'rtd', 'pfUsd', 'pfTl', 'invoice', 'invoiceTl', 'paymentRule'];
+const ORDER_NO_WIDTH = 160; // keep in sync with .col-order-no in styles.css
 import { useAuth } from '../contexts/AuthContext';
 
 // Error Boundary to prevent white screen crashes
@@ -123,7 +128,7 @@ interface VendorEditState {
 }
 
 interface ProjectBlockProps {
-  mode?: 'projects' | 'missingExtra' | 'directOrder' | 'expenses-p' | 'expenses-do' | 'expenses-me';
+  mode?: 'projects' | 'missingExtra' | 'directOrder' | 'expenses-p' | 'expenses-do' | 'expenses-me' | 'trust-stock';
   project: Project;
   sectionLabel: string; // Section label (e.g., "TLines NE", "CVW") - required for section header
   backendItems?: BackendProjectItem[]; // Optional backend items for vendor editing
@@ -171,6 +176,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
   const undoEntityType = mode === 'directOrder' ? 'directOrderItem' as const
     : mode === 'missingExtra' ? 'missingExtraItem' as const
     : (mode === 'expenses-p' || mode === 'expenses-do' || mode === 'expenses-me') ? 'expensesPItem' as const
+    : mode === 'trust-stock' ? 'trustStockItem' as const
     : 'projectItem' as const;
   const undoCallback = useCallback(() => {
     if (onProjectUpdate) onProjectUpdate(project.projectId);
@@ -216,6 +222,8 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
       return await createExpensesDirectOrderItem(project.projectId, itemData);
     } else if (mode === 'expenses-me') {
       return await createExpensesMissingExtraItem(project.projectId, itemData);
+    } else if (mode === 'trust-stock') {
+      return await createTrustStockItem(project.projectId, itemData);
     } else {
       return await createProjectItem(project.projectId, itemData);
     }
@@ -232,6 +240,8 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
       return await updateExpensesDirectOrderItem(itemId, itemData);
     } else if (mode === 'expenses-me') {
       return await updateExpensesMissingExtraItem(itemId, itemData);
+    } else if (mode === 'trust-stock') {
+      return await updateTrustStockItem(itemId, itemData);
     } else {
       return await updateProjectItem(itemId, itemData);
     }
@@ -248,6 +258,8 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
       await deleteExpensesDirectOrderItem(itemId);
     } else if (mode === 'expenses-me') {
       await deleteExpensesMissingExtraItem(itemId);
+    } else if (mode === 'trust-stock') {
+      await deleteTrustStockItem(itemId);
     } else {
       await deleteProjectItem(project.projectId, itemId);
     }
@@ -405,7 +417,12 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
   const isExpensesPMode = mode === 'expenses-p' || mode === 'expenses-do' || mode === 'expenses-me';
   const EXPENSES_HIDE_COLS = ['pfCode', 'pfSignStatus', 'poSignStatus', 'pfUsd', 'pfTl', 'rtd', 'containerDate'];
   const EXPENSES_SHOW_COLS = ['expensesUsd', 'expensesTl'];
+  const isTrustStockMode = mode === 'trust-stock';
   const isColumnVisible = useCallback((key: string) => {
+    // Trust Stock shows a fixed column set (ORDER NO is rendered separately, see orderNo below)
+    if (isTrustStockMode) {
+      return TRUST_STOCK_COLS.includes(key) && baseIsColumnVisible(key);
+    }
     if (isExpensesPMode) {
       if (EXPENSES_HIDE_COLS.includes(key)) return false;
       if (EXPENSES_SHOW_COLS.includes(key)) return true;
@@ -413,7 +430,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
       if (EXPENSES_SHOW_COLS.includes(key)) return false;
     }
     return baseIsColumnVisible(key);
-  }, [baseIsColumnVisible, isExpensesPMode]);
+  }, [baseIsColumnVisible, isExpensesPMode, isTrustStockMode]);
   const isColumnEditable = permissionOverrides?.isColumnEditable || defaultPermissions.isColumnEditable;
   const { paymentRules, addRule: addPaymentRule } = usePaymentRules();
 
@@ -676,6 +693,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
         : '',
       vendorId: item.vendorId || '',
       orderType: item.orderType || '',
+      orderNo: (item as any).orderNo || '',
       pfSignStatus: mapSignStatusToFrontend(item.pfSignStatus),
       poSignStatus: mapSignStatusToFrontend(item.poSignStatus),
       status: item.status?.replace(/_/g, ' ') || '',
@@ -750,8 +768,9 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
 
   // Calculate dynamic grid width based on visible columns
   const gridWidthPx = useMemo(() => {
-    return getGridWidthPx(isColumnVisible, isSupplierMode);
-  }, [isColumnVisible, isSupplierMode]);
+    const base = getGridWidthPx(isColumnVisible, isSupplierMode);
+    return isTrustStockMode ? `${parseInt(base, 10) + ORDER_NO_WIDTH}px` : base;
+  }, [isColumnVisible, isSupplierMode, isTrustStockMode]);
 
   // 💰 CALCULATE TOTALS for PF USD and PF TL (excluding restricted rows)
   const projectTotals = React.useMemo(() => {
@@ -1105,6 +1124,8 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
         apiEndpoint = `/api/expenses-direct-order/projects/${projectId}`;
       } else if (mode === 'expenses-me') {
         apiEndpoint = `/api/expenses-missing-extra/projects/${projectId}`;
+      } else if (mode === 'trust-stock') {
+        apiEndpoint = `/api/trust-stock/groups/${projectId}`;
       } else {
         // Regular projects
         apiEndpoint = `/api/projects/${projectId}`;
@@ -1139,6 +1160,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
           : mode === 'expenses-p' ? `/api/expenses-p/projects/${projectId}/move-region`
           : mode === 'expenses-do' ? `/api/expenses-direct-order/projects/${projectId}/move-region`
           : mode === 'expenses-me' ? `/api/expenses-missing-extra/projects/${projectId}/move-region`
+          : mode === 'trust-stock' ? `/api/trust-stock/groups/${projectId}`
           : `/api/projects/${projectId}/move-region`;
         const moveResponse = await apiFetch(moveEndpoint, {
           method: 'PATCH',
@@ -1161,12 +1183,14 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
           : mode === 'expenses-p' ? `/api/expenses-p/items`
           : mode === 'expenses-do' ? `/api/expenses-direct-order/items`
           : mode === 'expenses-me' ? `/api/expenses-missing-extra/items`
+          : mode === 'trust-stock' ? `/api/trust-stock/items`
           : `/api/projects/${projectId}/items`;
         const itemCreateBase = mode === 'directOrder' ? `/api/direct-orders/${projectId}/items`
           : mode === 'missingExtra' ? `/api/missing-extra/cases/${projectId}/items`
           : mode === 'expenses-p' ? `/api/expenses-p/projects/${projectId}/items`
           : mode === 'expenses-do' ? `/api/expenses-direct-order/projects/${projectId}/items`
           : mode === 'expenses-me' ? `/api/expenses-missing-extra/projects/${projectId}/items`
+          : mode === 'trust-stock' ? `/api/trust-stock/groups/${projectId}/items`
           : `/api/projects/${projectId}/items`;
 
         // Remove items of unchecked types (in parallel — one round trip instead of N)
@@ -1242,6 +1266,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
           : mode === 'expenses-p' ? `/api/expenses-p/projects/${projectId}`
           : mode === 'expenses-do' ? `/api/expenses-direct-order/projects/${projectId}`
           : mode === 'expenses-me' ? `/api/expenses-missing-extra/projects/${projectId}`
+          : mode === 'trust-stock' ? `/api/trust-stock/groups/${projectId}`
           : `/api/projects/${projectId}`;
         await apiFetch(apiEndpoint, {
           method: 'PATCH',
@@ -1263,6 +1288,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
           : mode === 'expenses-p' ? `/api/expenses-p/projects/${projectId}`
           : mode === 'expenses-do' ? `/api/expenses-direct-order/projects/${projectId}`
           : mode === 'expenses-me' ? `/api/expenses-missing-extra/projects/${projectId}`
+          : mode === 'trust-stock' ? `/api/trust-stock/groups/${projectId}`
           : `/api/projects/${projectId}`;
         await apiFetch(apiEndpoint, {
           method: 'PATCH',
@@ -1518,8 +1544,8 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
       }
     } else {
       // 💰 CRITICAL: Handle pfUsd/pfTl with backend persistence and immediate UI update
-      if (editingCell.field === 'pfCode') {
-        const patchPayload = { pfCode: value || null };
+      if (editingCell.field === 'pfCode' || editingCell.field === 'orderNo') {
+        const patchPayload = { [editingCell.field]: value || null };
         applyPatch(editingCell.itemId, patchPayload, editingCell.field)
           .then(() => {})
           .catch((_error) => {});
@@ -2454,7 +2480,8 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
           />
         );
       case 'pfCode':
-        // Simple text input for manually editing PF code (custom types only)
+      case 'orderNo':
+        // Simple text input: PF code (custom types / Trust Stock) and Trust Stock ORDER NO
         return (
           <input
             type="text"
@@ -2675,7 +2702,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
                   className="column-header-cell col-project-no"
                   style={getHeaderCellStyle('projectNo' as ColumnKey)}
                 >
-                  PROJECT NO
+                  {isTrustStockMode ? 'STOCK' : 'PROJECT NO'}
                 </div>
                 <div
                   className="column-header-cell col-type"
@@ -2921,6 +2948,9 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
               <div className="header-right">
                 <div className="column-header-cell col-pf-code" style={getHeaderCellStyle('pfCode' as ColumnKey)}>PF CODE</div>
                 <div className="column-header-cell col-vendor" style={getHeaderCellStyle('vendor' as ColumnKey)}>VENDOR</div>
+                {isTrustStockMode && (
+                  <div className="column-header-cell col-order-no" style={{ ...getHeaderCellStyle('vendor' as ColumnKey), width: ORDER_NO_WIDTH }}>ORDER NO</div>
+                )}
                 <div className="column-header-cell col-order-type" style={getHeaderCellStyle('orderType' as ColumnKey)}>ORDER TYPE</div>
                 {!isSupplierMode && (
                   <div className="column-header-cell col-po-sign-status" style={getHeaderCellStyle('poSignStatus' as ColumnKey)}>PO SIGN STATUS</div>
@@ -3098,8 +3128,9 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
                             // const isFirstRowInType = __rowIndex === 0; // Unused variable
 
                             const scrollableFields = [
-                              { field: 'pfCode', value: row.pfCode, className: 'col-pf-code', editable: !!row.customTypeId && isColumnEditable('pfCode') },
+                              { field: 'pfCode', value: row.pfCode, className: 'col-pf-code', editable: (isTrustStockMode || !!row.customTypeId) && isColumnEditable('pfCode') },
                               { field: 'vendor', value: row.vendor, className: 'col-vendor', editable: isColumnEditable('vendor') },
+                              ...(isTrustStockMode ? [{ field: 'orderNo', value: (row as any).orderNo, className: 'col-order-no', editable: isColumnEditable('vendor') }] : []),
                               { field: 'orderType', value: row.orderType, className: 'col-order-type', editable: isColumnEditable('orderType') },
                               // PO SIGN STATUS - show only on first row of type group
                               ...(isSupplierMode ? [] : [{
@@ -3852,6 +3883,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
         enableGrouping={enableGrouping}
         pfGroups={pfGroups}
         onOpenAddToGroup={() => setAddToGroupOpen(true)}
+        stockMode={isTrustStockMode}
         onDeleteProject={handleDeleteProject}
         onToggleUrgent={handleToggleUrgent}
         onEditProject={handleEditProject}

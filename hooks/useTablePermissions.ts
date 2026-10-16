@@ -15,6 +15,7 @@ export const PAGE_KEYS = {
   SUPPLIERS: 'suppliers',
   TRUST_EXPENSES: 'trust_expenses',
   EXPENSES_P: 'expenses_p',
+  TRUST_STOCK: 'trust_stock',
   EXPENSES_DIRECT_ORDER: 'expenses_direct_order',
   EXPENSES_MISSING_EXTRA: 'expenses_missing_extra',
   ADMIN: 'admin',

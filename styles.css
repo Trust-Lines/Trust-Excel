@@ -1720,6 +1720,7 @@ html, body {
 .col-pf-code { width: 180px; flex-shrink: 0; }
 .col-vendor { width: 220px; flex-shrink: 0; }
 .col-order-type { width: 200px; flex-shrink: 0; }
+.col-order-no { width: 160px; flex-shrink: 0; } /* Trust Stock only */
 .col-po-sign-status { width: 140px; flex-shrink: 0; }
 .col-pf-sign-status { width: 140px; flex-shrink: 0; }
 .col-status { width: 140px; flex-shrink: 0; }

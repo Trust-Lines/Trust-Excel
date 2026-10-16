@@ -17,6 +17,8 @@ interface ProjectMenuProps {
   enableGrouping?: boolean; // Projects tab only
   pfGroups?: PfGroup[];
   onOpenAddToGroup?: () => void;
+  /** Trust Stock: no price-list document, urgency, address or region */
+  stockMode?: boolean;
   onDeleteProject: (projectId: string) => void;
   onToggleUrgent: (projectId: string, isUrgent: boolean) => void;
   onEditProject?: (projectId: string, field: 'name' | 'address' | 'types' | 'bucket', value: any) => void | Promise<void>;
@@ -46,6 +48,7 @@ const ProjectMenu: React.FC<ProjectMenuProps> = ({
   enableGrouping = false,
   pfGroups = [],
   onOpenAddToGroup,
+  stockMode = false,
   onDeleteProject,
   onToggleUrgent,
   onEditProject
@@ -197,6 +200,7 @@ const ProjectMenu: React.FC<ProjectMenuProps> = ({
       >
         {/* Menu Items */}
         <div style={{ padding: '4px 0' }}>
+          {!stockMode && (<>
           {/* Belge Hazırla */}
           <button
             onClick={() => { navigate(`/price-list?projectId=${projectId}`); onClose(); }}
@@ -210,8 +214,10 @@ const ProjectMenu: React.FC<ProjectMenuProps> = ({
 
           {/* Divider */}
           <hr style={{ margin: '4px 0', border: 'none', borderTop: '1px solid #e5e7eb' }} />
+          </>)}
 
           {/* Toggle Urgent */}
+          {!stockMode && (
           <button
             onClick={handleUrgentToggle}
             style={{
@@ -237,6 +243,7 @@ const ProjectMenu: React.FC<ProjectMenuProps> = ({
             <span style={{ fontSize: '16px' }}>{isUrgent ? '🔽' : '🔺'}</span>
             {isUrgent ? 'Remove Urgent' : 'Make Urgent'}
           </button>
+          )}
 
           {enableGrouping && (
             <>
@@ -283,7 +290,7 @@ const ProjectMenu: React.FC<ProjectMenuProps> = ({
           )}
 
           {/* Edit Address */}
-          {editMode === 'address' ? (
+          {!stockMode && (editMode === 'address' ? (
             <div style={{ padding: '8px 16px' }}>
               <input
                 autoFocus
@@ -304,7 +311,7 @@ const ProjectMenu: React.FC<ProjectMenuProps> = ({
             <button onClick={() => setEditMode('address')} style={{ width: '100%', padding: '8px 16px', border: 'none', background: 'none', textAlign: 'left', cursor: 'pointer', fontSize: '14px', color: '#374151', display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f3f4f6'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}>
               Edit Address
             </button>
-          )}
+          ))}
 
           {/* Edit Types */}
           {editMode === 'types' ? (
@@ -374,7 +381,7 @@ const ProjectMenu: React.FC<ProjectMenuProps> = ({
           )}
 
           {/* Move Region */}
-          {editMode === 'region' ? (
+          {!stockMode && (editMode === 'region' ? (
             <div style={{ padding: '8px 16px' }}>
               <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>Move project to another region:</div>
               {BUCKET_OPTIONS.filter(b => b.value !== projectBucket).map(b => (
@@ -394,7 +401,7 @@ const ProjectMenu: React.FC<ProjectMenuProps> = ({
             <button onClick={() => setEditMode('region')} style={{ width: '100%', padding: '8px 16px', border: 'none', background: 'none', textAlign: 'left', cursor: 'pointer', fontSize: '14px', color: '#374151', display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f3f4f6'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}>
               Move Region
             </button>
-          )}
+          ))}
 
           {/* Divider */}
           <hr style={{ margin: '4px 0', border: 'none', borderTop: '1px solid #e5e7eb' }} />

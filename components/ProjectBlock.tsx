@@ -457,6 +457,9 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
       // 1. Update backend via API
       const updatedItem = await updateItem(itemId, apiPayload);
 
+      // Vendor set to TR-STOCK from the vendor cell → open "Use from Trust Stock"
+      if ('vendorId' in patchPayload) openStockUsageIfNewStockRow(updatedItem as BackendProjectItem, itemsById.get(itemId));
+
       // 2. IMMEDIATELY update local state for instant UI feedback
       setItemsById(prev => {
         const newMap = new Map(prev);
@@ -2091,6 +2094,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
       };
       // 3. IMMEDIATE backend creation
       const createdItem = await createItem(newItemData);
+      if (createdItem) openStockUsageIfNewStockRow(createdItem as BackendProjectItem);
 
       // 4. Update local state immediately (no full refresh to preserve scroll)
       if (createdItem) {

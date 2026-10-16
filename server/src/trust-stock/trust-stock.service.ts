@@ -76,8 +76,23 @@ export class TrustStockService implements OnModuleInit {
     return { data: groups };
   }
 
+/** Suffix given to a trashed group's code once that code is needed again. */
+  static readonly DELETED_SUFFIX = / ~deleted-\d+$/;
+
+  /**
+   * A group in the trash still owns its (unique) code. When the same code is needed
+   * again (new stock group / PF import), rename the trashed one out of the way —
+   * it gets its code back on restore if still free (see TrashBinService).
+   */
+  private async freeCodeFromTrash(db: any, code: string) {
+    const trashed = await db.trustStockGroup.findUnique({ where: { code } });
+    if (trashed?.deletedAt) {
+      await db.trustStockGroup.update({ where: { id: trashed.id }, data: { code: `${code} ~deleted-${Date.now()}` } });
+    }
+  }
+
   private async nextGroupCode(): Promise<string> {
-    const all = await this.prisma.trustStockGroup.findMany({ select: { code: true } });
+    const all = await this.prisma.trustStockGroup.findMany({ where: { deletedAt: null }, select: { code: true } });
     let max = 0;
     for (const { code } of all) {
       const m = code.match(/^STOCK\s*(\d+)$/i);
@@ -88,8 +103,9 @@ export class TrustStockService implements OnModuleInit {
 
   async createGroup(dto: CreateTrustStockGroupDto, userId?: string) {
     const code = (dto.code || '').trim().toUpperCase() || await this.nextGroupCode();
+    await this.freeCodeFromTrash(this.prisma, code);
     const clash = await this.prisma.trustStockGroup.findUnique({ where: { code } });
-    if (clash) throw new BadRequestException(`${code} already exists${clash.deletedAt ? ' (in the trash bin)' : ''}`);
+    if (clash) throw new BadRequestException(`${code} already exists`);
 
     const group = await this.prisma.trustStockGroup.create({
       data: { code, name: dto.name?.trim() || '', notes: dto.notes || null },
@@ -177,7 +193,7 @@ export class TrustStockService implements OnModuleInit {
   }
 
   async updateItem(itemId: string, dto: TrustStockItemDto, userId?: string) {
-    const existing = await this.prisma.trustStockItem.findFirst({ where: { id: itemId, deletedAt: null } });
+    const existing = await this.prisma.trustStockItem.findFirst({ where: { id: itemId, ...{ deletedAt: null, group: { deletedAt: null } } } });
     if (!existing) throw new NotFoundException('Stock item not found');
 
     const data = this.toData(dto);
@@ -264,14 +280,14 @@ export class TrustStockService implements OnModuleInit {
     const stockCode = parsed.stockCode?.trim().toUpperCase() || null;
     const group = stockCode ? await this.prisma.trustStockGroup.findUnique({ where: { code: stockCode } }) : null;
     const duplicate = parsed.pfCode
-      ? await this.prisma.trustStockItem.findFirst({ where: { pfCode: parsed.pfCode, deletedAt: null }, include: { group: { select: { code: true } } } })
+      ? await this.prisma.trustStockItem.findFirst({ where: { pfCode: parsed.pfCode, ...{ deletedAt: null, group: { deletedAt: null } } }, include: { group: { select: { code: true } } } })
       : null;
     if (duplicate) parsed.warnings.push(`${parsed.pfCode} is already in ${duplicate.group.code}.`);
     return {
       ...parsed,
       stockCode,
       vendor,
-      groupStatus: !group ? 'new' : group.deletedAt ? 'in-trash' : 'exists',
+      groupStatus: !group || group.deletedAt ? 'new' : 'exists',
       duplicateOf: duplicate ? { itemId: duplicate.id, groupCode: duplicate.group.code } : null,
     };
   }
@@ -286,10 +302,11 @@ export class TrustStockService implements OnModuleInit {
     const stockCode = dto.stockCode.trim().toUpperCase();
     const pfCode = dto.pfCode.trim();
 
-    const duplicate = await this.prisma.trustStockItem.findFirst({ where: { pfCode, deletedAt: null } });
+    const duplicate = await this.prisma.trustStockItem.findFirst({ where: { pfCode, ...{ deletedAt: null, group: { deletedAt: null } } } });
     if (duplicate) throw new BadRequestException(`${pfCode} has already been imported.`);
+    // A trashed group with this code doesn't count — move it out of the way and start fresh
+    await this.freeCodeFromTrash(this.prisma, stockCode);
     let group = await this.prisma.trustStockGroup.findUnique({ where: { code: stockCode } });
-    if (group?.deletedAt) throw new BadRequestException(`${stockCode} is in the trash bin — restore it first.`);
 
     // Store the PDF first (its key doesn't depend on DB ids), so a failed upload saves nothing
     const safeName = (fileName || `${pfCode}.pdf`).replace(/[^\w.\-]+/g, '_').slice(-120);
@@ -438,7 +455,7 @@ export class TrustStockService implements OnModuleInit {
   }
 
   async updateProduct(id: string, dto: UpdateStockProductDto, userId?: string) {
-    const product = await this.prisma.trustStockProduct.findFirst({ where: { id, deletedAt: null }, include: { usages: { where: { deletedAt: null } } } });
+    const product = await this.prisma.trustStockProduct.findFirst({ where: { id, deletedAt: null, stockItem: { deletedAt: null, group: { deletedAt: null } } }, include: { usages: { where: { deletedAt: null } } } });
     if (!product) throw new NotFoundException('Stock product not found');
     const s = TrustStockService.stats(product);
     if (dto.quantity !== undefined && dto.quantity < s.netUsed + s.reserved) {
@@ -511,7 +528,7 @@ export class TrustStockService implements OnModuleInit {
     await this.prisma.$transaction(async (tx) => {
       for (const line of lines) {
         const product = await tx.trustStockProduct.findFirst({
-          where: { id: line.productId, deletedAt: null, stockItem: { deletedAt: null } },
+          where: { id: line.productId, deletedAt: null, stockItem: { deletedAt: null, group: { deletedAt: null } } },
           include: { usages: { where: { deletedAt: null } } },
         });
         if (!product) throw new NotFoundException('Stock product not found');

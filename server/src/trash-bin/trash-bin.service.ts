@@ -316,7 +316,21 @@ export class TrashBinService {
       case 'ExpensesDirectOrderItem':     await this.prisma.expensesDirectOrderItem.update(w); break;
       case 'ExpensesMissingExtraProject': await this.prisma.expensesMissingExtraProject.update(w); break;
       case 'ExpensesMissingExtraItem':    await this.prisma.expensesMissingExtraItem.update(w); break;
-      case 'TrustStockGroup':             await this.prisma.trustStockGroup.update(w); break;
+      case 'TrustStockGroup': {
+        await this.prisma.trustStockGroup.update(w);
+        const g = await this.prisma.trustStockGroup.findUnique({ where: { id: entityId } });
+        if (g && / ~deleted-\d+$/.test(g.code)) {
+          const original = g.code.replace(/ ~deleted-\d+$/, '');
+          const taken = await this.prisma.trustStockGroup.findUnique({ where: { code: original } });
+          let code = original;
+          if (taken) {
+            code = `${original} (restored)`;
+            for (let i = 2; await this.prisma.trustStockGroup.findUnique({ where: { code } }); i++) code = `${original} (restored ${i})`;
+          }
+          await this.prisma.trustStockGroup.update({ where: { id: entityId }, data: { code } });
+        }
+        break;
+      }
       case 'TrustStockItem':              await this.prisma.trustStockItem.update(w); break;
       case 'User':                        await this.prisma.user.update(w); break;
       default: throw new BadRequestException(`Unknown entity type: ${entityType}`);

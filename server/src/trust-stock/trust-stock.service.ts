@@ -25,6 +25,12 @@ const GROUP_INCLUDE = {
   },
 };
 
+/**
+ * Stock movements that count: not undone, and their Projects row + project are not in the
+ * trash. Deleting a row/project gives its stock back; restoring it takes it again.
+ */
+const LIVE_USAGE = { deletedAt: null, projectItem: { deletedAt: null, project: { deletedAt: null } } };
+
 const DATE_FIELDS = ['std', 'etd', 'rtr', 'rtd', 'rdy', 'ftd', 'snd', 'paidUsd1Date', 'paidUsd2Date', 'paidTl1Date', 'paidTl2Date'] as const;
 const PLAIN_FIELDS = [
   'type', 'customTypeId', 'vendorId', 'pfCode', 'orderNo', 'orderType', 'pfSignStatus', 'poSignStatus',
@@ -414,7 +420,7 @@ export class TrustStockService implements OnModuleInit {
           },
         },
         usages: {
-          where: { deletedAt: null },
+          where: LIVE_USAGE,
           orderBy: { createdAt: 'asc' },
           include: { projectItem: { select: { id: true, pfCode: true, deletedAt: true, project: { select: { id: true, projectNo: true, name: true } } } } },
         },
@@ -455,7 +461,7 @@ export class TrustStockService implements OnModuleInit {
   }
 
   async updateProduct(id: string, dto: UpdateStockProductDto, userId?: string) {
-    const product = await this.prisma.trustStockProduct.findFirst({ where: { id, deletedAt: null, stockItem: { deletedAt: null, group: { deletedAt: null } } }, include: { usages: { where: { deletedAt: null } } } });
+    const product = await this.prisma.trustStockProduct.findFirst({ where: { id, deletedAt: null, stockItem: { deletedAt: null, group: { deletedAt: null } } }, include: { usages: { where: LIVE_USAGE } } });
     if (!product) throw new NotFoundException('Stock product not found');
     const s = TrustStockService.stats(product);
     if (dto.quantity !== undefined && dto.quantity < s.netUsed + s.reserved) {
@@ -472,7 +478,7 @@ export class TrustStockService implements OnModuleInit {
   }
 
   async deleteProduct(id: string, userId?: string) {
-    const product = await this.prisma.trustStockProduct.findFirst({ where: { id, deletedAt: null }, include: { usages: { where: { deletedAt: null } } } });
+    const product = await this.prisma.trustStockProduct.findFirst({ where: { id, deletedAt: null }, include: { usages: { where: LIVE_USAGE } } });
     if (!product) throw new NotFoundException('Stock product not found');
     if (product.usages.length) throw new BadRequestException('This product is used in projects — remove those usages first.');
     await this.prisma.trustStockProduct.update({ where: { id }, data: { deletedAt: new Date() } });
@@ -529,7 +535,7 @@ export class TrustStockService implements OnModuleInit {
       for (const line of lines) {
         const product = await tx.trustStockProduct.findFirst({
           where: { id: line.productId, deletedAt: null, stockItem: { deletedAt: null, group: { deletedAt: null } } },
-          include: { usages: { where: { deletedAt: null } } },
+          include: { usages: { where: LIVE_USAGE } },
         });
         if (!product) throw new NotFoundException('Stock product not found');
         const mine = product.usages.filter(u => u.projectItemId === row.id);
@@ -598,7 +604,7 @@ export class TrustStockService implements OnModuleInit {
 
   /** Undo one movement (e.g. a wrong entry or a released reservation). */
   async removeUsage(id: string, userId?: string) {
-    const usage = await this.prisma.trustStockUsage.findFirst({ where: { id, deletedAt: null }, include: { product: { include: { usages: { where: { deletedAt: null } } } } } });
+    const usage = await this.prisma.trustStockUsage.findFirst({ where: { id, deletedAt: null }, include: { product: { include: { usages: { where: LIVE_USAGE } } } } });
     if (!usage) throw new NotFoundException('Usage not found');
     if (usage.kind === 'RETURNED') {
       // Undoing a return puts those pieces back on the row — only possible if they're still free

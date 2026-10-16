@@ -282,6 +282,7 @@ model ProjectItem {
   description          String?
   priceNotes           Json?
   changeLogs           ProjectItemChangeLog[]
+  trustStockUsages     TrustStockUsage[]
   container            Container?             @relation(fields: [containerId], references: [id])
   customType           CustomProjectType?     @relation(fields: [customTypeId], references: [id])
   orderTypeRef         OrderType?             @relation(fields: [orderTypeId], references: [id])
@@ -1249,9 +1250,13 @@ model TrustStockItem {
   statusNote   String?
   priceNotes   Json?
   description  String?
+  pfDate       DateTime?
+  pdfFileKey   String?
+  pdfFileName  String?
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
   deletedAt    DateTime?
+  products     TrustStockProduct[]
   group        TrustStockGroup    @relation(fields: [groupId], references: [id], onDelete: Cascade)
   vendor       Vendor?            @relation(fields: [vendorId], references: [id])
   customType   CustomProjectType? @relation(fields: [customTypeId], references: [id])
@@ -1268,4 +1273,45 @@ model DropboxConfig {
   key       String    @id
   value     String
   updatedAt DateTime? @default(now()) @db.Timestamp(6)
+}
+
+/// A product line inside a stock PF (e.g. "FA 40" × 100 @ $300), read from the PF PDF.
+model TrustStockProduct {
+  id          String            @id @default(cuid())
+  stockItemId String
+  itemCode    String
+  description String            @default("")
+  category    String?
+  quantity    Decimal           @db.Decimal(12, 2)
+  unitPrice   Decimal?          @db.Decimal(12, 2)
+  totalPrice  Decimal?          @db.Decimal(12, 2)
+  currency    String            @default("USD")
+  sortOrder   Int               @default(0)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  deletedAt   DateTime?
+  stockItem   TrustStockItem    @relation(fields: [stockItemId], references: [id], onDelete: Cascade)
+  usages      TrustStockUsage[]
+
+  @@index([stockItemId])
+  @@index([deletedAt])
+  @@map("trust_stock_products")
+}
+
+/// Stock taken out for a project: a Projects-table row (vendor TR-STOCK) uses N pieces of a product.
+model TrustStockUsage {
+  id              String            @id @default(cuid())
+  productId       String
+  projectItemId   String
+  quantity        Decimal           @db.Decimal(12, 2)
+  createdByUserId String?
+  createdAt       DateTime          @default(now())
+  deletedAt       DateTime?
+  product         TrustStockProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  projectItem     ProjectItem       @relation(fields: [projectItemId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([projectItemId])
+  @@index([deletedAt])
+  @@map("trust_stock_usages")
 }

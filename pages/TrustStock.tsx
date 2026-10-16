@@ -2,6 +2,8 @@ import React, { useRef, useCallback, useEffect, useState, useMemo } from 'react'
 import { useLivePatchStore, PatchEventPayload } from '../hooks/useLivePatchStore';
 import ProjectBlock from '../components/ProjectBlock';
 import AccountingGrid from '../components/AccountingGrid';
+import TrustStockPdfImportModal from '../components/TrustStockPdfImportModal';
+import TrustStockContentsModal from '../components/TrustStockContentsModal';
 import { useTablePermissions, PAGE_KEYS } from '../hooks/useTablePermissions';
 import { useSocket } from '../contexts/SocketContext';
 import { useSocketEvent } from '../hooks/useSocketEvent';
@@ -45,6 +47,8 @@ const TrustStock: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [newOpen, setNewOpen] = useState(false);
+  const [pdfOpen, setPdfOpen] = useState(false);
+  const [contentsOpen, setContentsOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -232,6 +236,18 @@ const TrustStock: React.FC = () => {
             )}
           </div>
           <button
+            onClick={() => setContentsOpen(true)}
+            style={{ padding: '8px 14px', backgroundColor: '#fff', color: '#0f766e', border: '1px solid #0f766e', borderRadius: 4, fontSize: 14, cursor: 'pointer', fontWeight: 600 }}
+          >
+            Stock Contents
+          </button>
+          <button
+            onClick={() => setPdfOpen(true)}
+            style={{ padding: '8px 14px', backgroundColor: '#115e59', color: 'white', border: 'none', borderRadius: 4, fontSize: 14, cursor: 'pointer', fontWeight: 600 }}
+          >
+            Upload PF PDF
+          </button>
+          <button
             onClick={() => setNewOpen(true)}
             style={{ padding: '8px 16px', backgroundColor: '#0f766e', color: 'white', border: 'none', borderRadius: 4, fontSize: 14, cursor: 'pointer', fontWeight: 600 }}
           >
@@ -239,6 +255,11 @@ const TrustStock: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {pdfOpen && (
+        <TrustStockPdfImportModal onClose={() => setPdfOpen(false)} onImported={async () => { setPdfOpen(false); await fetchData(); }} />
+      )}
+      {contentsOpen && <TrustStockContentsModal onClose={() => setContentsOpen(false)} />}
 
       {newOpen && (
         <NewStockModal

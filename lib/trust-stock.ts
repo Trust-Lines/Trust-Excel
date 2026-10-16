@@ -1,4 +1,4 @@
-import { apiFetch } from './auth';
+import { apiFetch, getToken } from './auth';
 import type { Project } from '../types';
 import type { BackendProjectItem } from './projects';
 import { mapBackendTypeToFrontend, mapSignStatusToFrontend } from './projects';
@@ -160,4 +160,172 @@ export function mapTrustStockGroupToProject(group: TrustStockGroup): Project {
     })) as any,
     backendItems: items.map(mapTrustStockItemToBackendItem),
   } as Project;
+}
+
+/* ── PF PDF import ─────────────────────────────────────────────────────────── */
+
+export interface ParsedStockProduct {
+  itemCode: string;
+  description: string;
+  category: string | null;
+  quantity: number;
+  unitPrice: number | null;
+  totalPrice: number | null;
+}
+
+export interface PfPdfPreview {
+  stockCode: string | null;
+  pfCode: string | null;
+  supplierName: string | null;
+  vendor: { id: string; code: string; name: string } | null;
+  pfDate: string | null;
+  type: string | null;
+  currency: 'USD' | 'TL' | 'EUR';
+  totalPrice: number | null;
+  paymentRule: string | null;
+  products: ParsedStockProduct[];
+  warnings: string[];
+  groupStatus: 'new' | 'exists' | 'in-trash';
+  duplicateOf: { itemId: string; groupCode: string } | null;
+}
+
+export interface PfImportData {
+  stockCode: string;
+  pfCode: string;
+  vendorId: string | null;
+  type: string | null;
+  orderNo?: string | null;
+  pfDate: string | null;
+  currency: 'USD' | 'TL' | 'EUR';
+  totalPrice: number | null;
+  paymentRule: string | null;
+  products: ParsedStockProduct[];
+}
+
+// Multipart uploads can't go through apiFetch (it forces a JSON content type)
+async function uploadForm(path: string, form: FormData) {
+  const token = getToken();
+  const base = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:3001/api');
+  const url = base ? `${base}${path.replace(/^\/api/, '')}` : path;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
+    credentials: 'include',
+  });
+  return json<any>(res, 'Upload failed');
+}
+
+export async function previewTrustStockPdf(file: File): Promise<PfPdfPreview> {
+  const form = new FormData();
+  form.append('file', file);
+  return uploadForm(`${API_BASE}/pdf/preview`, form);
+}
+
+export async function importTrustStockPdf(file: File, data: PfImportData): Promise<TrustStockItem> {
+  const form = new FormData();
+  form.append('file', file);
+  form.append('data', JSON.stringify(data));
+  return uploadForm(`${API_BASE}/pdf/import`, form);
+}
+
+/** Opens the stored PF PDF in a new tab. */
+export async function openTrustStockPdf(itemId: string): Promise<void> {
+  const win = window.open('', '_blank'); // open synchronously so popup blockers allow it
+  const res = await apiFetch(`${API_BASE}/items/${itemId}/pdf`);
+  if (!res.ok) {
+    win?.close();
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'PDF not available');
+  }
+  const url = URL.createObjectURL(await res.blob());
+  if (win) win.location.href = url; else window.open(url, '_blank');
+}
+
+/* ── Stock contents & usage ────────────────────────────────────────────────── */
+
+export interface StockProductUsage {
+  id: string;
+  quantity: number;
+  createdAt: string;
+  projectItemId: string;
+  projectNo: string;
+  projectName: string;
+  projectPfCode: string | null;
+  rowDeleted: boolean;
+}
+
+export interface StockProduct {
+  id: string;
+  itemCode: string;
+  description: string;
+  category: string | null;
+  quantity: number;
+  used: number;
+  remaining: number;
+  unitPrice: number | null;
+  totalPrice: number | null;
+  currency: string;
+  stockItem: {
+    id: string;
+    pfCode: string | null;
+    orderNo: string | null;
+    pfDate: string | null;
+    type: string | null;
+    hasPdf: boolean;
+    vendor: { id: string; code: string; name: string } | null;
+    group: { id: string; code: string };
+  };
+  usages: StockProductUsage[];
+}
+
+export async function getStockProducts(): Promise<StockProduct[]> {
+  return json(await apiFetch(`${API_BASE}/products`), 'Failed to load stock contents');
+}
+
+/** Same list, readable with Projects access (used by the "Use from Trust Stock" picker). */
+export async function getAvailableStockProducts(): Promise<StockProduct[]> {
+  return json(await apiFetch(`${API_BASE}/usage/products`), 'Failed to load stock');
+}
+
+export async function updateStockProduct(id: string, data: Partial<Pick<StockProduct, 'itemCode' | 'description' | 'quantity' | 'unitPrice' | 'totalPrice'>>) {
+  return json(await apiFetch(`${API_BASE}/products/${id}`, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data),
+  }), 'Failed to update product');
+}
+
+export async function deleteStockProduct(id: string) {
+  return json(await apiFetch(`${API_BASE}/products/${id}`, { method: 'DELETE' }), 'Failed to remove product');
+}
+
+export interface RowStockUsage {
+  id: string;
+  quantity: number;
+  createdAt: string;
+  productId: string;
+  itemCode: string;
+  description: string;
+  unitPrice: number | null;
+  currency: string;
+  stockPfCode: string | null;
+  stockCode: string;
+}
+
+export async function getRowStockUsage(projectItemId: string): Promise<RowStockUsage[]> {
+  return json(await apiFetch(`${API_BASE}/usage?projectItemId=${encodeURIComponent(projectItemId)}`), 'Failed to load stock usage');
+}
+
+export async function addStockUsage(projectItemId: string, productId: string, quantity: number) {
+  return json(await apiFetch(`${API_BASE}/usage`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectItemId, productId, quantity }),
+  }), 'Failed to use stock');
+}
+
+export async function removeStockUsage(id: string) {
+  return json(await apiFetch(`${API_BASE}/usage/${id}`, { method: 'DELETE' }), 'Failed to remove usage');
+}
+
+/** The Trust Stock company as a vendor in the Projects table ("TR-STOCK"). */
+export function isStockVendorCode(code?: string | null): boolean {
+  return !!code && code.toUpperCase().replace(/[^A-Z]/g, '') === 'TRSTOCK';
 }

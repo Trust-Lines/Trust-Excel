@@ -12,3 +12,6 @@ server/dist/
 server/.env
 .DS_Store
 Thumbs.db
+
+# local file storage fallback (Supabase Storage in production)
+server/uploads/

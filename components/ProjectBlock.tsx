@@ -45,7 +45,8 @@ import {
 } from './AccountingColumns';
 import { getStatusStyle } from '../utils/statusStyles';
 import { useUndoStack } from '../hooks/useUndoStack';
-import { createTrustStockItem, updateTrustStockItem, deleteTrustStockItem } from '../lib/trust-stock';
+import { createTrustStockItem, updateTrustStockItem, deleteTrustStockItem, isStockVendorCode } from '../lib/trust-stock';
+import StockUsageModal from './StockUsageModal';
 
 // Trust Stock page: columns shown (plus the Trust-Stock-only ORDER NO column)
 const TRUST_STOCK_COLS = ['projectNo', 'type', 'pfCode', 'vendor', 'pfSignStatus', 'status', 'std', 'etd', 'rtr', 'rtd', 'pfUsd', 'pfTl', 'invoice', 'invoiceTl', 'paymentRule'];
@@ -289,6 +290,8 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
   const [addToGroupOpen, setAddToGroupOpen] = useState(false);
   const [rowContextMenu, setRowContextMenu] = useState<{ x: number; y: number; itemId: string; type: string } | null>(null);
+  // Projects rows with vendor TR-STOCK: take products out of Trust Stock
+  const [stockUsageFor, setStockUsageFor] = useState<{ itemId: string; label: string } | null>(null);
   const [isMutating, setIsMutating] = useState(false);
   const [isUrgent, setIsUrgent] = useState(false);
   const [colorRecalcTrigger, setColorRecalcTrigger] = useState(0); // Force color recalculation
@@ -3927,6 +3930,20 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
           <div style={{ padding: '6px 12px', color: '#6b7280', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             {rowContextMenu.type || 'Item'}
           </div>
+          {mode === 'projects' && isStockVendorCode(itemsById.get(rowContextMenu.itemId)?.vendor?.code) && (
+            <button
+              onClick={() => {
+                const it = itemsById.get(rowContextMenu.itemId);
+                setStockUsageFor({ itemId: rowContextMenu.itemId, label: `Project ${project.projectNumber} · ${rowContextMenu.type} · ${it?.pfCode || 'no PF code'}` });
+                setRowContextMenu(null);
+              }}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '8px 12px', border: 'none', background: 'none', cursor: 'pointer', color: '#0f766e', fontSize: '13px', textAlign: 'left' }}
+              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#ecfdf5')}
+              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+            >
+              Use from Trust Stock
+            </button>
+          )}
           <button
             onClick={handleDeleteRow}
             style={{
@@ -3949,6 +3966,10 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
           </button>
         </div>
       </>
+    )}
+
+    {stockUsageFor && (
+      <StockUsageModal projectItemId={stockUsageFor.itemId} rowLabel={stockUsageFor.label} onClose={() => setStockUsageFor(null)} />
     )}
 
     {/* Status Note Context Menu */}

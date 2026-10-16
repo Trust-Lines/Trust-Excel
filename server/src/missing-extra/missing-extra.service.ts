@@ -23,6 +23,7 @@ import { ProjectScopeService } from '../permissions/services/project-scope.servi
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { SupplierTotalsService } from '../supplier-totals/supplier-totals.service';
 import { EventsGateway } from '../events/events.gateway';
+import { reservedMillworkIndex, nextOpenMillworkIndex, keepOwnOpenCode, formatIndex } from '../common/helpers/fixed-millwork-codes';
 
 @Injectable()
 export class MissingExtraService {
@@ -669,7 +670,8 @@ export class MissingExtraService {
             existingItem.case.derivedProjectCode,
             effectiveVendorId,
             effectiveType,
-            effectiveOrderType
+            effectiveOrderType,
+            existingItem.pfCode,
           );
           updateData.pfCode = newPfCode;
         } catch (error) {
@@ -956,7 +958,7 @@ export class MissingExtraService {
     }
   }
 
-  private async generatePfCodeForItem(derivedProjectCode: string, vendorId: string, type: string, orderType?: string): Promise<string> {
+  private async generatePfCodeForItem(derivedProjectCode: string, vendorId: string, type: string, orderType?: string, currentPfCode?: string | null): Promise<string> {
     // Use the existing PF code generation service but with derived project code
     const vendor = await this.prismaService.vendor.findUnique({
       where: { id: vendorId },
@@ -977,22 +979,17 @@ export class MissingExtraService {
     const typeLetter = typeLetters[type] || 'X';
 
     // YSM/GOS vendor + MILLWORK type: fixed index based on orderType
-    if (vendor.fixedMillworkCodes && type === 'MILLWORK' && orderType) {
-      const orderTypeName = orderType.toUpperCase().trim();
-      let letter = typeLetter; // default M
-      let fixedIndex: number;
-      if (orderTypeName.includes('CUSTOM')) {
-        fixedIndex = 3; // M03 - SELECTIVE / CUSTOM
-      } else if (orderTypeName.includes('SELECTIVE')) {
-        fixedIndex = 2; // M02 - STANDARD / SELECTIVE
-      } else if (orderTypeName.includes('FURNITURE')) {
-        letter = 'F';
-        fixedIndex = 1; // F01 - FURNITURE
-      } else {
-        fixedIndex = 1; // M01 - STANDARD / BASIC
-      }
-      const indexStr = fixedIndex.toString().padStart(2, '0');
-      return `${vendor.code}-${derivedProjectCode}-${letter}${indexStr}`;
+    // Fixed-code vendors (GOS/TDR/YSM) + MILLWORK: M01–M03 reserved, the rest from M04
+    if (vendor.fixedMillworkCodes && type === 'MILLWORK') {
+      const reserved = reservedMillworkIndex(orderType);
+      if (reserved) return `${vendor.code}-${derivedProjectCode}-${typeLetter}${formatIndex(reserved)}`;
+      const kept = keepOwnOpenCode(currentPfCode, `${vendor.code}-${derivedProjectCode}-${typeLetter}`);
+      if (kept) return kept;
+      const siblings = await this.prismaService.missingExtraItem.findMany({
+        where: { case: { derivedProjectCode }, type: 'MILLWORK' as any, vendorId },
+        select: { pfCode: true },
+      });
+      return `${vendor.code}-${derivedProjectCode}-${typeLetter}${formatIndex(nextOpenMillworkIndex(siblings.map(s => s.pfCode), typeLetter))}`;
     }
 
     // Default: auto-increment logic for non-YSM or non-MILLWORK

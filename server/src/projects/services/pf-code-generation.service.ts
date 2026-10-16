@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { VendorsService } from '../../vendors/vendors.service';
 import { CustomTypesService } from '../../custom-types/custom-types.service';
 import { ProjectItemType } from '@prisma/client';
+import { reservedMillworkIndex, nextOpenMillworkIndex, keepOwnOpenCode, formatIndex } from '../../common/helpers/fixed-millwork-codes';
 
 interface ItemTypeInfo {
   enumType?: ProjectItemType;
@@ -26,7 +27,8 @@ export class PfCodeGenerationService {
     projectId: string,
     vendorId: string,
     itemTypeInfo: ItemTypeInfo,
-    orderType?: string | null
+    orderType?: string | null,
+    excludeItemId?: string
   ): Promise<string> {
     return await this.prismaService.$transaction(async (prisma) => {
       // Get project and vendor data
@@ -46,26 +48,27 @@ export class PfCodeGenerationService {
       // Get type short code
       const typeShort = await this.getTypeShortCode(itemTypeInfo);
 
-      // YSM / GOS + MILLWORK: fixed code based on orderType
-      if (vendor.fixedMillworkCodes && itemTypeInfo.enumType === ProjectItemType.MILLWORK && orderType) {
-        const orderTypeName = orderType.toUpperCase().trim();
-        let letter = typeShort; // default M
-        let fixedIndex: number;
-        if (orderTypeName.includes('CUSTOM')) {
-          fixedIndex = 3; // M03 - SELECTIVE / CUSTOM
-        } else if (orderTypeName.includes('SELECTIVE')) {
-          fixedIndex = 2; // M02 - STANDARD / SELECTIVE
-        } else if (orderTypeName.includes('FURNITURE')) {
-          letter = 'F';
-          fixedIndex = 1; // F01 - FURNITURE
-        } else {
-          fixedIndex = 1; // M01 - STANDARD / BASIC
-        }
-        return `${vendor.code}-${project.projectNo}-${letter}${fixedIndex.toString().padStart(2, '0')}`;
-      }
-
       // Find highest sequence number for this combination
       const pfCodePrefix = `${vendor.code}-${project.projectNo}-${typeShort}`;
+
+      // Fixed-code vendors (GOS/TDR/YSM) + MILLWORK: M01–M03 reserved, the rest from M04
+      if (vendor.fixedMillworkCodes && itemTypeInfo.enumType === ProjectItemType.MILLWORK) {
+        const reserved = reservedMillworkIndex(orderType);
+        if (reserved) return `${pfCodePrefix}${formatIndex(reserved)}`;
+        if (excludeItemId) {
+          const self = await prisma.projectItem.findUnique({ where: { id: excludeItemId }, select: { pfCode: true } });
+          const kept = keepOwnOpenCode(self?.pfCode, pfCodePrefix);
+          if (kept) return kept;
+        }
+        const siblings = await prisma.projectItem.findMany({
+          where: {
+            pfCode: { startsWith: pfCodePrefix },
+            ...(excludeItemId ? { id: { not: excludeItemId } } : {}),
+          },
+          select: { pfCode: true },
+        });
+        return `${pfCodePrefix}${formatIndex(nextOpenMillworkIndex(siblings.map(s => s.pfCode), typeShort))}`;
+      }
 
       const existingItems = await prisma.projectItem.findMany({
         where: {
@@ -106,8 +109,9 @@ export class PfCodeGenerationService {
     orderType?: string | null,
     currentItemId?: string
   ): Promise<string> {
-    // YSM + MILLWORK fixed codes: skip uniqueness check (same code is expected for same orderType)
-    if (orderType && itemTypeInfo.enumType === ProjectItemType.MILLWORK) {
+    // Fixed-code vendor + MILLWORK with a standard order type: M01–M03 are shared on
+    // purpose, so skip the uniqueness check. Other Millwork items (M04+) stay unique.
+    if (reservedMillworkIndex(orderType) && itemTypeInfo.enumType === ProjectItemType.MILLWORK) {
       const vendor = await this.prismaService.vendor.findUnique({ where: { id: vendorId }, select: { fixedMillworkCodes: true } });
       if (vendor?.fixedMillworkCodes) {
         return this.generatePfCode(projectId, vendorId, itemTypeInfo, orderType);
@@ -116,7 +120,7 @@ export class PfCodeGenerationService {
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        const pfCode = await this.generatePfCode(projectId, vendorId, itemTypeInfo, orderType);
+        const pfCode = await this.generatePfCode(projectId, vendorId, itemTypeInfo, orderType, currentItemId);
 
         // Double-check uniqueness (exclude current item being updated)
         const existing = await this.prismaService.projectItem.findFirst({

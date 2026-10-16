@@ -921,6 +921,8 @@ export class ProjectsService {
     const isVendorChanging = updateItemDto.vendorId && updateItemDto.vendorId !== existingItem.vendorId;
     const isFirstTimeVendorAssign = updateItemDto.vendorId && !existingItem.vendorId;
     const isOrderTypeChanging = updateItemDto.orderType !== undefined && updateItemDto.orderType !== existingItem.orderType;
+    // Type letter (M/S/C/…) and the fixed Millwork rule both depend on the item type
+    const isTypeChanging = updateItemDto.type !== undefined && updateItemDto.type !== existingItem.type;
     let newPfCode = existingItem.pfCode;
     const effectiveVendorId = updateItemDto.vendorId !== undefined ? updateItemDto.vendorId : existingItem.vendorId;
 
@@ -944,7 +946,7 @@ export class ProjectsService {
     // (e.g. it was signed while the rule still depended on PO status) gets it on its next edit.
     const missingCode = !existingItem.pfCode && !poJustBlocked;
 
-    const needsPfCodeRegen = (isVendorChanging || isFirstTimeVendorAssign || orderTypeTrigger || poJustAllowed || missingCode) && effectiveVendorId && poAllowsCode;
+    const needsPfCodeRegen = (isVendorChanging || isFirstTimeVendorAssign || orderTypeTrigger || isTypeChanging || poJustAllowed || missingCode) && effectiveVendorId && poAllowsCode;
 
     if (needsPfCodeRegen) {
       try {

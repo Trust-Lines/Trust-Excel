@@ -11,6 +11,7 @@ import { EventsGateway } from '../events/events.gateway';
 import { CreateExpensesMEProjectDto } from './dto/create-expenses-me-project.dto';
 import { CreateExpensesMEItemDto } from './dto/create-expenses-me-item.dto';
 import { UpdateExpensesMEItemDto } from './dto/update-expenses-me-item.dto';
+import { reservedMillworkIndex, nextOpenMillworkIndex, keepOwnOpenCode, formatIndex } from '../common/helpers/fixed-millwork-codes';
 
 const ITEM_INCLUDE = {
   vendor: { select: { id: true, code: true, name: true } },
@@ -233,7 +234,7 @@ export class ExpensesMissingExtraService {
         try {
           const project = await this.prisma.expensesMissingExtraProject.findUnique({ where: { id: item.projectId } });
           if (project) {
-            const newPfCode = await this.generatePfCodeForItem(project.projectNo, effectiveVendorId, effectiveType, effectiveOrderType);
+            const newPfCode = await this.generatePfCodeForItem(project.projectNo, effectiveVendorId, effectiveType, effectiveOrderType, item.pfCode);
             updateData.pfCode = newPfCode;
           }
         } catch (error) {
@@ -346,7 +347,7 @@ export class ExpensesMissingExtraService {
     return { message: 'Item deleted successfully' };
   }
 
-  private async generatePfCodeForItem(projectNo: string, vendorId: string, type: string | null, orderType: string | null): Promise<string> {
+  private async generatePfCodeForItem(projectNo: string, vendorId: string, type: string | null, orderType: string | null, currentPfCode?: string | null): Promise<string> {
     const vendor = await this.prisma.vendor.findUnique({ where: { id: vendorId } });
     if (!vendor) throw new Error('Vendor not found');
 
@@ -360,22 +361,17 @@ export class ExpensesMissingExtraService {
     const typeLetter = (type && typeLetters[type]) || 'X';
 
     // YSM/GOS vendor + MILLWORK type: fixed code based on orderType
-    if (vendor.fixedMillworkCodes && type === 'MILLWORK' && orderType) {
-      const orderTypeName = orderType.toUpperCase().trim();
-      let letter = typeLetter; // default M
-      let fixedIndex: number;
-      if (orderTypeName.includes('CUSTOM')) {
-        fixedIndex = 3; // M03 - SELECTIVE / CUSTOM
-      } else if (orderTypeName.includes('SELECTIVE')) {
-        fixedIndex = 2; // M02 - STANDARD / SELECTIVE
-      } else if (orderTypeName.includes('FURNITURE')) {
-        letter = 'F';
-        fixedIndex = 1; // F01 - FURNITURE
-      } else {
-        fixedIndex = 1; // M01 - STANDARD / BASIC
-      }
-      const indexStr = fixedIndex.toString().padStart(2, '0');
-      return `${vendor.code}-${projectNo}-${letter}${indexStr}`;
+    // Fixed-code vendors (GOS/TDR/YSM) + MILLWORK: M01–M03 reserved, the rest from M04
+    if (vendor.fixedMillworkCodes && type === 'MILLWORK') {
+      const reserved = reservedMillworkIndex(orderType);
+      if (reserved) return `${vendor.code}-${projectNo}-${typeLetter}${formatIndex(reserved)}`;
+      const kept = keepOwnOpenCode(currentPfCode, `${vendor.code}-${projectNo}-${typeLetter}`);
+      if (kept) return kept;
+      const siblings = await this.prisma.expensesMissingExtraItem.findMany({
+        where: { project: { projectNo }, type: 'MILLWORK' as any, vendorId },
+        select: { pfCode: true },
+      });
+      return `${vendor.code}-${projectNo}-${typeLetter}${formatIndex(nextOpenMillworkIndex(siblings.map(s => s.pfCode), typeLetter))}`;
     }
 
     // Default: auto-increment logic

@@ -432,6 +432,12 @@ const Reports: React.FC = () => {
   // Reset payment filter when leaving supplier mode
   useEffect(() => { if (groupMode !== 'supplier') setPaymentFilter(''); }, [groupMode]);
 
+  // Paper orientation for printing (remembered per browser)
+  const [orientation, setOrientation] = useState<'portrait' | 'landscape'>(() => {
+    try { return localStorage.getItem('reports.orientation') === 'landscape' ? 'landscape' : 'portrait'; } catch { return 'portrait'; }
+  });
+  useEffect(() => { try { localStorage.setItem('reports.orientation', orientation); } catch { /* ignore */ } }, [orientation]);
+
   const handlePrint = () => window.print();
 
   return (
@@ -444,7 +450,7 @@ const Reports: React.FC = () => {
           print-color-adjust: exact !important;
         }
         @media print {
-          @page { size: A4 landscape; margin: 10mm; }
+          @page { size: A4 ${orientation}; margin: 10mm; }
           body * { visibility: hidden !important; }
           .report-sheet, .report-sheet * { visibility: visible !important; }
           .report-sheet { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none !important; border: none !important; padding: 0 !important; }
@@ -662,6 +668,22 @@ const Reports: React.FC = () => {
           )}
 
           <div style={{ flex: 1 }} />
+
+          <div style={{ display: 'flex', border: '1px solid #d1d5db', borderRadius: '6px', overflow: 'hidden' }} title="Paper orientation when printing">
+            {(['portrait', 'landscape'] as const).map(o => (
+              <button
+                key={o}
+                onClick={() => setOrientation(o)}
+                style={{
+                  height: '34px', padding: '0 12px', border: 'none', cursor: 'pointer', fontSize: '13px',
+                  background: orientation === o ? '#1f2937' : '#fff', color: orientation === o ? '#fff' : '#374151',
+                  fontWeight: orientation === o ? 700 : 500,
+                }}
+              >
+                {o === 'portrait' ? 'Portrait' : 'Landscape'}
+              </button>
+            ))}
+          </div>
 
           <span style={{ fontSize: '13px', color: '#6b7280' }}>{totalRowCount} rows</span>
           <button

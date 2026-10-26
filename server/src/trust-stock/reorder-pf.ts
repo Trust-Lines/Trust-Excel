@@ -66,7 +66,9 @@ function fontFaces(): string {
 }
 
 /** One page of the form. Sizes in pt, measured from the real PFs (612 × 792). */
-function pageHtml(pg: ReorderPfPage): string {
+interface SignatureBlock { url: string; width: number }
+
+function pageHtml(pg: ReorderPfPage, signature: SignatureBlock | null): string {
   // group lines by category → [section bar (black), sub-category bar (gray)]
   const groups: { section: string; sub: string; lines: ReorderPfLine[] }[] = [];
   let lastSec = '';
@@ -140,6 +142,7 @@ function pageHtml(pg: ReorderPfPage): string {
       <colgroup><col style="width:89pt"><col style="width:210pt"><col style="width:41pt"><col style="width:34pt"><col style="width:86pt"><col style="width:111pt"></colgroup>
       <tr><td colspan="3" class="tl">TOTAL</td><td class="tq">${totalQty}</td><td></td><td class="tp">${anyPrice ? money(totalPrice, currency) : ''}</td></tr>
     </table>
+    ${signature ? `<img class="signblock" src="${signature.url}" style="width:${signature.width}pt">` : `
     <table class="sign">
       <colgroup><col style="width:124pt"><col style="width:106pt"><col style="width:144pt"><col style="width:86pt"><col style="width:111pt"></colgroup>
       <tr class="head"><td>PRODUCTION MANAGER</td><td>PROJECT MANAGER</td><td>TRUST LINES MANAGER</td><td>GENERAL MANAGER</td><td>ACCOUNTANT</td></tr>
@@ -150,7 +153,7 @@ function pageHtml(pg: ReorderPfPage): string {
       <div class="nt">PAYMENT TERMS NOTE</div>
       <div>${esc(pg.paymentNote)}</div>
     </div>
-    <div class="endline"></div>
+    <div class="endline"></div>`}
   </section>`;
 }
 
@@ -208,6 +211,7 @@ const CSS = `
   .note { width: 571pt; border: 0.75pt solid #000; border-top: none; font-size: 7pt; font-style: italic; padding: 3pt 3pt 4pt; }
   .note .nt { font-weight: 700; font-size: 8pt; }
   .endline { width: 571pt; height: 10pt; border: 0.75pt solid #000; border-top: none; }
+  .signblock { display: block; margin: 1pt 0 0 -1pt; page-break-inside: avoid; }
 `;
 
 /**
@@ -270,14 +274,93 @@ async function cropPictures(browser: any, sources: { pdf: Buffer; layout: PfItem
   return pics;
 }
 
-/** Build the PDF: pictures are taken from `sources` (original PFs) by item code. */
+/**
+ * The signature block of an original PF (signature boxes with the signatures in them, payment
+ * note), cropped from the first source that is actually signed. `sources` come newest first.
+ */
+async function cropSignature(browser: any, sources: { pdf: Buffer }[]): Promise<SignatureBlock | null> {
+  if (!sources.length) return null;
+  const dir = path.dirname(require.resolve('pdf-parse/lib/pdf.js/v1.10.100/build/pdf.js'));
+  const page = await browser.newPage();
+  try {
+    await page.setContent('<html><body></body></html>');
+    await page.addScriptTag({ content: fs.readFileSync(path.join(dir, 'pdf.js'), 'utf8') });
+    await page.evaluate((code: string) => {
+      (window as any).PDFJS.workerSrc = URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
+    }, fs.readFileSync(path.join(dir, 'pdf.worker.js'), 'utf8'));
+    for (const src of sources) {
+      try {
+        const sig: SignatureBlock | null = await page.evaluate(async (b64: string) => {
+          const PDFJS = (window as any).PDFJS;
+          const pdf = await PDFJS.getDocument({ data: Uint8Array.from(atob(b64), c => c.charCodeAt(0)) }).promise;
+          const S = 4;
+          for (let n = pdf.numPages; n >= 1; n--) {
+            const pg = await pdf.getPage(n);
+            const H = pg.getViewport(1).height;
+            const items = (await pg.getTextContent()).items.map((i: any) => ({ s: String(i.str).trim(), y: H - i.transform[5] }));
+            const head = items.find((i: any) => /PRODUCTION MANAGER/i.test(i.s));
+            const note = items.find((i: any) => /PAYMENT TERMS/i.test(i.s) && (!head || i.y > head.y));
+            if (!head || !note) continue;
+            const vp = pg.getViewport(S);
+            const canvas = document.createElement('canvas'); canvas.width = vp.width; canvas.height = vp.height;
+            await pg.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+            const ctx = canvas.getContext('2d')!;
+            const W = canvas.width;
+            const img = ctx.getImageData(0, 0, W, canvas.height).data;
+            const dark = (x: number, y: number) => { const k = (y * W + x) * 4; return img[k] + img[k + 1] + img[k + 2] < 300; };
+            // a table border: a dark run across the right part of the page (signatures don't reach that far as a straight line)
+            const isLine = (y: number) => { let c = 0; const a = Math.round(430 * S), b = Math.round(580 * S); for (let x = a; x < b; x++) if (dark(x, y)) c++; return c > (b - a) * 0.9; };
+            let top = -1;
+            for (let y = Math.round(head.y * S); y > Math.round((head.y - 20) * S); y--) if (isLine(y)) { top = y; break; }
+            // below the note: its bottom border, then the empty row's bottom border
+            let bottom = -1, found = 0;
+            for (let y = Math.round((note.y + 2) * S); y < Math.min(canvas.height, Math.round((note.y + 60) * S)); y++) {
+              if (isLine(y)) { found++; bottom = y; if (found === 2) break; while (isLine(y + 1)) y++; }
+            }
+            if (top < 0 || bottom < 0) continue;
+            // left / right frame from the top border
+            let x0 = 0, x1 = W - 1;
+            while (x0 < W && !dark(x0, top)) x0++;
+            while (x1 > 0 && !dark(x1, top)) x1--;
+            // signed? count ink between the header row and the note, ignoring the vertical borders
+            const y0 = Math.round((head.y + 3) * S), y1 = Math.round((note.y - 10) * S);
+            const inked = (x: number, y: number) => dark(x, y) || (img[(y * W + x) * 4 + 2] > 150 && img[(y * W + x) * 4] < 120); // black or blue pen
+            const borderRow = new Set<number>();
+            for (let y = y0; y < y1; y++) { let c = 0; for (let x = x0; x < x1; x++) if (inked(x, y)) c++; if (c > (x1 - x0) * 0.6) borderRow.add(y); }
+            let ink = 0;
+            for (let x = x0 + 8; x < x1 - 8; x++) {
+              let col = 0;
+              for (let y = y0; y < y1; y++) if (!borderRow.has(y) && inked(x, y)) col++;
+              if (col < (y1 - y0) * 0.6) ink += col;   // a full-height column is a border
+            }
+            if (ink < 200 * S * S) return null;          // blank boxes (stray marks only: ~550 vs ~15,000 for real signatures at 4×)
+            const pad = S; // 1pt
+            const t = document.createElement('canvas');
+            t.width = x1 - x0 + 2 * pad; t.height = bottom - top + 2 * pad;
+            t.getContext('2d')!.drawImage(canvas, x0 - pad, top - pad, t.width, t.height, 0, 0, t.width, t.height);
+            // scaled to our frame (571pt + the 1pt margins), whatever page size the original was
+            return { url: t.toDataURL('image/png'), width: 571 * t.width / (x1 - x0) };
+          }
+          return null;
+        }, src.pdf.toString('base64'));
+        if (sig) return sig;
+      } catch { /* try the next PF */ }
+    }
+  } finally {
+    await page.close().catch(() => {});
+  }
+  return null;
+}
+
+/** Build the PDF: pictures are taken from `sources` (original PFs, newest first) by item code, the signatures from the newest signed one. */
 export async function renderReorderPf(pages: ReorderPfPage[], sources: { pdf: Buffer; layout: PfItemLayout[] }[]): Promise<Buffer> {
   const browser = await launchBrowser();
   try {
     const pics = await cropPictures(browser, sources);
     for (const pg of pages) for (const l of pg.lines) if (!l.picture) l.picture = pics.get(normalizeItemCode(l.itemCode)) || null;
+    const signature = await cropSignature(browser, sources);
     const page = await browser.newPage();
-    await page.setContent(`<!doctype html><html><head><meta charset="utf-8"><style>${fontFaces()}${CSS}</style></head><body>${pages.map(pageHtml).join('')}</body></html>`, { waitUntil: 'load' });
+    await page.setContent(`<!doctype html><html><head><meta charset="utf-8"><style>${fontFaces()}${CSS}</style></head><body>${pages.map(pg => pageHtml(pg, signature)).join('')}</body></html>`, { waitUntil: 'load' });
     // long PF codes: shrink the text until it fits its cell (never wraps or spills over the border)
     await page.evaluate(async () => {
       await (document as any).fonts.ready;

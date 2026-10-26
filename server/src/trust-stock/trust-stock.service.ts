@@ -369,7 +369,7 @@ export class TrustStockService implements OnModuleInit {
   }
 
   /**
-   * Re-order PF: an ESTIMATED PRODUCTION FORM for everything whose Order column is > 0,
+   * Re-order PF: a PRODUCTION FORM for everything whose Order column is > 0,
    * one page per vendor, under the next stock code (STOCK-TR-04 → STOCK-TR-05).
    * Pictures are copied from the products' original PFs. Nothing is saved.
    */

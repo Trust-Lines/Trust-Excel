@@ -4,7 +4,7 @@ import { launchBrowser } from '../common/pdf/browser';
 import { PfItemLayout, normalizeItemCode } from './pf-pdf-parser';
 
 /**
- * Re-order PF: the Trust Lines "ESTIMATED PRODUCTION FORM" (same layout as the PFs we
+ * Re-order PF: the Trust Lines "PRODUCTION FORM" (same layout as the PFs we
  * import — US Letter, same bands, columns, total bar, signature boxes and payment note),
  * one page per vendor, listing what has to be re-ordered.
  */
@@ -36,18 +36,33 @@ const money = (v: number, currency: string) => {
   return sym + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
-let logoDataUrl: string | null = null;
-function logo(): string {
-  if (logoDataUrl) return logoDataUrl;
+const assetCache = new Map<string, string>();
+/** assets/<name> as a data URL ('' when missing) */
+function asset(name: string, mime: string): string {
+  if (assetCache.has(name)) return assetCache.get(name)!;
   const candidates = [
-    path.join(__dirname, 'assets', 'pf-logo.png'),
-    path.join(__dirname, '..', '..', 'src', 'trust-stock', 'assets', 'pf-logo.png'), // compiled → asset stays in src
-    path.join(process.cwd(), 'server', 'src', 'trust-stock', 'assets', 'pf-logo.png'),
+    path.join(__dirname, 'assets', name),
+    path.join(__dirname, '..', '..', 'src', 'trust-stock', 'assets', name), // compiled → asset stays in src
+    path.join(process.cwd(), 'server', 'src', 'trust-stock', 'assets', name),
   ];
   for (const p of candidates) {
-    try { logoDataUrl = `data:image/png;base64,${fs.readFileSync(p).toString('base64')}`; return logoDataUrl; } catch { /* next */ }
+    try {
+      const url = `data:${mime};base64,${fs.readFileSync(p).toString('base64')}`;
+      assetCache.set(name, url);
+      return url;
+    } catch { /* next */ }
   }
   return '';
+}
+const logo = () => asset('pf-logo.png', 'image/png');
+
+/** Carlito = Calibri's metrics (our PFs are Calibri), embedded so the server renders the same everywhere */
+function fontFaces(): string {
+  return ([['Regular', 400, 'normal'], ['Bold', 700, 'normal'], ['Italic', 400, 'italic'], ['BoldItalic', 700, 'italic']] as const)
+    .map(([f, w, s]) => {
+      const url = asset(`Carlito-${f}.ttf`, 'font/ttf');
+      return url ? `@font-face { font-family: 'PfCalibri'; src: url(${url}) format('truetype'); font-weight: ${w}; font-style: ${s}; }` : '';
+    }).join('\n');
 }
 
 /** One page of the form. Sizes in pt, measured from the real PFs (612 × 792). */
@@ -101,7 +116,7 @@ function pageHtml(pg: ReorderPfPage): string {
     <div class="top">
       <div class="logo-box">${logo() ? `<img src="${logo()}">` : ''}</div>
       <div class="title-box">
-        <div class="title">ESTIMATED PRODUCTION FORM</div>
+        <div class="title">PRODUCTION FORM</div>
         <div class="type">${esc(pg.formType)}</div>
       </div>
     </div>
@@ -109,7 +124,7 @@ function pageHtml(pg: ReorderPfPage): string {
     <table class="grid">
       <colgroup><col style="width:306pt"><col style="width:34pt"><col style="width:102pt"><col style="width:129pt"></colgroup>
       <tr class="label"><td>SUPPLIER INFO</td><td></td><td class="c">ORDER NO:</td><td class="c">Date</td></tr>
-      <tr class="value"><td class="big">${esc(pg.supplierName)}</td><td></td><td class="c order">${esc(pg.pfCode)}</td><td class="c big date">${esc(pg.date)}</td></tr>
+      <tr class="value"><td class="big">${esc(pg.supplierName)}</td><td></td><td class="c order"><span class="fit">${esc(pg.pfCode)}</span></td><td class="c big date">${esc(pg.date)}</td></tr>
     </table>
     <table class="grid">
       <colgroup><col style="width:89pt"><col style="width:353pt"><col style="width:129pt"></colgroup>
@@ -142,7 +157,7 @@ function pageHtml(pg: ReorderPfPage): string {
 const CSS = `
   @page { size: 612pt 792pt; margin: 30pt 0 25pt; }
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: Calibri, Carlito, "Segoe UI", Arial, sans-serif; color: #000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { margin: 0; font-family: PfCalibri, Calibri, Carlito, "Segoe UI", Arial, sans-serif; color: #000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .page { width: 612pt; padding: 25pt 20pt 0 21pt; page-break-after: always; position: relative; }
   .page:last-child { page-break-after: auto; }
   .top { display: flex; height: 59pt; border-top: 0.75pt solid #000; }
@@ -157,7 +172,8 @@ const CSS = `
   .grid + .grid { margin-top: -0.75pt; }
   .grid .label td { background: #a6a6a6; font-size: 8pt; font-weight: 700; height: 12pt; }
   .grid .value td { height: 19pt; font-size: 11pt; font-weight: 700; }
-  .grid .order { font-size: 8pt; white-space: nowrap; padding: 0 1pt; }
+  .grid .order { background: #d9d9d9; white-space: nowrap; padding: 0 2pt; }
+  .grid .order .fit { font-size: 9.5pt; display: inline-block; }
   .grid .date { background: #d9d9d9; }
   .grid .c { text-align: center; }
   .grid .client td { height: 16pt; }
@@ -261,7 +277,16 @@ export async function renderReorderPf(pages: ReorderPfPage[], sources: { pdf: Bu
     const pics = await cropPictures(browser, sources);
     for (const pg of pages) for (const l of pg.lines) if (!l.picture) l.picture = pics.get(normalizeItemCode(l.itemCode)) || null;
     const page = await browser.newPage();
-    await page.setContent(`<!doctype html><html><head><meta charset="utf-8"><style>${CSS}</style></head><body>${pages.map(pageHtml).join('')}</body></html>`, { waitUntil: 'load' });
+    await page.setContent(`<!doctype html><html><head><meta charset="utf-8"><style>${fontFaces()}${CSS}</style></head><body>${pages.map(pageHtml).join('')}</body></html>`, { waitUntil: 'load' });
+    // long PF codes: shrink the text until it fits its cell (never wraps or spills over the border)
+    await page.evaluate(async () => {
+      await (document as any).fonts.ready;
+      document.querySelectorAll<HTMLElement>('.fit').forEach(el => {
+        const room = el.parentElement!.clientWidth - 6;
+        let size = parseFloat(getComputedStyle(el).fontSize);
+        while (el.offsetWidth > room && size > 5) { size -= 0.25; el.style.fontSize = `${size}px`; }
+      });
+    });
     const pdf = await page.pdf({ format: 'Letter', printBackground: true, preferCSSPageSize: true });
     return Buffer.from(pdf);
   } finally {

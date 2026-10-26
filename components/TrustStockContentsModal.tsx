@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import {
-  getStockProducts, getAvailableStockProducts, openTrustStockPdf, updateStockProduct, deleteStockProduct,
+  getStockProducts, getAvailableStockProducts, openTrustStockPdf, updateStockProduct, deleteStockProduct, downloadReorderPf,
   StockProduct, StockStatus, STOCK_STATUS_STYLE,
 } from '../lib/trust-stock';
 import { useSocketEvent } from '../hooks/useSocketEvent';
@@ -99,6 +99,7 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
   const [statusFilter, setStatusFilter] = useState<StockStatus | 'ALL'>('ALL');
   const [orderFilter, setOrderFilter] = useState('');
   const [open, setOpen] = useState<Set<string>>(new Set());
+  const [makingPf, setMakingPf] = useState(false);
 
   // Edits from this table; reload afterwards (the live event isn't sent back to the editor)
   const save = async (p: StockProduct, patch: Parameters<typeof updateStockProduct>[1]) => {
@@ -171,6 +172,24 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
         <div style={{ padding: '10px 18px', background: '#1e293b', color: '#fff', borderRadius: '10px 10px 0 0', display: 'flex', alignItems: 'center' }}>
           <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: '.4px' }}>TRUST LINES — STOCK OVERVIEW</div>
           <div style={{ flex: 1 }} />
+          {!readOnly && (() => {
+            const lines = products.filter(p => p.reorderQty > 0);
+            const qty = lines.reduce((s, p) => s + p.reorderQty, 0);
+            return (
+              <button
+                disabled={!lines.length || makingPf}
+                onClick={async () => {
+                  setMakingPf(true);
+                  try { await downloadReorderPf(); setError(null); }
+                  catch (e) { setError(e instanceof Error ? e.message : 'Could not create the re-order PF'); }
+                  finally { setMakingPf(false); }
+                }}
+                title={lines.length ? `Production form for ${lines.length} product(s), ${qty} pcs — the Order column` : 'Nothing at the reorder point'}
+                style={{ marginRight: 14, padding: '6px 14px', borderRadius: 6, border: 'none', fontSize: 12, fontWeight: 700, cursor: lines.length && !makingPf ? 'pointer' : 'default', background: lines.length ? '#f59e0b' : '#475569', color: lines.length ? '#1e293b' : '#cbd5e1' }}>
+                {makingPf ? 'Creating PF…' : `⬇ Re-order PF${lines.length ? ` (${lines.length})` : ''}`}
+              </button>
+            );
+          })()}
           <button onClick={onClose} style={{ border: 'none', background: 'none', fontSize: 22, cursor: 'pointer', color: '#fff' }}>×</button>
         </div>
 

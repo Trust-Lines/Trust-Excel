@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { DropboxService } from '../dropbox/dropbox.service';
 import { PfCodeGenerationService } from '../projects/services/pf-code-generation.service';
 import { ProjectItemType } from '@prisma/client';
+import { launchBrowser } from '../common/pdf/browser';
 
 
 const PRICE_LIST_TYPE_MAP: Record<string, ProjectItemType> = {
@@ -1020,29 +1021,8 @@ export class PriceListService implements OnModuleInit {
 </html>`;
   }
 
-  /**
-   * On Vercel there is no bundled Chrome: use puppeteer-core with the
-   * serverless Chromium build. Locally fall back to full puppeteer.
-   */
-  private async launchBrowser(): Promise<any> {
-    /* eslint-disable @typescript-eslint/no-var-requires */
-    if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
-      const chromium = require('@sparticuz/chromium');
-      const puppeteerCore = require('puppeteer-core');
-      return puppeteerCore.launch({
-        args: chromium.args,
-        defaultViewport: chromium.defaultViewport,
-        executablePath: await chromium.executablePath(),
-        headless: true,
-      });
-    }
-    const puppeteer = require('puppeteer');
-    return puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
-    /* eslint-enable @typescript-eslint/no-var-requires */
-  }
-
   private async renderPdf(html: string): Promise<Buffer> {
-    const browser = await this.launchBrowser();
+    const browser = await launchBrowser();
     try {
       const page = await browser.newPage();
       await page.setContent(html, { waitUntil: 'networkidle0' });

@@ -48,6 +48,14 @@ export interface ParsedPfProduct {
   totalPrice: number | null;
 }
 
+/** Where a product's picture sits on the PF page (PDF points, origin bottom-left) */
+export interface PfItemLayout {
+  itemCode: string;
+  page: number;      // 0-based
+  x0: number; x1: number;
+  y0: number; y1: number; // y0 < y1
+}
+
 export interface ParsedPf {
   stockCode: string | null;      // PROJECT NUMBER, e.g. "STOCK-TR-02"
   pfCode: string | null;         // ORDER NO, e.g. "KYA-STOCK-TR-02-M01"
@@ -60,6 +68,8 @@ export interface ParsedPf {
   paymentRule: string | null;    // advance %, e.g. "50"
   products: ParsedPfProduct[];
   warnings: string[];
+  /** picture cell of each product (used to copy product pictures into generated PFs) */
+  layout?: PfItemLayout[];
 }
 
 interface Cell { s: string; x: number; y: number; w?: number; h?: number }
@@ -261,7 +271,8 @@ export async function parsePfPdf(buffer: Buffer): Promise<ParsedPf> {
     .filter(({ rows, idx }) => idx === formIdx || rows.some(r => isFormTitle(r.text))
       || rows.some(r => r.cells.some(c => L.code.test(c.s)) && r.cells.some(c => L.qty.test(c.s))));
   const skipped: string[] = [];
-  for (const { rows } of tablePages) {
+  out.layout = [];
+  for (const { rows, idx: pageIdx } of tablePages) {
     let category: string | null = null;
     for (let i = 0; i < rows.length; i++) {
       const head = rows[i];
@@ -280,7 +291,9 @@ export async function parsePfPdf(buffer: Buffer): Promise<ParsedPf> {
           if (!only || only.x >= codeHead.x - 5) break;                                // a product line — stop
           if (/[A-Za-zÇĞİÖŞÜçğıöşü]{3,}/.test(t)) headings.unshift(t);
         }
-        if (headings.length) category = headings.join(' — ');
+        // a lone gray sub-category bar stays under the black section bar above it ("CABINETRY")
+        if (headings.length === 1 && category?.includes(' — ')) category = `${category.split(' — ')[0]} — ${headings[0]}`;
+        else if (headings.length) category = headings.join(' — ');
 
         const body: Row[] = [];
         let endedAtNextTable = false;
@@ -301,6 +314,7 @@ export async function parsePfPdf(buffer: Buffer): Promise<ParsedPf> {
         }
 
         const descX = descHead ? descHead.x : codeHead.x + 120;
+        const picHead = head.cells.find(c => /^(PIC|PICTURE|IMAGE|G[ÖO]RSEL|RES[İI]M)$/i.test(c.s.trim()));
         const unitHead = head.cells.find(c => c.x > qtyHead.x && L.unitPrice.test(c.s));
         const totalHead = head.cells.find(c => c.x > qtyHead.x && c !== unitHead && L.lineTotal.test(c.s));
         const inMoneyCol = (c: Cell) => [unitHead, totalHead].some(h => h && Math.abs(c.x - h.x) <= 45) || (!!unitHead && c.x > unitHead.x - 20);
@@ -354,6 +368,12 @@ export async function parsePfPdf(buffer: Buffer): Promise<ParsedPf> {
             if (unitPrice == null && totalPrice != null) unitPrice = +(totalPrice / a.qty).toFixed(2);
             if (totalPrice == null && unitPrice != null) totalPrice = +(unitPrice * a.qty).toFixed(2);
             out.products.push({ itemCode: code, description, category, quantity: a.qty, unitPrice, totalPrice });
+            if (picHead) {
+              // picture cell: from just left of the PIC label to just left of QUANTITY, one row high
+              const half = gaps.length ? Math.max(8, gaps[Math.floor(gaps.length / 2)] / 2 - 1) : 14;
+              const mid = a.y + 3; // quantity text baseline sits slightly below the row's middle
+              out.layout!.push({ itemCode: code, page: pageIdx, x0: picHead.x - 14, x1: qtyHead.x - 3, y0: mid - half, y1: mid + half });
+            }
           } catch {
             skipped.push(`a line near the top-${Math.round(a.y)} mark`);
           }

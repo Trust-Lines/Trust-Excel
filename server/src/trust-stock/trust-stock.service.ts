@@ -4,7 +4,8 @@ import { EventsGateway } from '../events/events.gateway';
 import { applyStatusDateAutomation } from '../common/helpers/status-date-automation';
 import { CreateTrustStockGroupDto, UpdateTrustStockGroupDto, TrustStockItemDto } from './dto/trust-stock.dto';
 import { ImportPfDto, UpdateStockProductDto, CreateStockUsageDto, StockMovementsDto } from './dto/trust-stock-pdf.dto';
-import { parsePfPdf, normalizeCode } from './pf-pdf-parser';
+import { parsePfPdf, normalizeCode, PfItemLayout } from './pf-pdf-parser';
+import { renderReorderPf, ReorderPfPage } from './reorder-pf';
 import { FileStorage } from '../common/storage/file-storage';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
@@ -289,6 +290,7 @@ export class TrustStockService implements OnModuleInit {
       ? await this.prisma.trustStockItem.findFirst({ where: { pfCode: parsed.pfCode, ...{ deletedAt: null, group: { deletedAt: null } } }, include: { group: { select: { code: true } } } })
       : null;
     if (duplicate) parsed.warnings.push(`${parsed.pfCode} is already in ${duplicate.group.code}.`);
+    delete parsed.layout; // only used for re-order PFs, not part of the import data
     return {
       ...parsed,
       stockCode,
@@ -364,6 +366,71 @@ export class TrustStockService implements OnModuleInit {
     const data = await this.pdfStore.read(item.pdfFileKey);
     if (!data) throw new NotFoundException('PDF file not found');
     return { data, fileName: item.pdfFileName || `${item.pfCode || 'pf'}.pdf` };
+  }
+
+  /**
+   * Re-order PF: an ESTIMATED PRODUCTION FORM for everything whose Order column is > 0,
+   * one page per vendor, under the next stock code (STOCK-TR-04 → STOCK-TR-05).
+   * Pictures are copied from the products' original PFs. Nothing is saved.
+   */
+  async reorderPf(productIds?: string[]) {
+    const products = (await this.listProducts()).filter(p => p.reorderQty > 0 && (!productIds?.length || productIds.includes(p.id)));
+    if (!products.length) throw new BadRequestException('Nothing to re-order');
+
+    const codes = (await this.prisma.trustStockGroup.findMany({ select: { code: true } })).map(g => g.code.replace(/\s*~deleted-\d+$/, '').replace(/\s*\(restored\)$/i, ''));
+    let prefix = 'STOCK-TR-', max = 0, width = 2;
+    for (const c of codes) {
+      const m = c.match(/^(.*?)(\d+)$/);
+      if (!m || !/STOCK/i.test(m[1])) continue;
+      if (Number(m[2]) >= max) { max = Number(m[2]); prefix = m[1]; width = m[2].length; }
+    }
+    const stockCode = `${prefix}${String(max + 1).padStart(width, '0')}`;
+    const now = new Date();
+    const date = `${now.getMonth() + 1}/${now.getDate()}/${now.getFullYear()}`;
+
+    // one page per vendor + PF type, in the order the products are listed
+    const pages = new Map<string, ReorderPfPage>();
+    const sourceItemIds = new Set<string>();
+    for (const p of products) {
+      const vendor = p.stockItem.vendor;
+      const type = p.stockItem.type || 'MILLWORK';
+      const key = `${vendor?.id || '-'}|${type}`;
+      if (!pages.has(key)) {
+        const letter = type === 'MILLWORK' ? 'M' : type.charAt(0);
+        const sameVendor = [...pages.values()].filter(x => x.supplierName === (vendor?.name || '').toUpperCase() && x.pfCode.endsWith(`-${letter}01`)).length;
+        pages.set(key, {
+          supplierName: (vendor?.name || '').toUpperCase(),
+          pfCode: `${vendor?.code ? vendor.code + '-' : ''}${stockCode}-${letter}${String(sameVendor + 1).padStart(2, '0')}`,
+          stockCode,
+          date,
+          formType: type.replace(/_/g, ' '),
+          paymentNote: 'Note: Production will start after receiving a 50% advance payment.',
+          lines: [],
+        });
+      }
+      pages.get(key)!.lines.push({
+        itemCode: p.itemCode, description: p.description, dimensions: p.dimensions, category: p.category,
+        quantity: p.reorderQty, unitPrice: p.unitPrice, currency: p.currency || 'USD',
+      });
+      if (p.stockItem.hasPdf) sourceItemIds.add(p.stockItem.id);
+    }
+
+    // the original PFs, for the product pictures
+    const sources: { pdf: Buffer; layout: PfItemLayout[] }[] = [];
+    const items = await this.prisma.trustStockItem.findMany({ where: { id: { in: [...sourceItemIds] } }, select: { pdfFileKey: true }, orderBy: { createdAt: 'desc' } });
+    for (const it of items) {
+      try {
+        const pdf = await this.pdfStore.read(it.pdfFileKey!);
+        if (!pdf) continue;
+        const layout = (await parsePfPdf(pdf)).layout || [];
+        if (layout.length) sources.push({ pdf, layout });
+      } catch (e: any) {
+        this.logger.warn(`Re-order PF: could not read pictures from ${it.pdfFileKey}: ${e?.message || e}`);
+      }
+    }
+
+    const data = await renderReorderPf([...pages.values()], sources);
+    return { data, fileName: `${stockCode}-REORDER.pdf` };
   }
 
   // ==================== STOCK CONTENTS & USAGE ====================

@@ -242,6 +242,21 @@ export async function openTrustStockPdf(itemId: string): Promise<void> {
   if (win) win.location.href = url; else window.open(url, '_blank');
 }
 
+/** Builds the re-order PF (everything with an Order quantity) and downloads it. */
+export async function downloadReorderPf(productIds?: string[]): Promise<void> {
+  const res = await apiFetch(`${API_BASE}/reorder-pf`, { method: 'POST', body: JSON.stringify({ productIds }) });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Could not create the re-order PF');
+  }
+  const name = decodeURIComponent(/filename="([^"]+)"/.exec(res.headers.get('Content-Disposition') || '')?.[1] || 'REORDER-PF.pdf');
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+
 /* ── Stock contents & usage ────────────────────────────────────────────────── */
 
 export type StockMoveKind = 'TAKEN' | 'RETURNED' | 'RESERVED';

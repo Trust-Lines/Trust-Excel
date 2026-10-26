@@ -96,6 +96,15 @@ export class TrustStockController {
     return this.service.listCatalog();
   }
 
+  /** Re-order PF (PDF) for the products whose Order column is > 0; body.productIds narrows it */
+  @Post('reorder-pf')
+  async reorderPf(@Body('productIds') productIds: string[] | undefined, @Res() res: Response) {
+    const { data, fileName } = await this.service.reorderPf(Array.isArray(productIds) ? productIds : undefined);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
+    res.send(data);
+  }
+
   @Patch('products/:id')
   updateProduct(@Param('id') id: string, @Body() dto: UpdateStockProductDto, @Request() req: any) {
     return this.service.updateProduct(id, dto, req.user?.id);

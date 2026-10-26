@@ -17,6 +17,28 @@
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const pdfParse = require('pdf-parse/lib/pdf-parse.js');
 
+// pdf.js (inside pdf-parse) prints harmless font notices such as "Warning: TT: undefined
+// function: 21" for PDFs with hinted TrueType fonts. Its verbosity setting doesn't reach the
+// in-process worker that prints them, so while a PDF is being read, drop just those
+// "Warning: …" lines from console.log. Everything else (and real errors) still shows.
+let quietDepth = 0;
+let originalLog: typeof console.log | null = null;
+async function withPdfJsQuiet<T>(fn: () => Promise<T>): Promise<T> {
+  if (quietDepth++ === 0) {
+    originalLog = console.log;
+    const log = originalLog;
+    console.log = (...args: any[]) => {
+      if (typeof args[0] === 'string' && args[0].startsWith('Warning: ')) return;
+      log.apply(console, args);
+    };
+  }
+  try {
+    return await fn();
+  } finally {
+    if (--quietDepth === 0 && originalLog) { console.log = originalLog; originalLog = null; }
+  }
+}
+
 export interface ParsedPfProduct {
   itemCode: string;
   description: string;
@@ -78,7 +100,7 @@ async function readRows(buffer: Buffer): Promise<Row[][]> {
     pages.push(rows);
     return '';
   };
-  await pdfParse(buffer, { pagerender });
+  await withPdfJsQuiet(() => pdfParse(buffer, { pagerender }));
   return pages;
 }
 

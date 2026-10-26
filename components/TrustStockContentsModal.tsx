@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import {
-  getStockProducts, getAvailableStockProducts, openTrustStockPdf, updateStockProduct, productFamily,
+  getStockProducts, getAvailableStockProducts, openTrustStockPdf, updateStockProduct,
   StockProduct, StockStatus, STOCK_STATUS_STYLE,
 } from '../lib/trust-stock';
 import { useSocketEvent } from '../hooks/useSocketEvent';
@@ -76,9 +76,6 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
   // Dashboard figures (remaining / available only count models with a confirmed receipt — same as the sheet)
   const dash_ = useMemo(() => {
     const received = products.filter(p => p.received != null);
-    const families: Record<string, number> = {};
-    for (const p of received) families[productFamily(p.itemCode)] = (families[productFamily(p.itemCode)] || 0) + (p.onHand ?? 0);
-    for (const p of products) if (!(productFamily(p.itemCode) in families)) families[productFamily(p.itemCode)] = 0;
     return {
       ordered: products.reduce((s, p) => s + p.ordered, 0),
       received: received.reduce((s, p) => s + (p.received ?? 0), 0),
@@ -86,7 +83,6 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
       onHand: received.reduce((s, p) => s + (p.onHand ?? 0), 0),
       reserved: products.reduce((s, p) => s + p.reserved, 0),
       available: received.reduce((s, p) => s + (p.available ?? 0), 0),
-      families,
       reorder: products.filter(p => p.status === 'REORDER_NOW').length,
       out: products.filter(p => p.status === 'OUT_OF_STOCK').length,
       watch: products.filter(p => p.status === 'WATCH').length,
@@ -127,7 +123,6 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
             {card('AVAILABLE', dash_.available, '#1e3a5f')}
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
-            {Object.entries(dash_.families).sort(([a], [b]) => a.localeCompare(b)).map(([f, v]) => card(`${f} REMAINING`, v, '#2c5aa0', '#1d4ed8'))}
             {card('NEED REORDER', dash_.reorder, '#b91c1c', '#b91c1c')}
             {card('OUT OF STOCK', dash_.out, '#7f1d1d', '#7f1d1d')}
             {card('ON WATCH', dash_.watch, '#b45309', '#b45309')}

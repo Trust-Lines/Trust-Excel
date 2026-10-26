@@ -40,7 +40,7 @@ export interface ParsedPf {
   warnings: string[];
 }
 
-interface Cell { s: string; x: number; y: number }
+interface Cell { s: string; x: number; y: number; w?: number; h?: number }
 interface Row { y: number; cells: Cell[]; text: string }
 
 const KNOWN_TYPES = ['MILLWORK', 'SHELVING', 'CEILING', 'IMAGE', 'FURNITURE', 'DECORATION'];
@@ -50,7 +50,7 @@ async function readRows(buffer: Buffer): Promise<Row[][]> {
   const pagerender = async (pageData: any) => {
     const tc = await pageData.getTextContent({ normalizeWhitespace: true });
     const cells: Cell[] = tc.items
-      .map((i: any) => ({ s: String(i.str).replace(/\s+/g, ' ').trim(), x: i.transform[4], y: i.transform[5] }))
+      .map((i: any) => ({ s: String(i.str).replace(/\s+/g, ' ').trim(), x: i.transform[4], y: i.transform[5], w: i.width || 0, h: Math.abs(i.transform[3]) || 10 }))
       .filter((c: Cell) => c.s);
     cells.sort((a, b) => b.y - a.y || a.x - b.x);
     const rows: Row[] = [];
@@ -59,7 +59,22 @@ async function readRows(buffer: Buffer): Promise<Row[][]> {
       if (!row) { row = { y: c.y, cells: [], text: '' }; rows.push(row); }
       row.cells.push(c);
     }
-    rows.forEach(r => { r.cells.sort((a, b) => a.x - b.x); r.text = r.cells.map(c => c.s).join(' '); });
+    rows.forEach(r => {
+      r.cells.sort((a, b) => a.x - b.x);
+      // Glue pieces of one word/phrase the PDF split up (e.g. at Ş/İ glyphs: "GOS-ST" + "OCK-TR-07")
+      const merged: Cell[] = [];
+      for (const c of r.cells) {
+        const prev = merged[merged.length - 1];
+        const gap = prev && prev.w ? c.x - (prev.x + prev.w) : Infinity;
+        const h = prev?.h || 10;
+        if (prev && gap < 0.45 * h && gap > -0.5 * h) {
+          prev.s = gap > 0.12 * h ? `${prev.s} ${c.s}` : prev.s + c.s;
+          prev.w = c.x + (c.w || 0) - prev.x;
+        } else merged.push({ ...c });
+      }
+      r.cells = merged;
+      r.text = r.cells.map(c => c.s).join(' ');
+    });
     pages.push(rows);
     return '';
   };
@@ -115,179 +130,264 @@ function toIsoDate(s: string): string | null {
   return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
 }
 
+// Label variants seen on PFs (English / Turkish, different templates)
+const L = {
+  code: /ITEM\s*CODE|ITEM\s*NO|PRODUCT\s*CODE|^CODE$|^KOD|[ÜU]R[ÜU]N\s*KOD|STOK\s*KOD/i,
+  desc: /DESCRIPTION|^DESC\.?$|A[ÇC]IKLAMA|[ÜU]R[ÜU]N\s*ADI/i,
+  qty: /QUANTITY|^QTY\.?$|^PCS\.?$|^ADET$|M[İI]KTAR/i,
+  price: /PRICE|F[İI]YAT|TUTAR|AMOUNT/i,
+  order: /ORDER\s*NO|PF\s*NO|PO\s*NO|S[İI]PAR[İI][ŞS]\s*NO/i,
+  date: /^(DATE|TAR[İI]H):?$/i,
+  supplier: /SUPPLIER|TEDAR[İI]K[ÇC][İI]|^VENDOR/i,
+  project: /PROJECT\s*(NUMBER|NO)|PROJE\s*NO/i,
+  tableEnd: /^\s*(TOTAL|TOPLAM)\b|PRODUCTION MANAGER|PAYMENT TERMS|SIGNATURE|[İI]MZA/i,
+};
+
 export async function parsePfPdf(buffer: Buffer): Promise<ParsedPf> {
-  const pages = await readRows(buffer);
   const out: ParsedPf = {
     stockCode: null, pfCode: null, supplierName: null, vendorCodeHint: null, pfDate: null,
     type: null, currency: 'USD', totalPrice: null, paymentRule: null, products: [], warnings: [],
   };
 
+  // Every part is read on its own: if one fails, the rest still comes through.
+  const attempt = (what: string, fn: () => void) => {
+    try { fn(); } catch { out.warnings.push(`Couldn't read ${what} — check it on the preview.`); }
+  };
+
+  let pages: Row[][] = [];
+  try {
+    pages = await readRows(buffer);
+  } catch {
+    out.warnings.push('This PDF could not be read (damaged or password-protected) — fill the fields by hand.');
+    return out;
+  }
+  if (!pages.some(p => p.length)) {
+    out.warnings.push('No text found in this PDF (scanned image?) — fill the fields by hand.');
+    return out;
+  }
+
   const isFormTitle = (t: string) => /PRODUCTION FORM/i.test(t);
   let formIdx = pages.findIndex(p => p.some(r => isFormTitle(r.text)));
-  if (formIdx < 0) formIdx = pages.findIndex(p => p.some(r => /ORDER NO/i.test(r.text)) && p.some(r => /ITEM CODE/i.test(r.text)));
-  if (formIdx < 0) {
-    out.warnings.push('Trust Lines "Production Form" page not found — fill the fields by hand.');
-  }
+  if (formIdx < 0) formIdx = pages.findIndex(p => p.some(r => r.cells.some(c => L.order.test(c.s))) && p.some(r => r.cells.some(c => L.code.test(c.s))));
+  if (formIdx < 0) out.warnings.push('Trust Lines "Production Form" page not found — check the fields on the preview.');
   const form = formIdx >= 0 ? pages[formIdx] : [];
-  const rowIndex = (re: RegExp) => form.findIndex(r => re.test(r.text));
+  const rowIndex = (re: RegExp) => form.findIndex(r => r.cells.some(c => re.test(c.s)) || re.test(r.text));
+  const allText = pages.flat().map(r => r.text).join('\n');
 
-  // ── Form type (MILLWORK …): row right after the title, or any known type on the title rows
-  const titleIdx = rowIndex(/PRODUCTION FORM/i);
-  for (const r of form.slice(Math.max(0, titleIdx), titleIdx + 3)) {
-    const t = KNOWN_TYPES.find(k => r.text.toUpperCase().includes(k));
-    if (t) { out.type = t; break; }
-  }
+  // ── Form type (MILLWORK …)
+  attempt('the type', () => {
+    const titleIdx = rowIndex(/PRODUCTION FORM/i);
+    for (const r of form.slice(Math.max(0, titleIdx), Math.max(0, titleIdx) + 3)) {
+      const t = KNOWN_TYPES.find(k => r.text.toUpperCase().includes(k));
+      if (t) { out.type = t; break; }
+    }
+  });
 
-  // ── Supplier / ORDER NO / Date: header row, values in the next row under each label
-  const supIdx = rowIndex(/SUPPLIER INFO/i);
-  if (supIdx >= 0) {
-    const head = form[supIdx], next = form[supIdx + 1];
-    const orderHead = head.cells.find(c => /ORDER NO/i.test(c.s));
-    const dateHead = head.cells.find(c => /^DATE$/i.test(c.s));
-    const supHead = head.cells.find(c => /SUPPLIER/i.test(c.s));
-    if (supHead) out.supplierName = cellAt(next, supHead.x, 60)?.s || null;
-    if (orderHead) out.pfCode = cellAt(next, orderHead.x, 60)?.s || null;
-    if (dateHead) out.pfDate = toIsoDate(cellAt(next, dateHead.x, 60)?.s || '');
-  }
-  if (!out.pfDate) {
-    const any = form.map(r => toIsoDate(r.text)).find(Boolean);
-    if (any) out.pfDate = any;
-  }
+  // ── Supplier / ORDER NO / Date: a label row with the values underneath (or right next to the label)
+  attempt('supplier / order no / date', () => {
+    const valueFor = (re: RegExp, tol = 60): string | null => {
+      for (let i = 0; i < form.length; i++) {
+        const label = form[i].cells.find(c => re.test(c.s));
+        if (!label) continue;
+        const inline = label.s.replace(/^[^:]*:\s*/, '').trim();
+        if (label.s.includes(':') && inline && !re.test(inline)) return inline;  // "ORDER NO: X"
+        const below = cellAt(form[i + 1], label.x, tol)?.s;
+        if (below && !Object.values(L).some(l => l !== L.tableEnd && l.test(below))) return below;
+      }
+      return null;
+    };
+    out.supplierName = valueFor(L.supplier);
+    out.pfCode = valueFor(L.order);
+    out.pfDate = toIsoDate(valueFor(L.date) || '');
+  });
+  attempt('the PF code', () => {
+    if (out.pfCode && /^[A-Z0-9]+(-[A-Z0-9]+)+$/i.test(out.pfCode)) return;
+    // Fallback: anything shaped like a PF code, e.g. KYA-STOCK-TR-03-M01
+    const m = allText.match(/\b[A-Z]{2,8}-STOCK-[A-Z0-9-]+\b/) || allText.match(/\b[A-Z]{2,8}(?:-[A-Z0-9]+){2,}-[A-Z]\d{2}\b/);
+    if (m) out.pfCode = m[0];
+  });
+  if (!out.pfDate) attempt('the date', () => { out.pfDate = form.map(r => toIsoDate(r.text)).find(Boolean) || null; });
   if (out.pfCode) out.vendorCodeHint = out.pfCode.split('-')[0] || null;
 
-  // ── Stock code: row under "PROJECT NUMBER"
-  const projIdx = rowIndex(/PROJECT NUMBER/i);
-  if (projIdx >= 0) {
-    const label = form[projIdx].cells.find(c => /PROJECT NUMBER/i.test(c.s))!;
-    out.stockCode = cellAt(form[projIdx + 1], label.x, 40)?.s || form[projIdx + 1]?.cells[0]?.s || null;
-  }
-
-  // ── Product table(s): from each "ITEM CODE" header down to "TOTAL"
-  let category: string | null = null;
-  for (let i = 0; i < form.length; i++) {
-    const head = form[i];
-    const codeHead = head.cells.find(c => /ITEM CODE/i.test(c.s));
-    if (!codeHead) continue;
-    const descHead = head.cells.find(c => /DESCRIPTION/i.test(c.s));
-    const qtyHead = head.cells.find(c => /QUANTITY|QTY/i.test(c.s));
-    // Category = closest plain heading rows above the table (e.g. "CABINETRY", "INDUSTRIAL / CABINETS / MDF / BLACK")
-    const headings: string[] = [];
-    for (let k = i - 1; k >= 0 && headings.length < 2; k--) {
-      const t = form[k].text;
-      if (/STANDARD ITEMS|PROJECT|CLIENT|SUPPLIER|ORDER NO/i.test(t)) break;
-      if (form[k].cells.length === 1) headings.unshift(t);
+  // ── Stock code: under "PROJECT NUMBER"; fallback from the PF code (KYA-STOCK-TR-03-M01 → STOCK-TR-03)
+  attempt('the stock code', () => {
+    const projIdx = rowIndex(L.project);
+    if (projIdx >= 0) {
+      const label = form[projIdx].cells.find(c => L.project.test(c.s));
+      const v = label ? cellAt(form[projIdx + 1], label.x, 40)?.s : form[projIdx + 1]?.cells[0]?.s;
+      if (v && /\d/.test(v)) out.stockCode = v.trim();
     }
-    if (headings.length) category = headings.join(' — ');
-
-    const body: Row[] = [];
-    for (let k = i + 1; k < form.length && !/^\s*TOTAL\b/i.test(form[k].text) && !form[k].cells.some(c => /^TOTAL$/i.test(c.s)); k++) {
-      if (form[k].cells.some(c => /ITEM CODE/i.test(c.s))) break;
-      body.push(form[k]);
+    if (!out.stockCode && out.pfCode) {
+      const m = out.pfCode.match(/(STOCK(?:-[A-Z0-9]+)*?)-[A-Z]\d{2}$/i) || out.pfCode.match(/STOCK-[A-Z0-9-]+/i);
+      if (m) out.stockCode = m[1] || m[0];
     }
-    const descX = descHead ? descHead.x : codeHead.x + 120;
-    const isCodeCell = (c: Cell) => c.x < Math.min(descX, codeHead.x + 80) - 20 && c.x >= codeHead.x - 40;
-    const isQtyCell = (c: Cell) => !!qtyHead && Math.abs(c.x - qtyHead.x) <= 30 && /^\d+([.,]\d+)?$/.test(c.s.trim());
-    const cells = body.flatMap(r => r.cells.map(c => ({ ...c, y: r.y })));
-    const qtyCells = cells.filter(isQtyCell);
+  });
 
-    // Items: one per quantity cell (fallback: one per row that starts with a code)
-    const anchors = qtyCells.length ? qtyCells.map(c => ({ y: c.y, qty: parseMoney(c.s) as number | null }))
-      : body.filter(r => r.cells.some(isCodeCell)).map(r => ({ y: r.y, qty: null as number | null }));
-    const parts = anchors.map(() => ({ code: [] as Cell[], desc: [] as Cell[] }));
-    for (const c of cells) {
-      if (isQtyCell(c)) continue;
-      let best = -1;
-      anchors.forEach((a, k) => { if (best < 0 || Math.abs(a.y - c.y) < Math.abs(anchors[best].y - c.y)) best = k; });
-      if (best < 0) continue;
-      (isCodeCell(c) ? parts[best].code : parts[best].desc).push(c);
-    }
-    anchors.forEach((a, k) => {
-      const byPos = (x: Cell[]) => [...x].sort((p, q) => q.y - p.y || p.x - q.x).map(c => c.s).join(' ');
-      const code = normalizeItemCode(byPos(parts[k].code));
-      if (!code) return;
-      out.products.push({
-        itemCode: code,
-        description: byPos(parts[k].desc).replace(/\s+/g, ' ').trim(),
-        category,
-        quantity: a.qty ?? 0,
-        unitPrice: null,
-        totalPrice: null,
-      });
-      if (a.qty == null) out.warnings.push(`Quantity not found for ${code}.`);
-    });
-  }
-  if (out.products.length === 0) out.warnings.push('No product lines found on the form.');
-
-  // ── Payment rule: "50% advance" / "%50 sözleşmede"
-  const allText = pages.flat().map(r => r.text).join('\n');
-  const pay = allText.match(/(\d{1,3})\s*%\s*(?:advance|pe[sş]in|deposit)/i)
-    || allText.match(/%\s*(\d{1,3})\s*(?:s[oö]zle[sş]me|pe[sş]in|advance)/i)
-    || allText.match(/(?:payment|[oö]deme)[^\n]*?%\s*(\d{1,3})/i)
-    || allText.match(/(?:payment|[oö]deme)[^\n]*?(\d{1,3})\s*%/i);
-  if (pay) out.paymentRule = pay[1];
-
-  // ── Currency
-  if (/\bEUR\b|€/.test(allText)) out.currency = 'EUR';
-  if (/\bUSD\b|\$/.test(allText)) out.currency = 'USD';
-  else if (/\bTL\b|₺|\bTRY\b/.test(allText)) out.currency = 'TL';
-
-  // ── Prices from the quote pages: rows where qty × unit ≈ total
-  const used = new Set<number>();
-  const quoteRows = pages.filter((_, i) => i !== formIdx).flat();
-  for (const r of quoteRows) {
-    const nums = r.cells.flatMap(c => c.s.split(/\s{2,}|\s(?=\$)|(?<=\$)\s/))
-      .map(s => s.trim()).filter(s => /\d/.test(s))
-      .flatMap(s => (/^\d+(\.\d+)?(\s+\d+(\.\d+)?)+$/.test(s) ? s.split(/\s+/) : [s]))
-      .map(parseMoney).filter((n): n is number => n != null && n > 0);
-    if (nums.length < 3) continue;
-    let matched = false;
-    for (let pi = 0; pi < out.products.length && !matched; pi++) {
-      if (used.has(pi)) continue;
-      const q = out.products[pi].quantity;
-      if (!q || !nums.includes(q)) continue;
-      for (const u of nums) {
-        if (u === q) continue;
-        const t = nums.find(n => n !== u && Math.abs(n - u * q) < 0.01 * Math.max(1, n));
-        if (t != null) {
-          out.products[pi].unitPrice = u;
-          out.products[pi].totalPrice = t;
-          used.add(pi);
-          matched = true;
-          break;
+  // ── Product tables: form pages (and continuation pages) — any page whose header row has
+  //    a code column and a quantity column but no price column (price columns = vendor quote).
+  const tablePages = pages
+    .map((rows, idx) => ({ rows, idx }))
+    .filter(({ rows, idx }) => idx === formIdx || rows.some(r => isFormTitle(r.text))
+      || rows.some(r => r.cells.some(c => L.code.test(c.s)) && r.cells.some(c => L.qty.test(c.s)) && !r.cells.some(c => L.price.test(c.s))));
+  const skipped: string[] = [];
+  for (const { rows } of tablePages) {
+    let category: string | null = null;
+    for (let i = 0; i < rows.length; i++) {
+      const head = rows[i];
+      const codeHead = head.cells.find(c => L.code.test(c.s));
+      const qtyHead = head.cells.find(c => L.qty.test(c.s));
+      if (!codeHead || head.cells.some(c => L.price.test(c.s))) continue;
+      try {
+        const descHead = head.cells.find(c => L.desc.test(c.s));
+        // Category = plain heading rows right above the table ("CABINETRY", "INDUSTRIAL / CABINETS / MDF / BLACK")
+        const headings: string[] = [];
+        for (let k = i - 1; k >= 0 && headings.length < 2; k--) {
+          const t = rows[k].text;
+          if (/STANDARD ITEMS|PROJECT|CLIENT|SUPPLIER|ORDER NO/i.test(t) || rows[k].cells.some(c => L.code.test(c.s))) break;
+          if (rows[k].cells.length === 1) headings.unshift(t);
         }
+        if (headings.length) category = headings.join(' — ');
+
+        const body: Row[] = [];
+        for (let k = i + 1; k < rows.length; k++) {
+          if (L.tableEnd.test(rows[k].text) || rows[k].cells.some(c => /^(TOTAL|TOPLAM)$/i.test(c.s))) break;
+          if (rows[k].cells.some(c => L.code.test(c.s))) break; // next table
+          body.push(rows[k]);
+        }
+
+        const descX = descHead ? descHead.x : codeHead.x + 120;
+        const isCodeCell = (c: Cell) => c.x < Math.min(descX, codeHead.x + 80) - 20 && c.x >= codeHead.x - 40;
+        const isQtyCell = (c: Cell) => !!qtyHead && Math.abs(c.x - qtyHead.x) <= 30 && /^\d+([.,]\d+)?$/.test(c.s.trim());
+        const cells = body.flatMap(r => r.cells.map(c => ({ ...c, y: r.y })));
+        const qtyCells = cells.filter(isQtyCell);
+
+        // One item per quantity cell — code and description pieces go to the nearest quantity
+        // (an item may span several text rows). Without a quantity column: one per code row.
+        const anchors = qtyCells.length
+          ? qtyCells.map(c => ({ y: c.y, qty: parseMoney(c.s) }))
+          : body.filter(r => r.cells.some(isCodeCell)).map(r => ({ y: r.y, qty: null as number | null }));
+        const parts = anchors.map(() => ({ code: [] as Cell[], desc: [] as Cell[] }));
+        // A piece belongs to an item only if it lies within that item's band (≈ half the row spacing),
+        // so a line whose quantity can't be read doesn't borrow the neighbour's quantity.
+        const ys = anchors.map(a => a.y).sort((p, q) => q - p);
+        const gaps = ys.slice(1).map((y, k) => ys[k] - y).sort((p, q) => p - q);
+        const band = gaps.length ? Math.max(6, gaps[Math.floor(gaps.length / 2)] * 0.45) : Infinity;
+        const orphanCodes: Cell[] = [];
+        for (const c of cells) {
+          if (isQtyCell(c) || !anchors.length) continue;
+          let best = 0;
+          anchors.forEach((a, k) => { if (Math.abs(a.y - c.y) < Math.abs(anchors[best].y - c.y)) best = k; });
+          if (Math.abs(anchors[best].y - c.y) > band) { if (isCodeCell(c)) orphanCodes.push(c); continue; }
+          (isCodeCell(c) ? parts[best].code : parts[best].desc).push(c);
+        }
+        // Codes with no quantity next to them are reported as skipped (lines close together = one code)
+        orphanCodes.sort((p, q) => q.y - p.y).reduce<Cell[][]>((groups, c) => {
+          const g = groups[groups.length - 1];
+          if (g && Math.abs(g[g.length - 1].y - c.y) <= band) g.push(c); else groups.push([c]);
+          return groups;
+        }, []).forEach(g => skipped.push(`${normalizeItemCode(g.map(c => c.s).join(' '))} — quantity not readable`));
+
+        anchors.forEach((a, k) => {
+          // A line that can't be read is skipped; the next one is still read
+          try {
+            const byPos = (x: Cell[]) => [...x].sort((p, q) => q.y - p.y || p.x - q.x).map(c => c.s).join(' ');
+            const code = normalizeItemCode(byPos(parts[k].code));
+            const description = byPos(parts[k].desc).replace(/\s+/g, ' ').trim();
+            if (!code) { skipped.push(`quantity ${a.qty ?? '?'}${description ? ` (${description.slice(0, 40)}…)` : ''} — no item code`); return; }
+            if (a.qty == null || !Number.isFinite(a.qty) || a.qty <= 0) { skipped.push(`${code} — quantity not readable`); return; }
+            out.products.push({ itemCode: code, description, category, quantity: a.qty, unitPrice: null, totalPrice: null });
+          } catch {
+            skipped.push(`a line near the top-${Math.round(a.y)} mark`);
+          }
+        });
+      } catch {
+        out.warnings.push('Part of a product table could not be read — check the lines on the preview.');
       }
     }
   }
+  if (skipped.length) out.warnings.push(`Skipped ${skipped.length} line(s) that couldn't be read: ${skipped.join('; ')}.`);
+  if (out.products.length === 0) out.warnings.push('No product lines found — add them on the preview.');
+
+  // ── Payment rule: "50% advance" / "%50 sözleşmede"
+  attempt('the payment rule', () => {
+    const pay = allText.match(/(\d{1,3})\s*%\s*(?:advance|pe[sş]in|deposit)/i)
+      || allText.match(/%\s*(\d{1,3})\s*(?:s[oö]zle[sş]me|pe[sş]in|advance)/i)
+      || allText.match(/(?:payment|[oö]deme)[^\n]*?%\s*(\d{1,3})/i)
+      || allText.match(/(?:payment|[oö]deme)[^\n]*?(\d{1,3})\s*%/i);
+    if (pay) out.paymentRule = pay[1];
+  });
+
+  // ── Currency
+  attempt('the currency', () => {
+    if (/\bEUR\b|€/.test(allText)) out.currency = 'EUR';
+    if (/\bUSD\b|\$/.test(allText)) out.currency = 'USD';
+    else if (/\bTL\b|₺|\bTRY\b/.test(allText)) out.currency = 'TL';
+  });
+
+  // ── Prices from the other pages (vendor quote): rows where qty × unit ≈ total
+  const tableIdx = new Set(tablePages.map(t => t.idx));
+  const quoteRows = pages.filter((_, i) => !tableIdx.has(i)).flat();
+  const used = new Set<number>();
+  for (const r of quoteRows) {
+    try {
+      const nums = r.cells.flatMap(c => c.s.split(/\s{2,}|\s(?=\$)|(?<=\$)\s/))
+        .map(s => s.trim()).filter(s => /\d/.test(s))
+        .flatMap(s => (/^\d+(\.\d+)?(\s+\d+(\.\d+)?)+$/.test(s) ? s.split(/\s+/) : [s]))
+        .map(parseMoney).filter((n): n is number => n != null && n > 0);
+      if (nums.length < 3) continue;
+      let matched = false;
+      for (let pi = 0; pi < out.products.length && !matched; pi++) {
+        if (used.has(pi)) continue;
+        const q = out.products[pi].quantity;
+        if (!q || !nums.includes(q)) continue;
+        for (const u of nums) {
+          if (u === q) continue;
+          const t = nums.find(n => n !== u && Math.abs(n - u * q) < 0.01 * Math.max(1, n));
+          if (t != null) {
+            out.products[pi].unitPrice = u;
+            out.products[pi].totalPrice = t;
+            used.add(pi);
+            matched = true;
+            break;
+          }
+        }
+      }
+    } catch { /* an unreadable quote row is skipped */ }
+  }
   const unpriced = out.products.filter(p => p.unitPrice == null);
-  if (unpriced.length && unpriced.length === out.products.length) {
-    out.warnings.push('No vendor price quote in this PDF — enter the unit prices on the preview.');
+  if (out.products.length && unpriced.length === out.products.length) {
+    out.warnings.push('No vendor prices found in this PDF — enter the unit prices on the preview.');
   } else {
     for (const p of unpriced) out.warnings.push(`Price not found for ${p.itemCode} — enter it on the preview.`);
   }
 
   // Cross-check: the quantities read must add up to the form's TOTAL
-  const totalRow = form.find(r => r.cells.some(c => /^TOTAL$/i.test(c.s)));
-  const formTotal = totalRow?.cells.map(c => parseMoney(c.s)).find((v): v is number => v != null && v > 0);
-  const qtySum = out.products.reduce((sum, p) => sum + p.quantity, 0);
-  if (formTotal != null && out.products.length && Math.abs(formTotal - qtySum) > 0.001) {
-    out.warnings.push(`Quantities read add up to ${qtySum}, but the form's TOTAL is ${formTotal} — check the lines.`);
-  }
+  attempt('the form total', () => {
+    const totalRow = form.find(r => r.cells.some(c => /^(TOTAL|TOPLAM)$/i.test(c.s)));
+    const formTotal = totalRow?.cells.map(c => parseMoney(c.s)).find((v): v is number => v != null && v > 0);
+    const qtySum = out.products.reduce((sum, p) => sum + p.quantity, 0);
+    if (formTotal != null && out.products.length && Math.abs(formTotal - qtySum) > 0.001) {
+      out.warnings.push(`Quantities read add up to ${qtySum}, but the form's TOTAL is ${formTotal} — check the lines.`);
+    }
+  });
 
   // ── Grand total: "TOTAL PRICE … 39.000.00" on a quote page, else sum of lines
-  for (let i = 0; i < quoteRows.length; i++) {
-    if (!/TOTAL/i.test(quoteRows[i].text)) continue;
-    const candidates = [quoteRows[i], quoteRows[i + 1], quoteRows[i - 1]].filter(Boolean) as Row[];
-    for (const r of candidates) {
-      const money = r.cells.map(c => parseMoney(c.s)).filter((n): n is number => n != null && n > 0);
-      const big = money.length ? Math.max(...money) : null;
-      if (big && big > (out.totalPrice ?? 0)) out.totalPrice = big;
+  attempt('the total price', () => {
+    for (let i = 0; i < quoteRows.length; i++) {
+      if (!/TOTAL|TOPLAM/i.test(quoteRows[i].text)) continue;
+      for (const r of [quoteRows[i], quoteRows[i + 1], quoteRows[i - 1]].filter(Boolean) as Row[]) {
+        const money = r.cells.map(c => parseMoney(c.s)).filter((n): n is number => n != null && n > 0);
+        const big = money.length ? Math.max(...money) : null;
+        if (big && big > (out.totalPrice ?? 0)) out.totalPrice = big;
+      }
     }
-  }
-  const sum = out.products.reduce((s, p) => s + (p.totalPrice ?? 0), 0);
-  if (sum > 0 && (!out.totalPrice || Math.abs(out.totalPrice - sum) > 0.01)) {
-    if (out.totalPrice) out.warnings.push(`Quote total ${out.totalPrice} differs from the sum of lines ${sum}; using the sum of lines.`);
-    out.totalPrice = sum;
-  }
+    const sum = out.products.reduce((s, p) => s + (p.totalPrice ?? 0), 0);
+    if (sum > 0 && (!out.totalPrice || Math.abs(out.totalPrice - sum) > 0.01)) {
+      if (out.totalPrice) out.warnings.push(`Quote total ${out.totalPrice} differs from the sum of lines ${sum}; using the sum of lines.`);
+      out.totalPrice = sum;
+    }
+    if (!sum && !out.products.some(p => p.totalPrice)) out.totalPrice = null;
+  });
 
   if (!out.pfCode) out.warnings.push('ORDER NO (PF code) not found.');
   if (!out.stockCode) out.warnings.push('PROJECT NUMBER (stock code) not found.');

@@ -362,14 +362,6 @@ export const STOCK_STATUS_STYLE: Record<StockStatus, { label: string; bg: string
   PENDING_VERIFICATION: { label: 'PENDING VERIFICATION', bg: '#e5e7eb', fg: '#374151' },
 };
 
-/** Cabinet family from the item code: "FA 40" → FA, "IN-FC-48/F12 BODY" → FC */
-export function productFamily(itemCode: string): string {
-  const tokens = itemCode.toUpperCase().split(/[^A-Z0-9]+/).filter(Boolean);
-  const firstNum = tokens.findIndex(t => /^d/.test(t));
-  const alpha = (firstNum < 0 ? tokens : tokens.slice(0, firstNum)).filter(t => /^[A-Z]+$/.test(t));
-  return alpha[alpha.length - 1] || tokens[0] || '?';
-}
-
 export async function removeStockUsage(id: string) {
   return json(await apiFetch(`${API_BASE}/usage/${id}`, { method: 'DELETE' }), 'Failed to remove usage');
 }

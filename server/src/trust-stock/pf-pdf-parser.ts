@@ -125,9 +125,16 @@ function cellAt(row: Row | undefined, x: number, tol = 40): Cell | undefined {
 }
 
 function toIsoDate(s: string): string | null {
-  const m = s.match(/(\d{1,2})[./-](\d{1,2})[./-](\d{4})/);
+  const m = s.match(/(\d{1,2})([./-])(\d{1,2})\2(\d{4})/);
   if (!m) return null;
-  return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  let a = +m[1], b = +m[3];
+  const y = +m[4];
+  // "." / "-" → day.month (Turkish); "/" → month/day (US Excel) unless that can't be a date
+  let day = a, month = b;
+  if (m[2] === '/' && a <= 12) { month = a; day = b; }
+  if (month > 12 && day <= 12) { [day, month] = [month, day]; }
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  return `${y}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
 // Label variants seen on PFs (English / Turkish, different templates)
@@ -136,6 +143,8 @@ const L = {
   desc: /DESCRIPTION|^DESC\.?$|A[ÇC]IKLAMA|[ÜU]R[ÜU]N\s*ADI/i,
   qty: /QUANTITY|^QTY\.?$|^PCS\.?$|^ADET$|M[İI]KTAR/i,
   price: /PRICE|F[İI]YAT|TUTAR|AMOUNT/i,
+  unitPrice: /^(UNIT\s*)?PRICE|B[İI]R[İI]M\s*F[İI]YAT|^F[İI]YAT/i,
+  lineTotal: /^(TOTAL|AMOUNT|TUTAR|TOPLAM)(\s*PRICE)?$/i,
   order: /ORDER\s*NO|PF\s*NO|PO\s*NO|S[İI]PAR[İI][ŞS]\s*NO/i,
   date: /^(DATE|TAR[İI]H):?$/i,
   supplier: /SUPPLIER|TEDAR[İI]K[ÇC][İI]|^VENDOR/i,
@@ -228,7 +237,7 @@ export async function parsePfPdf(buffer: Buffer): Promise<ParsedPf> {
   const tablePages = pages
     .map((rows, idx) => ({ rows, idx }))
     .filter(({ rows, idx }) => idx === formIdx || rows.some(r => isFormTitle(r.text))
-      || rows.some(r => r.cells.some(c => L.code.test(c.s)) && r.cells.some(c => L.qty.test(c.s)) && !r.cells.some(c => L.price.test(c.s))));
+      || rows.some(r => r.cells.some(c => L.code.test(c.s)) && r.cells.some(c => L.qty.test(c.s))));
   const skipped: string[] = [];
   for (const { rows } of tablePages) {
     let category: string | null = null;
@@ -236,7 +245,7 @@ export async function parsePfPdf(buffer: Buffer): Promise<ParsedPf> {
       const head = rows[i];
       const codeHead = head.cells.find(c => L.code.test(c.s));
       const qtyHead = head.cells.find(c => L.qty.test(c.s));
-      if (!codeHead || head.cells.some(c => L.price.test(c.s))) continue;
+      if (!codeHead || !qtyHead) continue;
       try {
         const descHead = head.cells.find(c => L.desc.test(c.s));
         // Category = plain heading rows right above the table ("CABINETRY", "INDUSTRIAL / CABINETS / MDF / BLACK")
@@ -244,18 +253,35 @@ export async function parsePfPdf(buffer: Buffer): Promise<ParsedPf> {
         for (let k = i - 1; k >= 0 && headings.length < 2; k--) {
           const t = rows[k].text;
           if (/STANDARD ITEMS|PROJECT|CLIENT|SUPPLIER|ORDER NO/i.test(t) || rows[k].cells.some(c => L.code.test(c.s))) break;
-          if (rows[k].cells.length === 1) headings.unshift(t);
+          const only = rows[k].cells.length === 1 ? rows[k].cells[0] : null;
+          if (only && /^\d+([.,]\d+)?$/.test(only.s.trim())) continue;               // stray number
+          if (!only || only.x >= codeHead.x - 5) break;                                // a product line — stop
+          if (/[A-Za-zÇĞİÖŞÜçğıöşü]{3,}/.test(t)) headings.unshift(t);
         }
         if (headings.length) category = headings.join(' — ');
 
         const body: Row[] = [];
+        let endedAtNextTable = false;
         for (let k = i + 1; k < rows.length; k++) {
+          if (rows[k].cells.some(c => L.code.test(c.s))) { endedAtNextTable = true; break; } // next table
           if (L.tableEnd.test(rows[k].text) || rows[k].cells.some(c => /^(TOTAL|TOPLAM)$/i.test(c.s))) break;
-          if (rows[k].cells.some(c => L.code.test(c.s))) break; // next table
           body.push(rows[k]);
+        }
+        if (endedAtNextTable) {
+          const qtyX = qtyHead.x;
+          while (body.length) {
+            const last = body[body.length - 1];
+            const only = last.cells.length === 1 ? last.cells[0] : null;
+            const heading = only && only.x < codeHead.x - 5;                                        // full-width section title
+            const stray = only && /^\d+([.,]\d+)?$/.test(only.s.trim()) && Math.abs(only.x - qtyX) > 30; // loose number
+            if (heading || stray) body.pop(); else break;
+          }
         }
 
         const descX = descHead ? descHead.x : codeHead.x + 120;
+        const unitHead = head.cells.find(c => c.x > qtyHead.x && L.unitPrice.test(c.s));
+        const totalHead = head.cells.find(c => c.x > qtyHead.x && c !== unitHead && L.lineTotal.test(c.s));
+        const inMoneyCol = (c: Cell) => [unitHead, totalHead].some(h => h && Math.abs(c.x - h.x) <= 45) || (!!unitHead && c.x > unitHead.x - 20);
         const isCodeCell = (c: Cell) => c.x < Math.min(descX, codeHead.x + 80) - 20 && c.x >= codeHead.x - 40;
         const isQtyCell = (c: Cell) => !!qtyHead && Math.abs(c.x - qtyHead.x) <= 30 && /^\d+([.,]\d+)?$/.test(c.s.trim());
         const cells = body.flatMap(r => r.cells.map(c => ({ ...c, y: r.y })));
@@ -266,18 +292,19 @@ export async function parsePfPdf(buffer: Buffer): Promise<ParsedPf> {
         const anchors = qtyCells.length
           ? qtyCells.map(c => ({ y: c.y, qty: parseMoney(c.s) }))
           : body.filter(r => r.cells.some(isCodeCell)).map(r => ({ y: r.y, qty: null as number | null }));
-        const parts = anchors.map(() => ({ code: [] as Cell[], desc: [] as Cell[] }));
+        const parts = anchors.map(() => ({ code: [] as Cell[], desc: [] as Cell[], money: [] as Cell[] }));
         // A piece belongs to an item only if it lies within that item's band (≈ half the row spacing),
         // so a line whose quantity can't be read doesn't borrow the neighbour's quantity.
         const ys = anchors.map(a => a.y).sort((p, q) => q - p);
         const gaps = ys.slice(1).map((y, k) => ys[k] - y).sort((p, q) => p - q);
-        const band = gaps.length ? Math.max(6, gaps[Math.floor(gaps.length / 2)] * 0.45) : Infinity;
+        const band = gaps.length ? Math.max(6, gaps[Math.floor(gaps.length / 2)] * 0.45) : 20;
         const orphanCodes: Cell[] = [];
         for (const c of cells) {
           if (isQtyCell(c) || !anchors.length) continue;
           let best = 0;
           anchors.forEach((a, k) => { if (Math.abs(a.y - c.y) < Math.abs(anchors[best].y - c.y)) best = k; });
           if (Math.abs(anchors[best].y - c.y) > band) { if (isCodeCell(c)) orphanCodes.push(c); continue; }
+          if (inMoneyCol(c)) { parts[best].money.push(c); continue; }
           (isCodeCell(c) ? parts[best].code : parts[best].desc).push(c);
         }
         // Codes with no quantity next to them are reported as skipped (lines close together = one code)
@@ -293,9 +320,18 @@ export async function parsePfPdf(buffer: Buffer): Promise<ParsedPf> {
             const byPos = (x: Cell[]) => [...x].sort((p, q) => q.y - p.y || p.x - q.x).map(c => c.s).join(' ');
             const code = normalizeItemCode(byPos(parts[k].code));
             const description = byPos(parts[k].desc).replace(/\s+/g, ' ').trim();
+            if (!code && !description) return; // stray number between tables, not a line
             if (!code) { skipped.push(`quantity ${a.qty ?? '?'}${description ? ` (${description.slice(0, 40)}…)` : ''} — no item code`); return; }
             if (a.qty == null || !Number.isFinite(a.qty) || a.qty <= 0) { skipped.push(`${code} — quantity not readable`); return; }
-            out.products.push({ itemCode: code, description, category, quantity: a.qty, unitPrice: null, totalPrice: null });
+            const moneyAt = (h?: Cell) => {
+              if (!h) return null;
+              const c = parts[k].money.filter(m => Math.abs(m.x - h.x) <= 45).sort((p, q) => Math.abs(p.x - h.x) - Math.abs(q.x - h.x))[0];
+              return c ? parseMoney(c.s) : null;
+            };
+            let unitPrice = moneyAt(unitHead), totalPrice = moneyAt(totalHead);
+            if (unitPrice == null && totalPrice != null) unitPrice = +(totalPrice / a.qty).toFixed(2);
+            if (totalPrice == null && unitPrice != null) totalPrice = +(unitPrice * a.qty).toFixed(2);
+            out.products.push({ itemCode: code, description, category, quantity: a.qty, unitPrice, totalPrice });
           } catch {
             skipped.push(`a line near the top-${Math.round(a.y)} mark`);
           }
@@ -337,7 +373,7 @@ export async function parsePfPdf(buffer: Buffer): Promise<ParsedPf> {
       if (nums.length < 3) continue;
       let matched = false;
       for (let pi = 0; pi < out.products.length && !matched; pi++) {
-        if (used.has(pi)) continue;
+        if (used.has(pi) || out.products[pi].unitPrice != null) continue;
         const q = out.products[pi].quantity;
         if (!q || !nums.includes(q)) continue;
         for (const u of nums) {

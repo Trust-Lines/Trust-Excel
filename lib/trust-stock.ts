@@ -281,6 +281,8 @@ export interface StockProduct {
   available: number | null;
   remainingPct: number | null;
   reorderThreshold: number | null;
+  /** suggested re-order (ordered − available) once at the reorder point; 0 otherwise */
+  reorderQty: number;
   status: StockStatus;
   /** what can still be taken/reserved (ordered qty is the cap until the receipt is confirmed) */
   takeable: number;

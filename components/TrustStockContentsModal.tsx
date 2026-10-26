@@ -101,7 +101,7 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
 
   const th: React.CSSProperties = { padding: '6px 6px', fontSize: 10.5, color: '#fff', background: '#1e293b', textAlign: 'center', fontWeight: 600, position: 'sticky', top: 0, zIndex: 1, lineHeight: 1.2 };
   const td: React.CSSProperties = { padding: '5px 6px', fontSize: 12, borderBottom: '1px solid #eef2f7', textAlign: 'center', verticalAlign: 'middle' };
-  const COLS = ['Stock Order', 'Item Code', 'Description', 'Dimensions', 'Ordered', 'Confirmed\nReceived', 'Taken', 'Returned', 'On Hand', 'Reserved', 'Available', 'Remaining %', 'Reorder at ≤', 'Status', 'Used by'];
+  const COLS = ['Stock Order', 'Item Code', 'Description', 'Dimensions', 'Ordered', 'Confirmed\nReceived', 'Taken', 'Returned', 'On Hand', 'Reserved', 'Available', 'Remaining %', 'Reorder at ≤', 'Order', 'Status', 'Used by'];
 
   return (
     <div onMouseDown={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', zIndex: readOnly ? 100001 : 20000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }}>
@@ -193,6 +193,10 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
                         <td style={{ ...td, fontWeight: 700 }}>{dash(p.available)}</td>
                         <td style={td}>{fmtPct(p.remainingPct)}</td>
                         <td style={td}>{dash(p.reorderThreshold)}</td>
+                        <td style={{ ...td, fontWeight: 800, color: p.reorderQty > 0 ? '#c2410c' : '#9ca3af', background: p.reorderQty > 0 ? '#fff7ed' : undefined }}
+                          title={p.reorderQty > 0 ? `Re-order ${p.reorderQty} to get back to the ordered ${p.ordered}` : 'Not at the reorder point'}>
+                          {p.reorderQty > 0 ? p.reorderQty : '—'}
+                        </td>
                         <td style={td}><span style={{ display: 'inline-block', padding: '3px 6px', borderRadius: 4, background: st.bg, color: st.fg, fontSize: 10, fontWeight: 700, lineHeight: 1.2 }}>{st.label}</span></td>
                         <td style={td}>
                           {p.usages.length === 0 ? <span style={{ color: '#9ca3af' }}>—</span> : (
@@ -216,7 +220,7 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
                           <td style={{ ...td, color: '#0369a1', fontWeight: 600 }}>{u.kind === 'RETURNED' ? u.quantity : ''}</td>
                           <td style={td} />
                           <td style={{ ...td, color: '#6d28d9', fontWeight: 600 }}>{u.kind === 'RESERVED' ? u.quantity : ''}</td>
-                          <td style={{ ...td, color: '#64748b' }} colSpan={5}>{fmtDate(u.createdAt)}</td>
+                          <td style={{ ...td, color: '#64748b' }} colSpan={6}>{fmtDate(u.createdAt)}</td>
                         </tr>
                       ))}
                     </React.Fragment>
@@ -235,7 +239,9 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
                     visible.reduce((s, p) => s + p.reserved, 0),
                     visible.reduce((s, p) => s + (p.available ?? 0), 0),
                   ].map((v, i) => <td key={i} style={{ ...td, background: '#facc15', fontWeight: 800 }}>{v}</td>)}
-                  <td colSpan={4} style={{ ...td, background: '#facc15' }} />
+                  <td colSpan={2} style={{ ...td, background: '#facc15' }} />
+                  <td style={{ ...td, background: '#facc15', fontWeight: 800, color: '#9a3412' }}>{visible.reduce((s, p) => s + p.reorderQty, 0) || '—'}</td>
+                  <td colSpan={2} style={{ ...td, background: '#facc15' }} />
                 </tr>
               </tfoot>
             </table>

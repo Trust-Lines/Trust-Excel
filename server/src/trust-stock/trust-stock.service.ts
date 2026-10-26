@@ -395,7 +395,9 @@ export class TrustStockService implements OnModuleInit {
     else status = 'HEALTHY';
     // What can still be handed out: before the warehouse receipt is confirmed, the ordered quantity is the cap
     const takeable = (received ?? ordered) - taken + returned - reserved;
-    return { ordered, received, taken, returned, netUsed: taken - returned, reserved, onHand, available, remainingPct, reorderThreshold, status, takeable };
+    // Suggested re-order once the reorder point is hit: what's missing to get back to the ordered quantity
+    const reorderQty = status === 'REORDER_NOW' || status === 'OUT_OF_STOCK' ? Math.max(0, ordered - (available as number)) : 0;
+    return { ordered, received, taken, returned, netUsed: taken - returned, reserved, onHand, available, remainingPct, reorderThreshold, reorderQty, status, takeable };
   }
 
   /** "( D=32.5"-W=40"-H=32.75")" at the end of a description → dimensions + clean description */

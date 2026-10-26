@@ -242,7 +242,7 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
           )}
         </div>
         <div style={{ padding: '6px 18px', fontSize: 11, color: '#64748b', borderTop: '1px solid #e5e7eb' }}>
-          Status per model, Remaining % = Available ÷ Confirmed Received: HEALTHY &gt; 40% · WATCH 25–40% · REORDER NOW ≤ 25% · OUT OF STOCK ≤ 0 · PENDING VERIFICATION = no warehouse receipt yet (enter it in “Confirmed Received”).
+          Status per model, Remaining % = Available ÷ Confirmed Received: HEALTHY &gt; 50% · WATCH 25–50% · REORDER NOW ≤ 25% · OUT OF STOCK ≤ 0 · PENDING VERIFICATION = no warehouse receipt yet (enter it in “Confirmed Received”).
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback, ReactNode } from 'react';
-import { removeToken, restoreSession, getCurrentUser, logout as apiLogout } from '../lib/auth';
+import { removeToken, restoreSession, getCurrentUser, logout as apiLogout, apiFetch } from '../lib/auth';
 
 interface User {
   id: string;
@@ -157,15 +157,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Check if user is logged in on app start with refresh token support
   useEffect(() => {
-    const initAuth = async () => {
+    // Is the API answering at all? (false while it is starting / restarting / unreachable)
+    const apiIsUp = async (): Promise<boolean> => {
       try {
-        // Attempt to restore session (will try refresh token if access token missing/expired)
-        const userData = await restoreSession();
-        applyAuthData(userData);
+        const res = await apiFetch('/api/health');
+        if (res.status < 500) return true;
+        // 503 from the API itself ("degraded": DB down) still means the API is running
+        return res.status === 503 && (await res.json().catch(() => ({})))?.status === 'degraded';
+      } catch {
+        return false;
+      }
+    };
 
-      } catch (error) {
-        // No valid session found, user will need to login
-        removeToken();
+    const initAuth = async () => {
+      // A failed restore only means "logged out" when the API is up. While it is starting or
+      // restarting (e.g. local dev after a code change) keep the session and try again.
+      for (let attempt = 0; ; attempt++) {
+        try {
+          // Attempt to restore session (will try refresh token if access token missing/expired)
+          const userData = await restoreSession();
+          applyAuthData(userData);
+          break;
+        } catch (error) {
+          if (attempt < 20 && !(await apiIsUp())) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            continue;
+          }
+          // No valid session found, user will need to login
+          removeToken();
+          break;
+        }
       }
 
       setIsLoading(false);

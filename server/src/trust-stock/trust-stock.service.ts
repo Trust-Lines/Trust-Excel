@@ -374,7 +374,7 @@ export class TrustStockService implements OnModuleInit {
   //   remaining% = available ÷ received
   //   reorder at ≤ ROUNDDOWN(25% × received)
   //   status     = PENDING VERIFICATION (no receipt) | OUT OF STOCK (≤ 0) | REORDER NOW (≤ 25%)
-  //                | WATCH (≤ 40%) | HEALTHY
+  //                | WATCH (≤ 50%) | HEALTHY (> 50%)
 
   private static stats(p: { quantity: any; receivedQuantity: any; usages: { kind: string; quantity: any; projectItemId?: string }[] }) {
     const sum = (kind: string) => p.usages.filter(u => u.kind === kind).reduce((s, u) => s + Number(u.quantity), 0);
@@ -391,7 +391,7 @@ export class TrustStockService implements OnModuleInit {
     if (received == null) status = 'PENDING_VERIFICATION';
     else if ((available as number) <= 0) status = 'OUT_OF_STOCK';
     else if ((remainingPct as number) <= 0.25) status = 'REORDER_NOW';
-    else if ((remainingPct as number) <= 0.4) status = 'WATCH';
+    else if ((remainingPct as number) <= 0.5) status = 'WATCH';
     else status = 'HEALTHY';
     // What can still be handed out: before the warehouse receipt is confirmed, the ordered quantity is the cap
     const takeable = (received ?? ordered) - taken + returned - reserved;

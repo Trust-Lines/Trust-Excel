@@ -462,6 +462,32 @@ export class TrustStockService implements OnModuleInit {
     });
   }
 
+  /**
+   * Every product ever entered (imported or typed), one per item code — offered as a
+   * dropdown when adding lines by hand. The most recent entry of a code wins.
+   */
+  async listCatalog() {
+    const rows = await this.prisma.trustStockProduct.findMany({
+      orderBy: { createdAt: 'desc' },
+      select: { itemCode: true, description: true, dimensions: true, category: true, unitPrice: true, currency: true },
+    });
+    const seen = new Map<string, any>();
+    for (const r of rows) {
+      const key = r.itemCode.trim().toUpperCase();
+      if (!key || seen.has(key)) continue;
+      const split = TrustStockService.splitDimensions(r.description, r.dimensions);
+      seen.set(key, {
+        itemCode: r.itemCode.trim(),
+        description: split.description,
+        dimensions: split.dimensions,
+        category: r.category,
+        unitPrice: r.unitPrice != null ? Number(r.unitPrice) : null,
+        currency: r.currency,
+      });
+    }
+    return [...seen.values()].sort((a, b) => a.itemCode.localeCompare(b.itemCode, undefined, { numeric: true }));
+  }
+
   async updateProduct(id: string, dto: UpdateStockProductDto, userId?: string) {
     const product = await this.prisma.trustStockProduct.findFirst({ where: { id, deletedAt: null, stockItem: { deletedAt: null, group: { deletedAt: null } } }, include: { usages: { where: LIVE_USAGE } } });
     if (!product) throw new NotFoundException('Stock product not found');
@@ -473,6 +499,13 @@ export class TrustStockService implements OnModuleInit {
       throw new BadRequestException(`${s.netUsed + s.reserved} already taken/reserved — received quantity can't go below that.`);
     }
     const data: any = { ...dto };
+    if (typeof data.itemCode === 'string') data.itemCode = data.itemCode.trim();
+    // Older rows keep their dimensions inside the description (shown split). When the description
+    // is edited, move those dimensions into their own field so they aren't lost.
+    if (dto.description !== undefined && dto.dimensions === undefined && !product.dimensions) {
+      const old = TrustStockService.splitDimensions(product.description);
+      if (old.dimensions) data.dimensions = old.dimensions;
+    }
     if (dto.receivedQuantity !== undefined) data.receivedAt = dto.receivedQuantity == null ? null : (product.receivedAt ?? new Date());
     const updated = await this.prisma.trustStockProduct.update({ where: { id }, data });
     this.events.emitToRooms(['trust-stock', 'projects'], 'trust-stock:usage-changed', { productId: id }, userId);

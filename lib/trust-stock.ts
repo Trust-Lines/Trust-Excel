@@ -377,3 +377,17 @@ export function isStockVendorCode(code?: string | null): boolean {
 export async function getStockPeople(): Promise<string[]> {
   return json(await apiFetch(`${API_BASE}/usage/people`), 'Failed to load names');
 }
+
+/** One remembered product (latest entry per item code) for the manual-entry dropdown. */
+export interface StockCatalogItem {
+  itemCode: string;
+  description: string;
+  dimensions: string | null;
+  category: string | null;
+  unitPrice: number | null;
+  currency: string;
+}
+
+export async function getStockCatalog(): Promise<StockCatalogItem[]> {
+  return json(await apiFetch(`${API_BASE}/catalog`), 'Failed to load product catalog');
+}

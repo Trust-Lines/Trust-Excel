@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { previewTrustStockPdf, importTrustStockPdf, PfPdfPreview, ParsedStockProduct } from '../lib/trust-stock';
+import { previewTrustStockPdf, importTrustStockPdf, getStockCatalog, PfPdfPreview, ParsedStockProduct, StockCatalogItem } from '../lib/trust-stock';
 import { getVendors, Vendor } from '../lib/projects';
 
 /**
@@ -32,6 +32,28 @@ const TrustStockPdfImportModal: React.FC<{ onClose: () => void; onImported: () =
   const [products, setProducts] = useState<ParsedStockProduct[]>([]);
 
   useEffect(() => { getVendors().then(setVendors).catch(() => {}); }, []);
+
+  // Every product entered before — typing an item code offers them; picking one fills the line
+  const [catalog, setCatalog] = useState<StockCatalogItem[]>([]);
+  useEffect(() => { getStockCatalog().then(setCatalog).catch(() => {}); }, []);
+  const catalogText = (c: StockCatalogItem) => (c.dimensions ? `${c.description} (${c.dimensions})` : c.description);
+  const setItemCode = (i: number, code: string) => {
+    const hit = catalog.find(c => c.itemCode.toUpperCase() === code.trim().toUpperCase());
+    setProducts(prev => prev.map((p, k) => {
+      if (k !== i) return p;
+      const next = { ...p, itemCode: code };
+      if (!hit) return next;
+      // Fill what's empty (or still the text a previous pick put there)
+      const prevHit = catalog.find(c => c.itemCode.toUpperCase() === p.itemCode.trim().toUpperCase());
+      if (!p.description.trim() || (prevHit && p.description === catalogText(prevHit))) next.description = catalogText(hit);
+      if (!p.category) next.category = hit.category;
+      if (p.unitPrice == null && hit.unitPrice != null) {
+        next.unitPrice = hit.unitPrice;
+        next.totalPrice = +(hit.unitPrice * (p.quantity || 0)).toFixed(2);
+      }
+      return next;
+    }));
+  };
 
   const read = async (f: File) => {
     setFile(f);
@@ -158,6 +180,9 @@ const TrustStockPdfImportModal: React.FC<{ onClose: () => void; onImported: () =
                 </div>
               </div>
 
+              <datalist id="trust-stock-catalog">
+                {catalog.map(c => <option key={c.itemCode} value={c.itemCode}>{catalogText(c)}{c.unitPrice != null ? ` · ${c.unitPrice}` : ''}</option>)}
+              </datalist>
               <div style={{ marginTop: 16, fontSize: 13, fontWeight: 700 }}>Products in this PF</div>
               <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 6 }}>
                 <thead>
@@ -170,7 +195,7 @@ const TrustStockPdfImportModal: React.FC<{ onClose: () => void; onImported: () =
                 <tbody>
                   {products.map((p, i) => (
                     <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                      <td style={{ padding: 4, width: 120 }}><input style={input} value={p.itemCode} onChange={e => setProduct(i, { itemCode: e.target.value })} /></td>
+                      <td style={{ padding: 4, width: 120 }}><input style={input} list="trust-stock-catalog" placeholder="Type to search…" value={p.itemCode} onChange={e => setItemCode(i, e.target.value)} /></td>
                       <td style={{ padding: 4 }}>
                         <textarea style={{ ...input, minHeight: 38, resize: 'vertical' }} value={p.description} onChange={e => setProduct(i, { description: e.target.value })} />
                         {p.category && <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>{p.category}</div>}

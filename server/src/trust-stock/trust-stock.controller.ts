@@ -90,6 +90,12 @@ export class TrustStockController {
     return this.service.listProducts();
   }
 
+  /** Product catalog (every item code entered so far) for the manual-entry dropdown */
+  @Get('catalog')
+  catalog() {
+    return this.service.listCatalog();
+  }
+
   @Patch('products/:id')
   updateProduct(@Param('id') id: string, @Body() dto: UpdateStockProductDto, @Request() req: any) {
     return this.service.updateProduct(id, dto, req.user?.id);

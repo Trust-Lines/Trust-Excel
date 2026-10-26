@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import {
-  getStockProducts, getAvailableStockProducts, openTrustStockPdf, updateStockProduct,
+  getStockProducts, getAvailableStockProducts, openTrustStockPdf, updateStockProduct, deleteStockProduct,
   StockProduct, StockStatus, STOCK_STATUS_STYLE,
 } from '../lib/trust-stock';
 import { useSocketEvent } from '../hooks/useSocketEvent';
@@ -17,14 +17,14 @@ const fmtDate = (s: string | null) => (s ? new Date(s).toLocaleDateString('en-GB
 
 const STATUS_FILTERS: (StockStatus | 'ALL')[] = ['ALL', 'HEALTHY', 'WATCH', 'REORDER_NOW', 'OUT_OF_STOCK', 'PENDING_VERIFICATION'];
 
-const ReceivedCell: React.FC<{ p: StockProduct; onError: (m: string) => void }> = ({ p, onError }) => {
+const ReceivedCell: React.FC<{ p: StockProduct; onError: (m: string) => void; onSaved: () => void }> = ({ p, onError, onSaved }) => {
   const [value, setValue] = useState(p.received == null ? '' : String(p.received));
   useEffect(() => { setValue(p.received == null ? '' : String(p.received)); }, [p.received]);
   const commit = async () => {
     const trimmed = value.trim();
     const next = trimmed === '' ? null : Number(trimmed.replace(',', '.'));
     if (next === p.received || (next != null && !Number.isFinite(next))) { setValue(p.received == null ? '' : String(p.received)); return; }
-    try { await updateStockProduct(p.id, { receivedQuantity: next }); }
+    try { await updateStockProduct(p.id, { receivedQuantity: next }); onSaved(); }
     catch (e) { onError(e instanceof Error ? e.message : 'Save failed'); setValue(p.received == null ? '' : String(p.received)); }
   };
   return (
@@ -41,6 +41,55 @@ const ReceivedCell: React.FC<{ p: StockProduct; onError: (m: string) => void }> 
   );
 };
 
+/** Click to edit; Enter / leaving the field saves, Esc cancels. */
+const EditCell: React.FC<{
+  value: string;
+  onSave: (v: string) => Promise<void>;
+  editable: boolean;
+  multiline?: boolean;
+  numeric?: boolean;
+  style?: React.CSSProperties;
+  placeholder?: string;
+}> = ({ value, onSave, editable, multiline, numeric, style, placeholder = '—' }) => {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const [saving, setSaving] = useState(false);
+  useEffect(() => { if (!editing) setDraft(value); }, [value, editing]);
+  if (!editable || !editing) {
+    return (
+      <span
+        onClick={() => editable && setEditing(true)}
+        title={editable ? 'Click to edit' : undefined}
+        style={{ cursor: editable ? 'text' : undefined, display: 'block', minHeight: 16, borderBottom: editable ? '1px dashed transparent' : undefined, ...style }}
+        onMouseEnter={e => { if (editable) e.currentTarget.style.borderBottomColor = '#94a3b8'; }}
+        onMouseLeave={e => { e.currentTarget.style.borderBottomColor = 'transparent'; }}
+      >
+        {value || <span style={{ color: '#cbd5e1' }}>{placeholder}</span>}
+      </span>
+    );
+  }
+  const commit = async () => {
+    if (saving) return;
+    if (draft.trim() === value.trim()) { setEditing(false); return; }
+    setSaving(true);
+    try { await onSave(draft.trim()); setEditing(false); }
+    finally { setSaving(false); }
+  };
+  const common = {
+    autoFocus: true,
+    value: draft,
+    disabled: saving,
+    onChange: (e: any) => setDraft(e.target.value),
+    onBlur: commit,
+    onKeyDown: (e: React.KeyboardEvent) => {
+      if (e.key === 'Escape') { setDraft(value); setEditing(false); }
+      if (e.key === 'Enter' && !(multiline && e.shiftKey)) { e.preventDefault(); commit(); }
+    },
+    style: { width: '100%', boxSizing: 'border-box' as const, padding: '3px 5px', border: '1px solid #0f766e', borderRadius: 4, fontSize: 12, fontFamily: 'inherit', textAlign: (numeric ? 'center' : 'left') as any },
+  };
+  return multiline ? <textarea rows={2} {...common} /> : <input inputMode={numeric ? 'decimal' : undefined} {...common} />;
+};
+
 /** readOnly: opened from a Projects row (Projects access) — figures only, no receipt editing */
 const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolean }> = ({ onClose, readOnly = false }) => {
   const [products, setProducts] = useState<StockProduct[]>([]);
@@ -50,6 +99,19 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
   const [statusFilter, setStatusFilter] = useState<StockStatus | 'ALL'>('ALL');
   const [orderFilter, setOrderFilter] = useState('');
   const [open, setOpen] = useState<Set<string>>(new Set());
+
+  // Edits from this table; reload afterwards (the live event isn't sent back to the editor)
+  const save = async (p: StockProduct, patch: Parameters<typeof updateStockProduct>[1]) => {
+    if ('itemCode' in patch && !patch.itemCode) { setError('Item code can\'t be empty'); throw new Error('empty'); }
+    if ('quantity' in patch && !(Number.isFinite(patch.quantity as number) && (patch.quantity as number) >= 0)) { setError('Enter a valid ordered quantity'); throw new Error('bad qty'); }
+    try { await updateStockProduct(p.id, patch); setError(null); await load(); }
+    catch (e) { setError(e instanceof Error ? e.message : 'Save failed'); throw e; }
+  };
+  const remove = async (p: StockProduct) => {
+    if (!window.confirm(`Remove ${p.itemCode} from ${p.stockItem.group.code}?`)) return;
+    try { await deleteStockProduct(p.id); setError(null); await load(); }
+    catch (e) { setError(e instanceof Error ? e.message : 'Remove failed'); }
+  };
 
   const load = useCallback(async () => {
     try { setProducts(await (readOnly ? getAvailableStockProducts() : getStockProducts())); }
@@ -181,11 +243,19 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
                       )}
                       <tr>
                         <td style={td}>{p.stockItem.group.code}</td>
-                        <td style={{ ...td, fontWeight: 700, color: '#15803d', whiteSpace: 'nowrap' }}>{p.itemCode}</td>
-                        <td style={{ ...td, textAlign: 'left', color: '#15803d', maxWidth: 280 }}>{p.description}</td>
-                        <td style={{ ...td, whiteSpace: 'nowrap' }}>{p.dimensions || '—'}</td>
-                        <td style={td}>{p.ordered}</td>
-                        <td style={td}>{readOnly ? dash(p.received) : <ReceivedCell p={p} onError={setError} />}</td>
+                        <td style={{ ...td, fontWeight: 700, color: '#15803d', whiteSpace: 'nowrap' }}>
+                          <EditCell editable={!readOnly} value={p.itemCode} onSave={v => save(p, { itemCode: v })} />
+                        </td>
+                        <td style={{ ...td, textAlign: 'left', color: '#15803d', maxWidth: 280 }}>
+                          <EditCell editable={!readOnly} multiline value={p.description} onSave={v => save(p, { description: v })} />
+                        </td>
+                        <td style={{ ...td, whiteSpace: 'nowrap' }}>
+                          <EditCell editable={!readOnly} value={p.dimensions || ''} onSave={v => save(p, { dimensions: v || null })} />
+                        </td>
+                        <td style={td}>
+                          <EditCell editable={!readOnly} numeric value={String(p.ordered)} onSave={v => save(p, { quantity: Number(v.replace(',', '.')) })} />
+                        </td>
+                        <td style={td}>{readOnly ? dash(p.received) : <ReceivedCell p={p} onError={setError} onSaved={load} />}</td>
                         <td style={td}>{p.taken}</td>
                         <td style={td}>{p.returned}</td>
                         <td style={{ ...td, fontWeight: 600 }}>{dash(p.onHand)}</td>
@@ -199,7 +269,9 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
                         </td>
                         <td style={td}><span style={{ display: 'inline-block', padding: '3px 6px', borderRadius: 4, background: st.bg, color: st.fg, fontSize: 10, fontWeight: 700, lineHeight: 1.2 }}>{st.label}</span></td>
                         <td style={td}>
-                          {p.usages.length === 0 ? <span style={{ color: '#9ca3af' }}>—</span> : (
+                          {p.usages.length === 0 ? (readOnly ? <span style={{ color: '#9ca3af' }}>—</span> : (
+                            <button onClick={() => remove(p)} title="Remove this product (only possible while no project uses it)" style={{ border: 'none', background: 'none', color: '#dc2626', cursor: 'pointer', fontSize: 11, padding: 0 }}>Remove</button>
+                          )) : (
                             <button onClick={() => toggle(p.id)} style={{ border: 'none', background: 'none', color: '#0f766e', cursor: 'pointer', fontSize: 12, padding: 0, whiteSpace: 'nowrap' }}>
                               {isOpen ? '▾' : '▸'} {new Set(p.usages.map(u => u.projectNo)).size} project(s)
                             </button>

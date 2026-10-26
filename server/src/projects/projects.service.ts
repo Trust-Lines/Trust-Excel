@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { applyStatusDateAutomation } from '../common/helpers/status-date-automation';
+import { isFurnitureOrderType } from '../common/helpers/fixed-millwork-codes';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { CreateProjectItemDto } from './dto/create-project-item.dto';
@@ -931,7 +932,9 @@ export class ProjectsService {
       const effectiveType = updateItemDto.type !== undefined ? updateItemDto.type : existingItem.type;
       if (effectiveType === 'MILLWORK') {
         const vendor = await this.prismaService.vendor.findUnique({ where: { id: effectiveVendorId }, select: { fixedMillworkCodes: true } });
-        orderTypeTrigger = !!vendor?.fixedMillworkCodes;
+        // Fixed-code vendors depend on the order type; for everyone, FURNITURE switches M ↔ F
+        orderTypeTrigger = !!vendor?.fixedMillworkCodes
+          || isFurnitureOrderType(existingItem.orderType) !== isFurnitureOrderType(updateItemDto.orderType);
       }
     }
 

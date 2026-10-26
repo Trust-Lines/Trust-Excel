@@ -3,7 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { VendorsService } from '../../vendors/vendors.service';
 import { CustomTypesService } from '../../custom-types/custom-types.service';
 import { ProjectItemType } from '@prisma/client';
-import { reservedMillworkIndex, nextOpenMillworkIndex, formatIndex } from '../../common/helpers/fixed-millwork-codes';
+import { reservedMillworkIndex, nextOpenMillworkIndex, formatIndex, isFurnitureOrderType } from '../../common/helpers/fixed-millwork-codes';
 
 interface ItemTypeInfo {
   enumType?: ProjectItemType;
@@ -51,13 +51,15 @@ export class DirectOrderPfCodeGenerationService {
       const formattedProjectNo = cleanProjectNo.startsWith('DO') ? `P${cleanProjectNo}` : `PDO${cleanProjectNo}`;
 
       // Get type short code
-      const typeShort = await this.getTypeShortCode(itemTypeInfo);
+      // Millwork + FURNITURE order type → furniture letter (F); otherwise the type's own letter
+      const millworkFurniture = itemTypeInfo.enumType === ProjectItemType.MILLWORK && isFurnitureOrderType(orderType);
+      const typeShort = millworkFurniture ? 'F' : await this.getTypeShortCode(itemTypeInfo);
 
       // Find highest sequence number for this combination
       const pfCodePrefix = `${vendor.code}-${formattedProjectNo}-${typeShort}`;
 
       // Fixed-code vendors (GOS/TDR/YSM) + MILLWORK: M01–M03 reserved, the rest from M04
-      if (vendor.fixedMillworkCodes && itemTypeInfo.enumType === ProjectItemType.MILLWORK) {
+      if (vendor.fixedMillworkCodes && itemTypeInfo.enumType === ProjectItemType.MILLWORK && !millworkFurniture) {
         const reserved = reservedMillworkIndex(orderType);
         if (reserved) return `${pfCodePrefix}${formatIndex(reserved)}`;
         const siblings = await prisma.directOrderItem.findMany({

@@ -1,6 +1,6 @@
 // Projects API helper
 import { apiFetch } from './auth';
-import { extractPFSequence, getVendorPriority } from '../types';
+import { sortItemsForDisplay } from '../types';
 import { getProjectColor } from './projectColor';
 import { sanitizeProjectItemPayload } from './sanitizePayload';
 
@@ -647,29 +647,7 @@ export const mapBackendProjectToFrontend = (backendProject: BackendProject): Api
   const projectNumberColor = getProjectColor(backendProject);
 
   // CRITICAL: Apply YSM + PF sorting to backend items before mapping to rows
-  const sortedBackendItems = (backendProject.items || []).slice() // Copy to avoid mutation
-    .sort((a, b) => {
-      // First: Group by type (maintain type order)
-      const typeOrder = ['MILLWORK', 'SHELVING', 'CEILING', 'IMAGE', 'FURNITURE'];
-      const aTypeIndex = typeOrder.indexOf(a.type || '');
-      const bTypeIndex = typeOrder.indexOf(b.type || '');
-      if (aTypeIndex !== bTypeIndex) {
-        return aTypeIndex - bTypeIndex;
-      }
-
-      // Within same type: priority vendors first (YSM=0, GOS=1, others=2)
-      const aPri = getVendorPriority(a);
-      const bPri = getVendorPriority(b);
-      if (aPri !== bPri) return aPri - bPri;
-
-      // PF sequence within same priority vendor
-      if (aPri < 2) {
-        return extractPFSequence(a.pfCode) - extractPFSequence(b.pfCode);
-      }
-
-      // Others: vendor name alphabetical
-      return (a.vendor?.name || '').localeCompare(b.vendor?.name || '');
-    });
+  const sortedBackendItems = sortItemsForDisplay(backendProject.items || []);
 
   // Map sorted line items to rows
   const rows: ApiRow[] = sortedBackendItems.map(item => ({

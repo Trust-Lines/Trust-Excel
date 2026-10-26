@@ -23,7 +23,7 @@ import { ProjectScopeService } from '../permissions/services/project-scope.servi
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { SupplierTotalsService } from '../supplier-totals/supplier-totals.service';
 import { EventsGateway } from '../events/events.gateway';
-import { reservedMillworkIndex, nextOpenMillworkIndex, formatIndex } from '../common/helpers/fixed-millwork-codes';
+import { reservedMillworkIndex, nextOpenMillworkIndex, formatIndex, isFurnitureOrderType } from '../common/helpers/fixed-millwork-codes';
 
 @Injectable()
 export class MissingExtraService {
@@ -976,11 +976,13 @@ export class MissingExtraService {
       'FURNITURE': 'F',
     };
 
-    const typeLetter = typeLetters[type] || 'X';
+    const millworkFurniture = type === 'MILLWORK' && isFurnitureOrderType(orderType);
+    // Millwork + FURNITURE order type → furniture letter (F)
+    const typeLetter = millworkFurniture ? 'F' : (typeLetters[type] || 'X');
 
     // YSM/GOS vendor + MILLWORK type: fixed index based on orderType
     // Fixed-code vendors (GOS/TDR/YSM) + MILLWORK: M01–M03 reserved, the rest from M04
-    if (vendor.fixedMillworkCodes && type === 'MILLWORK') {
+    if (vendor.fixedMillworkCodes && type === 'MILLWORK' && !millworkFurniture) {
       const reserved = reservedMillworkIndex(orderType);
       if (reserved) return `${vendor.code}-${derivedProjectCode}-${typeLetter}${formatIndex(reserved)}`;
       const siblings = await this.prismaService.missingExtraItem.findMany({
@@ -996,7 +998,8 @@ export class MissingExtraService {
         case: {
           derivedProjectCode: derivedProjectCode,
         },
-        type: type as any,
+        // F numbers are shared by Furniture rows and Millwork-as-furniture rows
+        type: (millworkFurniture ? { in: ['MILLWORK', 'FURNITURE'] } : type) as any,
         vendorId: vendorId,
       },
       orderBy: {

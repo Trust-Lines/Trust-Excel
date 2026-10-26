@@ -10,7 +10,7 @@ import { useSocket } from '../contexts/SocketContext';
 import { useSocketEvent } from '../hooks/useSocketEvent';
 import { getExpensesPProjects, mapExpensesPToProject, mapExpensesPItemToBackendItem, createExpensesPProject, createExpensesPItem, deleteExpensesPProject } from '../lib/expenses-p';
 import { apiFetch } from '../lib/auth';
-import { TYPE_ORDER, extractPFSequence, getVendorPriority } from '../types';
+import { sortItemsForDisplay } from '../types';
 import type { ExpensesPProject } from '../types/expensesP';
 import type { Project } from '../types';
 import type { BackendProjectItem } from '../lib/projects';
@@ -296,19 +296,7 @@ const ExpensesP: React.FC = () => {
 
   // Derive reactive items per project from globalItemsById, sorted to match ProjectBlock's order
   const getReactiveItems = useCallback((backendItems: BackendProjectItem[]) => {
-    const typeOrder = TYPE_ORDER.map(t => t.toUpperCase());
-    return backendItems
-      .map(item => globalItemsById.get(item.id) || item)
-      .sort((a, b) => {
-        const aTypeIndex = typeOrder.indexOf(a.type || '');
-        const bTypeIndex = typeOrder.indexOf(b.type || '');
-        if (aTypeIndex !== bTypeIndex) return aTypeIndex - bTypeIndex;
-        const aPri = getVendorPriority(a);
-        const bPri = getVendorPriority(b);
-        if (aPri !== bPri) return aPri - bPri;
-        if (aPri < 2) return extractPFSequence(a.pfCode) - extractPFSequence(b.pfCode);
-        return (a.vendor?.name || '').localeCompare(b.vendor?.name || '');
-      });
+    return sortItemsForDisplay(backendItems.map(item => globalItemsById.get(item.id) || item));
   }, [globalItemsById]);
 
   // Viewport → bottom bar sync

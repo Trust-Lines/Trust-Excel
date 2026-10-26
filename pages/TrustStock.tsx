@@ -12,7 +12,7 @@ import {
   getTrustStockGroups, createTrustStockGroup, deleteTrustStockGroup, createTrustStockItem,
   mapTrustStockGroupToProject, mapTrustStockItemToBackendItem, TrustStockGroup,
 } from '../lib/trust-stock';
-import { TYPE_ORDER, extractPFSequence, getVendorPriority } from '../types';
+import { sortItemsForDisplay } from '../types';
 import type { Project } from '../types';
 import type { BackendProjectItem } from '../lib/projects';
 
@@ -144,17 +144,7 @@ const TrustStock: React.FC = () => {
 
   // Same row order as the Projects table
   const getReactiveItems = useCallback((backendItems: BackendProjectItem[]) => {
-    const typeOrder = TYPE_ORDER.map(t => t.toUpperCase());
-    return backendItems
-      .map(item => globalItemsById.get(item.id) || item)
-      .sort((a, b) => {
-        const at = typeOrder.indexOf(a.type || ''), bt = typeOrder.indexOf(b.type || '');
-        if (at !== bt) return at - bt;
-        const ap = getVendorPriority(a), bp = getVendorPriority(b);
-        if (ap !== bp) return ap - bp;
-        if (ap < 2) return extractPFSequence(a.pfCode) - extractPFSequence(b.pfCode);
-        return (a.vendor?.name || '').localeCompare(b.vendor?.name || '');
-      });
+    return sortItemsForDisplay(backendItems.map(item => globalItemsById.get(item.id) || item));
   }, [globalItemsById]);
 
   const visibleGroups = useMemo(() => {

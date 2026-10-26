@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Project, TYPE_ORDER, ProjectType, TypeGroup, createItemsMap, sortProjectItemsInTypeGroup, extractPFSequence, getVendorPriority } from '../types';
+import { Project, TYPE_ORDER, ProjectType, TypeGroup, createItemsMap, sortProjectItemsInTypeGroup, sortItemsForDisplay } from '../types';
 import { ROW_HEIGHT, TOTAL_ROW_HEIGHT } from '../constants';
 import ProjectHeader from './ProjectHeader';
 import SectionSeparator from './SectionSeparator';
@@ -626,31 +626,8 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
       ? Array.from(itemsById.values()).filter(item => filteredRowIds.has(item.id))
       : Array.from(itemsById.values()); // supplier P mode: project.rows is empty, show all
 
-    // Sort items using the same logic as mapBackendProjectToFrontend
-    const sortedItems = baseItems.sort((a, b) => {
-      // First: Group by type (maintain type order) - use same order as types.ts
-      const typeOrder = TYPE_ORDER.map(t => t.toUpperCase());
-      const aTypeIndex = typeOrder.indexOf(a.type || '');
-      const bTypeIndex = typeOrder.indexOf(b.type || '');
-      if (aTypeIndex !== bTypeIndex) {
-        return aTypeIndex - bTypeIndex;
-      }
-
-      // Phase 2: Priority vendors on top (YSM=0, GOS=1, others=2)
-      const aPri = getVendorPriority(a);
-      const bPri = getVendorPriority(b);
-      if (aPri !== bPri) return aPri - bPri;
-
-      // Phase 3: Within same priority vendor, sort by PF sequence
-      if (aPri < 2) {
-        return extractPFSequence(a.pfCode) - extractPFSequence(b.pfCode);
-      }
-
-      // Phase 4: Others keep creation order
-      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return aTime - bTime;
-    });
+    // Shared display order (types.ts → sortItemsForDisplay)
+    const sortedItems = sortItemsForDisplay(baseItems);
 
     // SUPPLIER MODE: Apply additional vendor filtering at final render stage
     let finalItems = sortedItems;
@@ -971,20 +948,8 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
       const rowsOfSameType = projectData.rows.filter(r => r.type === row.type);
       const positionInType = rowsOfSameType.indexOf(row);
 
-      const itemsOfSameType = backendItems
-        .filter(item => mapBackendTypeToFrontend(item.type, item.customType) === row.type)
-        .sort((a, b) => {
-          // Apply same sorting as frontend display
-          const aPri = getVendorPriority(a);
-          const bPri = getVendorPriority(b);
-          if (aPri !== bPri) return aPri - bPri;
-
-          if (aPri < 2) {
-            return extractPFSequence(a.pfCode) - extractPFSequence(b.pfCode);
-          }
-
-          return (a.vendor?.name || '').localeCompare(b.vendor?.name || '');
-        });
+      const itemsOfSameType = sortItemsForDisplay(backendItems
+        .filter(item => mapBackendTypeToFrontend(item.type, item.customType) === row.type));
 
       const correspondingItem = itemsOfSameType[positionInType];
       if (correspondingItem) {

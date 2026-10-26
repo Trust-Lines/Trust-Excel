@@ -10,7 +10,7 @@ import { useSocket } from '../contexts/SocketContext';
 import { useSocketEvent } from '../hooks/useSocketEvent';
 import { getExpensesMissingExtraProjects, mapExpensesMEToProject, mapExpensesMEItemToBackendItem, createExpensesMissingExtraProject, createExpensesMissingExtraItem, deleteExpensesMissingExtraProject } from '../lib/expenses-missing-extra';
 import { apiFetch } from '../lib/auth';
-import { TYPE_ORDER, extractPFSequence, getVendorPriority } from '../types';
+import { sortItemsForDisplay } from '../types';
 import type { ExpensesMissingExtraProject } from '../types/expensesMissingExtra';
 import type { Project } from '../types';
 import type { BackendProjectItem } from '../lib/projects';
@@ -275,21 +275,7 @@ const ExpensesMissingExtra: React.FC = () => {
   }, [sections]);
 
   const getReactiveItems = useCallback((backendItems: BackendProjectItem[]) => {
-    const typeOrder = TYPE_ORDER.map(t => t.toUpperCase());
-    return backendItems
-      .map(item => globalItemsById.get(item.id) || item)
-      .sort((a, b) => {
-        const aTypeIndex = typeOrder.indexOf(a.type || '');
-        const bTypeIndex = typeOrder.indexOf(b.type || '');
-        if (aTypeIndex !== bTypeIndex) return aTypeIndex - bTypeIndex;
-        const aPri = getVendorPriority(a);
-        const bPri = getVendorPriority(b);
-        if (aPri !== bPri) return aPri - bPri;
-        if (aPri < 2) {
-          return extractPFSequence(a.pfCode) - extractPFSequence(b.pfCode);
-        }
-        return (a.vendor?.name || '').localeCompare(b.vendor?.name || '');
-      });
+    return sortItemsForDisplay(backendItems.map(item => globalItemsById.get(item.id) || item));
   }, [globalItemsById]);
 
   const onViewportScroll = useCallback(() => {

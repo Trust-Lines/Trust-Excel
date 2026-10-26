@@ -11,7 +11,7 @@ import { EventsGateway } from '../events/events.gateway';
 import { CreateExpensesMEProjectDto } from './dto/create-expenses-me-project.dto';
 import { CreateExpensesMEItemDto } from './dto/create-expenses-me-item.dto';
 import { UpdateExpensesMEItemDto } from './dto/update-expenses-me-item.dto';
-import { reservedMillworkIndex, nextOpenMillworkIndex, formatIndex } from '../common/helpers/fixed-millwork-codes';
+import { reservedMillworkIndex, nextOpenMillworkIndex, formatIndex, isFurnitureOrderType } from '../common/helpers/fixed-millwork-codes';
 
 const ITEM_INCLUDE = {
   vendor: { select: { id: true, code: true, name: true } },
@@ -358,11 +358,13 @@ export class ExpensesMissingExtraService {
       'IMAGE': 'I',
       'FURNITURE': 'F',
     };
-    const typeLetter = (type && typeLetters[type]) || 'X';
+    const millworkFurniture = type === 'MILLWORK' && isFurnitureOrderType(orderType);
+    // Millwork + FURNITURE order type → furniture letter (F)
+    const typeLetter = millworkFurniture ? 'F' : ((type && typeLetters[type]) || 'X');
 
     // YSM/GOS vendor + MILLWORK type: fixed code based on orderType
     // Fixed-code vendors (GOS/TDR/YSM) + MILLWORK: M01–M03 reserved, the rest from M04
-    if (vendor.fixedMillworkCodes && type === 'MILLWORK') {
+    if (vendor.fixedMillworkCodes && type === 'MILLWORK' && !millworkFurniture) {
       const reserved = reservedMillworkIndex(orderType);
       if (reserved) return `${vendor.code}-${projectNo}-${typeLetter}${formatIndex(reserved)}`;
       const siblings = await this.prisma.expensesMissingExtraItem.findMany({
@@ -376,7 +378,8 @@ export class ExpensesMissingExtraService {
     const existingItems = await this.prisma.expensesMissingExtraItem.findMany({
       where: {
         project: { projectNo },
-        type: type as any,
+        // F numbers are shared by Furniture rows and Millwork-as-furniture rows
+        type: (millworkFurniture ? { in: ['MILLWORK', 'FURNITURE'] } : type) as any,
         vendorId,
       },
       orderBy: { pfCode: 'asc' },

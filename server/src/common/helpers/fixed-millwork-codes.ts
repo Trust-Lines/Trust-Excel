@@ -7,12 +7,21 @@
  *   STANDARD / BASIC                         → M01
  *   STANDARD / SELECTIVE                     → M02
  *   CUSTOM / SELECTIVE (or SELECTIVE / CUSTOM) → M03
- *   anything else (IMAGE, FURNITURE, no order type, …) → M04, M05, …
+ *   anything else (IMAGE, no order type, …) → M04, M05, …
+ *   FURNITURE → F code instead (see isFurnitureOrderType)
  *
  * Items sharing one of the three standard order types share its code on purpose.
  */
 
 export const FIRST_OPEN_MILLWORK_INDEX = 4;
+
+/**
+ * A Millwork row ordered as furniture is coded as furniture: F instead of M
+ * (e.g. KYA-409-F01), numbered with the vendor's other F codes in that project.
+ */
+export function isFurnitureOrderType(orderType?: string | null): boolean {
+  return !!orderType && orderType.toUpperCase().replace(/[^A-Z]/g, '').includes('FURNITURE');
+}
 
 /** Reserved index (1–3) for a standard order type, or null for everything else. */
 export function reservedMillworkIndex(orderType?: string | null): number | null {

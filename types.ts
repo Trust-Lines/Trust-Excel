@@ -217,54 +217,49 @@ export function getVendorPriority(item: any): number {
   return PRIORITY_VENDORS[code] ?? 2;
 }
 
-// Sort project items within type group: priority vendors on top, then creation order
-export const sortProjectItemsInTypeGroup = (items: any[]): any[] => {
-  return items
-    .slice()
-    .sort((a, b) => {
-      const aPri = getVendorPriority(a);
-      const bPri = getVendorPriority(b);
-      if (aPri !== bPri) return aPri - bPri;
-
-      // Within same priority vendor, sort by PF sequence (M01, M02, M03)
-      if (aPri < 2) {
-        return extractPFSequence(a.pfCode) - extractPFSequence(b.pfCode);
-      }
-
-      // Others: keep creation order
-      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return aTime - bTime;
-    });
-};
-
-// Full sort: TYPE_ORDER first, then within-type sort (matches ProjectBlock.computedRows exactly)
-export const sortBackendItems = (items: any[]): any[] => {
+/**
+ * Display order of project items (one rule used everywhere):
+ *  1. by type (TYPE_ORDER; custom types after, each kept together)
+ *  2. YSM first, then GOS (priority vendors)
+ *  3. other vendors as blocks — all rows of one vendor together, blocks in the order the
+ *     vendor first appeared in that type; rows without a vendor last
+ *  4. inside a vendor: PF code number (M01, M02 …), then creation time
+ */
+export function sortItemsForDisplay<T = any>(items: T[]): T[] {
   const typeOrder = TYPE_ORDER.map(t => t.toUpperCase());
-  return items.slice().sort((a, b) => {
-    // Phase 1: Group by type order
-    const aTypeIndex = typeOrder.indexOf((a.type || '').toUpperCase());
-    const bTypeIndex = typeOrder.indexOf((b.type || '').toUpperCase());
-    const aIdx = aTypeIndex === -1 ? 999 : aTypeIndex;
-    const bIdx = bTypeIndex === -1 ? 999 : bTypeIndex;
-    if (aIdx !== bIdx) return aIdx - bIdx;
-
-    // Phase 2: Priority vendors on top
-    const aPri = getVendorPriority(a);
-    const bPri = getVendorPriority(b);
-    if (aPri !== bPri) return aPri - bPri;
-
-    // Phase 3: Within same priority vendor, sort by PF sequence
-    if (aPri < 2) {
-      return extractPFSequence(a.pfCode) - extractPFSequence(b.pfCode);
+  const typeKey = (i: any) => (i.customTypeId ? `C:${i.customTypeId}` : `T:${(i.type || '').toUpperCase()}`);
+  const typeIdx = (i: any) => { const x = typeOrder.indexOf((i.type || '').toUpperCase()); return x < 0 ? 999 : x; };
+  const vendorKey = (i: any) => i.vendorId || i.vendor?.id || i.vendor?.code || '';
+  const time = (i: any) => (i.createdAt ? new Date(i.createdAt).getTime() : 0);
+  const firstSeen = new Map<string, number>();
+  for (const i of items as any[]) {
+    const k = `${typeKey(i)}|${vendorKey(i)}`;
+    const t = time(i);
+    if (!firstSeen.has(k) || t < (firstSeen.get(k) as number)) firstSeen.set(k, t);
+  }
+  return items.slice().sort((a: any, b: any) => {
+    const ta = typeIdx(a), tb = typeIdx(b);
+    if (ta !== tb) return ta - tb;
+    if (ta === 999 && typeKey(a) !== typeKey(b)) return typeKey(a) < typeKey(b) ? -1 : 1;
+    const pa = getVendorPriority(a), pb = getVendorPriority(b);
+    if (pa !== pb) return pa - pb;
+    const va = vendorKey(a), vb = vendorKey(b);
+    if (va !== vb) {
+      if (!va) return 1;
+      if (!vb) return -1;
+      const fa = firstSeen.get(`${typeKey(a)}|${va}`) as number, fb = firstSeen.get(`${typeKey(b)}|${vb}`) as number;
+      if (fa !== fb) return fa - fb;
+      return va < vb ? -1 : 1;
     }
-
-    // Phase 4: Others keep creation order
-    const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-    const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-    return aTime - bTime;
+    const sa = extractPFSequence(a.pfCode), sb = extractPFSequence(b.pfCode);
+    if (sa !== sb) return sa - sb;
+    return time(a) - time(b);
   });
-};
+}
+
+// Kept for existing callers
+export const sortProjectItemsInTypeGroup = (items: any[]): any[] => sortItemsForDisplay(items);
+export const sortBackendItems = (items: any[]): any[] => sortItemsForDisplay(items);
 
 // Create Map from items array for fast ID-based lookups
 export function createItemsMap(items: any[]): Map<string, any> {

@@ -403,7 +403,7 @@ export class TrustStockService implements OnModuleInit {
     if (dimensions) return { description, dimensions };
     const m = description.match(/\(?\s*(D\s*=\s*[\d.,]+"?[\s\-–x×]*W\s*=\s*[\d.,]+"?[\s\-–x×]*H\s*=\s*[\d.,]+"?)\s*\)?\s*$/i);
     if (!m) return { description, dimensions: null };
-    const dims = m[1].replace(/\s*[-–x×]\s*(?=[WH]\s*=)/gi, ' ').replace(/\s+/g, ' ').replace(/\s*=\s*/g, '=').trim();
+    const dims = m[1].replace(/\s*[-–x×]\s*(?=[WH]\s*=)/gi, ' ').replace(/\s+/g, ' ').replace(/\s*=\s*/g, '=').replace(/(\d),(\d)/g, '$1.$2').trim();
     return { description: description.slice(0, m.index).trim(), dimensions: dims };
   }
 

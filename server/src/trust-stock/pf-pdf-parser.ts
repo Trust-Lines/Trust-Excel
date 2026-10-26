@@ -1,9 +1,9 @@
 /**
- * Reads a Trust Lines "ESTIMATED PRODUCTION FORM" PDF (the PF) plus the vendor's
+ * Reads a Trust Lines "(ESTIMATED) PRODUCTION FORM" PDF (the PF) plus the vendor's
  * price quote that is usually attached as the following page(s).
  *
  * Rule-based, no AI: text is rebuilt into rows from its position on the page.
- *  - Page with "ESTIMATED PRODUCTION FORM": supplier, ORDER NO (= PF code), date,
+ *  - Page with "(ESTIMATED) PRODUCTION FORM": supplier, ORDER NO (= PF code), date,
  *    PROJECT NUMBER (= stock code), form type (MILLWORK, …), category lines and the
  *    ITEM CODE / DESCRIPTION / QUANTITY table.
  *  - Other pages (vendor quote, layout differs per vendor): any row that holds a
@@ -83,6 +83,21 @@ export function parseMoney(raw: string): number | null {
 
 const norm = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, '');
 
+/**
+ * Item codes as the stock sheet writes them, whatever spacing the PF used:
+ * "IN/FC-36/F 12 BODY" → "IN-FC-36/F12 BODY", "IN-FC-48/ F12" → "IN-FC-48/F12",
+ * "IN-FC-48/B 20 - SHORT" → "IN-FC-48/B20 SHORT", "FA 40" stays "FA 40".
+ */
+export function normalizeItemCode(raw: string): string {
+  return raw.toUpperCase()
+    .replace(/\s+/g, ' ')
+    .replace(/\s*\/\s*/g, '/')
+    .replace(/\/([A-Z]+)\s+(\d)/g, '/$1$2')
+    .replace(/^([A-Z]+)\/([A-Z]+)-/, '$1-$2-')
+    .replace(/\s+-\s+/g, ' ')
+    .trim();
+}
+
 /** Cell in `row` closest to column x (within tolerance). */
 function cellAt(row: Row | undefined, x: number, tol = 40): Cell | undefined {
   if (!row) return undefined;
@@ -107,15 +122,17 @@ export async function parsePfPdf(buffer: Buffer): Promise<ParsedPf> {
     type: null, currency: 'USD', totalPrice: null, paymentRule: null, products: [], warnings: [],
   };
 
-  const formIdx = pages.findIndex(p => p.some(r => /ESTIMATED PRODUCTION FORM/i.test(r.text)));
+  const isFormTitle = (t: string) => /PRODUCTION FORM/i.test(t);
+  let formIdx = pages.findIndex(p => p.some(r => isFormTitle(r.text)));
+  if (formIdx < 0) formIdx = pages.findIndex(p => p.some(r => /ORDER NO/i.test(r.text)) && p.some(r => /ITEM CODE/i.test(r.text)));
   if (formIdx < 0) {
-    out.warnings.push('Trust Lines "Estimated Production Form" page not found — fill the fields by hand.');
+    out.warnings.push('Trust Lines "Production Form" page not found — fill the fields by hand.');
   }
   const form = formIdx >= 0 ? pages[formIdx] : [];
   const rowIndex = (re: RegExp) => form.findIndex(r => re.test(r.text));
 
   // ── Form type (MILLWORK …): row right after the title, or any known type on the title rows
-  const titleIdx = rowIndex(/ESTIMATED PRODUCTION FORM/i);
+  const titleIdx = rowIndex(/PRODUCTION FORM/i);
   for (const r of form.slice(Math.max(0, titleIdx), titleIdx + 3)) {
     const t = KNOWN_TYPES.find(k => r.text.toUpperCase().includes(k));
     if (t) { out.type = t; break; }
@@ -169,30 +186,35 @@ export async function parsePfPdf(buffer: Buffer): Promise<ParsedPf> {
     }
     const descX = descHead ? descHead.x : codeHead.x + 120;
     const isCodeCell = (c: Cell) => c.x < Math.min(descX, codeHead.x + 80) - 20 && c.x >= codeHead.x - 40;
-    const anchors = body.filter(r => r.cells.some(isCodeCell));
-    for (const a of anchors) {
-      const code = a.cells.find(isCodeCell)!.s;
-      const qtyCell = qtyHead ? cellAt(a, qtyHead.x, 30) : undefined;
-      const quantity = qtyCell ? parseMoney(qtyCell.s) : null;
-      // Description = description-column text of the rows closest to this anchor
-      const descLines = body
-        .filter(r => {
-          const nearest = anchors.reduce((b, x) => (Math.abs(x.y - r.y) < Math.abs(b.y - r.y) ? x : b), anchors[0]);
-          return nearest === a;
-        })
-        .sort((p, q) => q.y - p.y)
-        .map(r => r.cells.filter(c => !isCodeCell(c) && c !== cellAt(r, qtyHead?.x ?? -999, 30)).map(c => c.s).join(' '))
-        .filter(Boolean);
+    const isQtyCell = (c: Cell) => !!qtyHead && Math.abs(c.x - qtyHead.x) <= 30 && /^\d+([.,]\d+)?$/.test(c.s.trim());
+    const cells = body.flatMap(r => r.cells.map(c => ({ ...c, y: r.y })));
+    const qtyCells = cells.filter(isQtyCell);
+
+    // Items: one per quantity cell (fallback: one per row that starts with a code)
+    const anchors = qtyCells.length ? qtyCells.map(c => ({ y: c.y, qty: parseMoney(c.s) as number | null }))
+      : body.filter(r => r.cells.some(isCodeCell)).map(r => ({ y: r.y, qty: null as number | null }));
+    const parts = anchors.map(() => ({ code: [] as Cell[], desc: [] as Cell[] }));
+    for (const c of cells) {
+      if (isQtyCell(c)) continue;
+      let best = -1;
+      anchors.forEach((a, k) => { if (best < 0 || Math.abs(a.y - c.y) < Math.abs(anchors[best].y - c.y)) best = k; });
+      if (best < 0) continue;
+      (isCodeCell(c) ? parts[best].code : parts[best].desc).push(c);
+    }
+    anchors.forEach((a, k) => {
+      const byPos = (x: Cell[]) => [...x].sort((p, q) => q.y - p.y || p.x - q.x).map(c => c.s).join(' ');
+      const code = normalizeItemCode(byPos(parts[k].code));
+      if (!code) return;
       out.products.push({
         itemCode: code,
-        description: descLines.join(' ').replace(/\s+/g, ' ').trim(),
+        description: byPos(parts[k].desc).replace(/\s+/g, ' ').trim(),
         category,
-        quantity: quantity ?? 0,
+        quantity: a.qty ?? 0,
         unitPrice: null,
         totalPrice: null,
       });
-      if (quantity == null) out.warnings.push(`Quantity not found for ${code}.`);
-    }
+      if (a.qty == null) out.warnings.push(`Quantity not found for ${code}.`);
+    });
   }
   if (out.products.length === 0) out.warnings.push('No product lines found on the form.');
 
@@ -236,8 +258,19 @@ export async function parsePfPdf(buffer: Buffer): Promise<ParsedPf> {
       }
     }
   }
-  for (const p of out.products) {
-    if (p.unitPrice == null) out.warnings.push(`Price not found for ${p.itemCode} — enter it on the preview.`);
+  const unpriced = out.products.filter(p => p.unitPrice == null);
+  if (unpriced.length && unpriced.length === out.products.length) {
+    out.warnings.push('No vendor price quote in this PDF — enter the unit prices on the preview.');
+  } else {
+    for (const p of unpriced) out.warnings.push(`Price not found for ${p.itemCode} — enter it on the preview.`);
+  }
+
+  // Cross-check: the quantities read must add up to the form's TOTAL
+  const totalRow = form.find(r => r.cells.some(c => /^TOTAL$/i.test(c.s)));
+  const formTotal = totalRow?.cells.map(c => parseMoney(c.s)).find((v): v is number => v != null && v > 0);
+  const qtySum = out.products.reduce((sum, p) => sum + p.quantity, 0);
+  if (formTotal != null && out.products.length && Math.abs(formTotal - qtySum) > 0.001) {
+    out.warnings.push(`Quantities read add up to ${qtySum}, but the form's TOTAL is ${formTotal} — check the lines.`);
   }
 
   // ── Grand total: "TOTAL PRICE … 39.000.00" on a quote page, else sum of lines

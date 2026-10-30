@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { ConfigService } from '@nestjs/config';
+import { appUrl } from '../common/helpers/app-url';
 
 @Injectable()
 export class NotificationService {
@@ -43,7 +44,7 @@ export class NotificationService {
 
       // Always send to the fixed admin alert email — never rely on DB user emails
       const adminEmail = this.configService.get<string>('ADMIN_ALERT_EMAIL', 'hghannom@gmail.com');
-      const frontendUrl = this.configService.get('FRONTEND_URL', 'https://projects-table.vercel.app');
+      const frontendUrl = appUrl();
 
       try {
         await this.sendProjectCompletionEmail(

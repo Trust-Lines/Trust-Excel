@@ -13,6 +13,7 @@ import { TypeVisibilityService } from '../permissions/services/type-visibility.s
 import { ProjectScopeService } from '../permissions/services/project-scope.service';
 import * as crypto from 'crypto';
 import * as bcrypt from 'bcrypt';
+import { appUrl } from '../common/helpers/app-url';
 
 const PROJECT_ITEM_TYPE_LABELS: Record<string, string> = {
   MILLWORK: 'Millwork',
@@ -168,7 +169,7 @@ export class AdminService {
       });
 
       // Generate activation link
-      const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'https://projects-table.vercel.app');
+      const frontendUrl = appUrl();
       const activationLink = `${frontendUrl}/activate?token=${token}`;
 
       // Send invitation email
@@ -419,7 +420,7 @@ export class AdminService {
       });
 
       // Generate activation link
-      const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'https://projects-table.vercel.app');
+      const frontendUrl = appUrl();
       const activationLink = `${frontendUrl}/activate?token=${token}`;
 
       // Send invitation email

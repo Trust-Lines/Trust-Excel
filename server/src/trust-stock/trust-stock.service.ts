@@ -370,7 +370,7 @@ export class TrustStockService implements OnModuleInit {
 
   /**
    * Re-order PF: a PRODUCTION FORM for the products and quantities picked in the RE-ORDER tab,
-   * one page per vendor, under the next stock code (STOCK-TR-04 → STOCK-TR-05).
+   * one page per vendor, under the next free stock code (STOCK-TR-04 → STOCK-TR-05).
    * The same item code picked from several stock orders becomes one line.
    * Pictures are copied from the products' original PFs. Nothing is saved.
    */
@@ -380,7 +380,9 @@ export class TrustStockService implements OnModuleInit {
     const products = (await this.listProducts()).filter(p => qty.has(p.id));
     if (!products.length) throw new BadRequestException('Nothing to re-order');
 
-    const codes = (await this.prisma.trustStockGroup.findMany({ select: { code: true } })).map(g => g.code.replace(/\s*~deleted-\d+$/, '').replace(/\s*\(restored\)$/i, ''));
+    // next number after the live stock orders: a code freed by deleting its order is used again
+    // (a trashed order gives its code up when it's reused, see freeCodeFromTrash)
+    const codes = (await this.prisma.trustStockGroup.findMany({ where: { deletedAt: null }, select: { code: true } })).map(g => g.code.replace(/\s*\(restored( \d+)?\)$/i, ''));
     let prefix = 'STOCK-TR-', max = 0, width = 2;
     for (const c of codes) {
       const m = c.match(/^(.*?)(\d+)$/);

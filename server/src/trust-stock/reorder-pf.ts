@@ -67,39 +67,17 @@ function fontFaces(): string {
 
 /** One page of the form. Sizes in pt, measured from the real PFs (612 × 792). */
 function pageHtml(pg: ReorderPfPage): string {
-  // group lines by category → [section bar (black), sub-category bar (gray)]
-  const groups: { section: string; sub: string; lines: ReorderPfLine[] }[] = [];
-  let lastSec = '';
-  for (const l of pg.lines) {
-    const cat = (l.category || '').toUpperCase().replace(/\s+/g, ' ').replace(/\s*\/\s*/g, ' / ').trim();
-    let [section, ...rest] = cat.split(/\s*[—–]\s*/);
-    let sub = rest.join(' — ');
-    // "INDUSTRIAL / CABINETS / MDF / BLACK" alone is a sub-category of the section above it
-    if (!sub && section.includes(' / ')) {
-      sub = section;
-      section = groups.find(x => x.sub === sub)?.section ?? lastSec;
-    }
-    section = section || '';
-    if (section) lastSec = section;
-    let g = groups.find(x => x.section === section && x.sub === sub);
-    if (!g) { g = { section, sub, lines: [] }; groups.push(g); }
-    g.lines.push(l);
-  }
   const currency = pg.lines.find(l => l.currency)?.currency || 'USD';
   const totalQty = pg.lines.reduce((s, l) => s + l.quantity, 0);
   const totalPrice = pg.lines.reduce((s, l) => s + (l.unitPrice ?? 0) * l.quantity, 0);
   const anyPrice = pg.lines.some(l => l.unitPrice != null);
 
-  let lastSection = '';
-  const body = groups.map(g => {
-    const sectionBar = g.section && g.section !== lastSection ? `<div class="bar black">${esc(g.section)}</div>` : '';
-    lastSection = g.section || lastSection;
-    return `${sectionBar}
-      ${g.sub ? `<div class="bar gray">${esc(g.sub)}</div>` : ''}
+  // one list: a single header, every line under it in the order picked
+  const body = `
       <table class="items">
         <colgroup><col style="width:89pt"><col style="width:210pt"><col style="width:41pt"><col style="width:34pt"><col style="width:86pt"><col style="width:111pt"></colgroup>
         <tr class="head"><td>ITEM CODE</td><td>DESCRIPTION</td><td>PIC</td><td>QUANTITY</td><td>PRICE</td><td>TOTAL</td></tr>
-        ${g.lines.map(l => `
+        ${pg.lines.map(l => `
         <tr class="row">
           <td class="code">${esc(l.itemCode)}</td>
           <td class="desc">${esc(l.description)}${l.dimensions ? `<br>( ${esc(l.dimensions.replace(/ (?=[WH]=)/g, '-'))})` : ''}</td>
@@ -109,7 +87,6 @@ function pageHtml(pg: ReorderPfPage): string {
           <td class="num">${l.unitPrice != null ? money(l.unitPrice * l.quantity, l.currency) : ''}</td>
         </tr>`).join('')}
       </table>`;
-  }).join('');
 
   return `
   <section class="page">
@@ -184,8 +161,6 @@ const CSS = `
   .grid .trustlines { font-size: 15pt; font-weight: 700; }
   .bar { width: 571pt; font-size: 9pt; font-weight: 700; color: #fff; padding: 0 3pt; border: 0.75pt solid #000; }
   .bar.red { background: #c00000; text-align: center; height: 13pt; line-height: 12pt; margin-top: 3pt; }
-  .bar.black { background: #000; height: 12pt; line-height: 11pt; margin-top: 3pt; }
-  .bar.gray { background: #595959; height: 12pt; line-height: 11pt; margin-top: 4pt; }
   .items { margin-top: 4pt; }
   .items .head td { background: #000; color: #fff; font-size: 8pt; font-weight: 700; text-align: center; height: 15pt; }
   .items tr { page-break-inside: avoid; }

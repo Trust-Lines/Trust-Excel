@@ -243,9 +243,9 @@ export async function openTrustStockPdf(itemId: string): Promise<void> {
 }
 
 /** Builds the re-order PF (everything with an Order quantity) and downloads it. */
-/** Production form for the picked products and quantities (RE-ORDER tab) */
-export async function downloadReorderPf(lines: { productId: string; quantity: number }[]): Promise<void> {
-  const res = await apiFetch(`${API_BASE}/reorder-pf`, { method: 'POST', body: JSON.stringify({ lines }) });
+/** Production form for the picked products and quantities (RE-ORDER tab); addToStock also records it as a new stock order */
+export async function downloadReorderPf(lines: { productId: string; quantity: number }[], addToStock = false): Promise<void> {
+  const res = await apiFetch(`${API_BASE}/reorder-pf`, { method: 'POST', body: JSON.stringify({ lines, addToStock }) });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Could not create the re-order PF');

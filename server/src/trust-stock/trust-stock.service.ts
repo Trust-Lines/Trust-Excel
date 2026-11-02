@@ -372,9 +372,10 @@ export class TrustStockService implements OnModuleInit {
    * Re-order PF: a PRODUCTION FORM for the products and quantities picked in the RE-ORDER tab,
    * one page per vendor, under the next free stock code (STOCK-TR-04 → STOCK-TR-05).
    * The same item code picked from several stock orders becomes one line.
-   * Pictures are copied from the products' original PFs. Nothing is saved.
+   * Pictures are copied from the products' original PFs. Nothing is saved unless addToStock:
+   * then each page becomes a PF of a new stock order in Trust Stock, exactly like importing the PDF.
    */
-  async reorderPf(lines: { productId: string; quantity: number }[]) {
+  async reorderPf(lines: { productId: string; quantity: number }[], opts: { addToStock?: boolean } = {}) {
     const qty = new Map<string, number>();
     for (const l of lines) if (l.quantity > 0) qty.set(l.productId, (qty.get(l.productId) || 0) + l.quantity);
     const products = (await this.listProducts()).filter(p => qty.has(p.id));
@@ -395,6 +396,7 @@ export class TrustStockService implements OnModuleInit {
 
     // one page per vendor + PF type, in the order the products are listed
     const pages = new Map<string, ReorderPfPage>();
+    const pageMeta = new Map<string, { vendorId: string | null; type: string }>();
     const sourceItemIds = new Set<string>();
     for (const p of products) {
       const vendor = p.stockItem.vendor;
@@ -412,6 +414,7 @@ export class TrustStockService implements OnModuleInit {
           paymentNote: 'Note: Production will start after receiving a 50% advance payment.',
           lines: [],
         });
+        pageMeta.set(key, { vendorId: vendor?.id || null, type });
       }
       const page = pages.get(key)!;
       const same = page.lines.find(l => normalizeItemCode(l.itemCode) === normalizeItemCode(p.itemCode));
@@ -438,7 +441,32 @@ export class TrustStockService implements OnModuleInit {
     }
 
     const data = await renderReorderPf([...pages.values()], sources);
-    return { data, fileName: `${stockCode}-REORDER.pdf` };
+    const fileName = `${stockCode}-REORDER.pdf`;
+
+    if (opts.addToStock) {
+      // same path as uploading the PF: validation, duplicate check, PDF stored, products pending verification
+      for (const [key, pg] of pages) {
+        const meta = pageMeta.get(key)!;
+        const currency = pg.lines.find(l => l.currency)?.currency || 'USD';
+        await this.importPdf(data, fileName, {
+          stockCode,
+          pfCode: pg.pfCode,
+          vendorId: meta.vendorId,
+          type: meta.type,
+          pfDate: now.toISOString(),
+          currency: ['USD', 'TL', 'EUR'].includes(currency) ? currency : 'USD',
+          products: pg.lines.map(l => ({
+            itemCode: l.itemCode,
+            // dimensions ride in the description, where the import splits them off again
+            description: l.dimensions ? `${l.description} (${l.dimensions})` : l.description,
+            category: l.category ?? null,
+            quantity: l.quantity,
+            unitPrice: l.unitPrice,
+          })),
+        }); // no userId: the live event goes to the requester too, so the Trust Stock page behind the modal updates
+      }
+    }
+    return { data, fileName };
   }
 
   // ==================== STOCK CONTENTS & USAGE ====================

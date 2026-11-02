@@ -187,6 +187,9 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
   const [view, setView] = useState<'list' | 'reorder'>('list');
   /** RE-ORDER tab: product id → quantity typed for the PF */
   const [picks, setPicks] = useState<Record<string, string>>({});
+  /** RE-ORDER tab: also record the PF as a new stock order in Trust Stock */
+  const [addToStock, setAddToStock] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   // Edits from this table; reload afterwards (the live event isn't sent back to the editor)
   const save = async (p: StockProduct, patch: Parameters<typeof updateStockProduct>[1]) => {
@@ -266,7 +269,18 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
     .filter(l => products.some(p => p.id === l.productId) && Number.isFinite(l.quantity) && l.quantity > 0), [picks, products]);
   const createPf = async () => {
     setMakingPf(true);
-    try { await downloadReorderPf(pfLines); setError(null); }
+    setNotice(null);
+    try {
+      await downloadReorderPf(pfLines, addToStock);
+      setError(null);
+      if (addToStock) {
+        // the new stock order's products are pending verification until the warehouse confirms them
+        setNotice('Added to Trust Stock as a new stock order.');
+        setPicks({});
+        setAddToStock(false);
+        await load();
+      }
+    }
     catch (e) { setError(e instanceof Error ? e.message : 'Could not create the re-order PF'); }
     finally { setMakingPf(false); }
   };
@@ -348,11 +362,17 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
                   {pfLines.length} product(s), {pfLines.reduce((s, l) => s + l.quantity, 0)} pcs selected · one page per vendor, next stock code
                 </span>
                 <div style={{ flex: 1 }} />
+                {notice && <span style={{ fontSize: 12, color: '#15803d', fontWeight: 600 }}>{notice}</span>}
+                <label title="Also record this PF in Trust Stock as a new stock order (products pending verification), as if the PDF had been uploaded"
+                  style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#0f172a', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={addToStock} onChange={e => setAddToStock(e.target.checked)} />
+                  Add to Trust Stock
+                </label>
                 <button onClick={() => setPicks({})} disabled={!Object.keys(picks).length}
                   style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #cbd5e1', background: '#fff', fontSize: 12, cursor: 'pointer' }}>Clear</button>
                 <button onClick={createPf} disabled={!pfLines.length || makingPf}
                   style={{ padding: '6px 14px', borderRadius: 6, border: 'none', fontSize: 12, fontWeight: 700, cursor: pfLines.length && !makingPf ? 'pointer' : 'default', background: pfLines.length ? '#f59e0b' : '#cbd5e1', color: '#1e293b' }}>
-                  {makingPf ? 'Creating PF…' : `⬇ Create PF${pfLines.length ? ` (${pfLines.length})` : ''}`}
+                  {makingPf ? 'Creating PF…' : `⬇ Create PF${addToStock ? ' + add to stock' : ''}${pfLines.length ? ` (${pfLines.length})` : ''}`}
                 </button>
               </div>
               <ReorderPanel products={needReorder} others={reorderOthers} picks={picks} setPicks={setPicks} />

@@ -99,7 +99,7 @@ export class TrustStockController {
   /** Re-order PF (PDF) for the products and quantities picked in the RE-ORDER tab */
   @Post('reorder-pf')
   async reorderPf(@Body() dto: ReorderPfDto, @Res() res: Response) {
-    const { data, fileName } = await this.service.reorderPf(dto.lines);
+    const { data, fileName } = await this.service.reorderPf(dto.lines, { addToStock: dto.addToStock });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
     res.send(data);

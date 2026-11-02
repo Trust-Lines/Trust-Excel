@@ -39,53 +39,53 @@ Third-party packages used by these files: `react` 18, `react-dom`, `react-router
 | `components/StockUsageModal.tsx` | 12503 | 16.7 KB |
 | `components/TodayPfControl.tsx` | 12803 | 3.2 KB |
 | `components/TodayPfManageModal.tsx` | 12911 | 24.4 KB |
-| `components/TrustStockContentsModal.tsx` | 13419 | 30.1 KB |
-| `components/VendorDropdownField.tsx` | 13899 | 13.8 KB |
-| `components/ui/AnchoredDropdown.tsx` | 14329 | 8.7 KB |
-| `constants.ts` | 14599 | 0.2 KB |
-| `contexts/AuthContext.tsx` | 14609 | 8.3 KB |
-| `contexts/PaymentRulesContext.tsx` | 14879 | 2.3 KB |
-| `contexts/SocketContext.tsx` | 14962 | 6.1 KB |
-| `hooks/useColumnPermissions.ts` | 15174 | 5.8 KB |
-| `hooks/useLivePatchStore.ts` | 15353 | 8.7 KB |
-| `hooks/usePagePermissions.ts` | 15609 | 2.2 KB |
-| `hooks/useSocketEvent.ts` | 15682 | 0.6 KB |
-| `hooks/useUndoStack.ts` | 15712 | 5.6 KB |
-| `lib/api.ts` | 15907 | 3.6 KB |
-| `lib/auth.ts` | 16040 | 6.5 KB |
-| `lib/columns.ts` | 16304 | 7.2 KB |
-| `lib/containers.ts` | 16605 | 4.6 KB |
-| `lib/dateUtils.ts` | 16793 | 1.7 KB |
-| `lib/direct-orders.ts` | 16860 | 5.4 KB |
-| `lib/displayHelpers.ts` | 17049 | 1.8 KB |
-| `lib/expenses-direct-order.ts` | 17112 | 5.3 KB |
-| `lib/expenses-missing-extra.ts` | 17273 | 5.3 KB |
-| `lib/expenses-p.ts` | 17434 | 5.5 KB |
-| `lib/gridWidth.ts` | 17603 | 2.4 KB |
-| `lib/missing-extra.ts` | 17719 | 9.9 KB |
-| `lib/payment-rules.ts` | 18025 | 1.1 KB |
-| `lib/pf-groups.ts` | 18078 | 3.7 KB |
-| `lib/projectColor.ts` | 18201 | 10.0 KB |
-| `lib/projectTotalApi.ts` | 18535 | 4.0 KB |
-| `lib/projects.ts` | 18663 | 27.0 KB |
-| `lib/sanitizePayload.ts` | 19508 | 2.1 KB |
-| `lib/today-pf.ts` | 19583 | 2.5 KB |
-| `lib/trust-stock.ts` | 19660 | 15.6 KB |
-| `pages/OperationalBoard.tsx` | 20078 | 36.9 KB |
-| `types.ts` | 21103 | 9.7 KB |
-| `types/expensesDirectOrder.ts` | 21394 | 1.4 KB |
-| `types/expensesMissingExtra.ts` | 21451 | 1.4 KB |
-| `types/expensesP.ts` | 21509 | 1.3 KB |
-| `types/projectTotal.ts` | 21566 | 0.4 KB |
-| `utils/containerUtils.ts` | 21596 | 2.3 KB |
-| `utils/excel/exportProjectTotalExcel.ts` | 21683 | 11.0 KB |
-| `utils/excel/exportProjectsAllTabsExcel.ts` | 21975 | 8.0 KB |
-| `utils/excel/exportProjectsExcel.ts` | 22206 | 19.2 KB |
-| `utils/excel/statusColorsExcel.ts` | 22676 | 2.6 KB |
-| `utils/filterUtils.ts` | 22778 | 7.1 KB |
-| `utils/moneyUtils.ts` | 22980 | 5.1 KB |
-| `utils/statusStyles.ts` | 23154 | 4.2 KB |
-| `styles.css` | 23347 | 101.0 KB |
+| `components/TrustStockContentsModal.tsx` | 13419 | 31.2 KB |
+| `components/VendorDropdownField.tsx` | 13919 | 13.8 KB |
+| `components/ui/AnchoredDropdown.tsx` | 14349 | 8.7 KB |
+| `constants.ts` | 14619 | 0.2 KB |
+| `contexts/AuthContext.tsx` | 14629 | 8.3 KB |
+| `contexts/PaymentRulesContext.tsx` | 14899 | 2.3 KB |
+| `contexts/SocketContext.tsx` | 14982 | 6.1 KB |
+| `hooks/useColumnPermissions.ts` | 15194 | 5.8 KB |
+| `hooks/useLivePatchStore.ts` | 15373 | 8.7 KB |
+| `hooks/usePagePermissions.ts` | 15629 | 2.2 KB |
+| `hooks/useSocketEvent.ts` | 15702 | 0.6 KB |
+| `hooks/useUndoStack.ts` | 15732 | 5.6 KB |
+| `lib/api.ts` | 15927 | 3.6 KB |
+| `lib/auth.ts` | 16060 | 6.5 KB |
+| `lib/columns.ts` | 16324 | 7.2 KB |
+| `lib/containers.ts` | 16625 | 4.6 KB |
+| `lib/dateUtils.ts` | 16813 | 1.7 KB |
+| `lib/direct-orders.ts` | 16880 | 5.4 KB |
+| `lib/displayHelpers.ts` | 17069 | 1.8 KB |
+| `lib/expenses-direct-order.ts` | 17132 | 5.3 KB |
+| `lib/expenses-missing-extra.ts` | 17293 | 5.3 KB |
+| `lib/expenses-p.ts` | 17454 | 5.5 KB |
+| `lib/gridWidth.ts` | 17623 | 2.4 KB |
+| `lib/missing-extra.ts` | 17739 | 9.9 KB |
+| `lib/payment-rules.ts` | 18045 | 1.1 KB |
+| `lib/pf-groups.ts` | 18098 | 3.7 KB |
+| `lib/projectColor.ts` | 18221 | 10.0 KB |
+| `lib/projectTotalApi.ts` | 18555 | 4.0 KB |
+| `lib/projects.ts` | 18683 | 27.0 KB |
+| `lib/sanitizePayload.ts` | 19528 | 2.1 KB |
+| `lib/today-pf.ts` | 19603 | 2.5 KB |
+| `lib/trust-stock.ts` | 19680 | 15.3 KB |
+| `pages/OperationalBoard.tsx` | 20098 | 36.9 KB |
+| `types.ts` | 21123 | 9.7 KB |
+| `types/expensesDirectOrder.ts` | 21414 | 1.4 KB |
+| `types/expensesMissingExtra.ts` | 21471 | 1.4 KB |
+| `types/expensesP.ts` | 21529 | 1.3 KB |
+| `types/projectTotal.ts` | 21586 | 0.4 KB |
+| `utils/containerUtils.ts` | 21616 | 2.3 KB |
+| `utils/excel/exportProjectTotalExcel.ts` | 21703 | 11.0 KB |
+| `utils/excel/exportProjectsAllTabsExcel.ts` | 21995 | 8.0 KB |
+| `utils/excel/exportProjectsExcel.ts` | 22226 | 19.2 KB |
+| `utils/excel/statusColorsExcel.ts` | 22696 | 2.6 KB |
+| `utils/filterUtils.ts` | 22798 | 7.1 KB |
+| `utils/moneyUtils.ts` | 23000 | 5.1 KB |
+| `utils/statusStyles.ts` | 23174 | 4.2 KB |
+| `styles.css` | 23367 | 101.0 KB |
 
 ---
 
@@ -13608,6 +13608,9 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
   const [view, setView] = useState<'list' | 'reorder'>('list');
   /** RE-ORDER tab: product id → quantity typed for the PF */
   const [picks, setPicks] = useState<Record<string, string>>({});
+  /** RE-ORDER tab: also record the PF as a new stock order in Trust Stock */
+  const [addToStock, setAddToStock] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   // Edits from this table; reload afterwards (the live event isn't sent back to the editor)
   const save = async (p: StockProduct, patch: Parameters<typeof updateStockProduct>[1]) => {
@@ -13687,7 +13690,18 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
     .filter(l => products.some(p => p.id === l.productId) && Number.isFinite(l.quantity) && l.quantity > 0), [picks, products]);
   const createPf = async () => {
     setMakingPf(true);
-    try { await downloadReorderPf(pfLines); setError(null); }
+    setNotice(null);
+    try {
+      await downloadReorderPf(pfLines, addToStock);
+      setError(null);
+      if (addToStock) {
+        // the new stock order's products are pending verification until the warehouse confirms them
+        setNotice('Added to Trust Stock as a new stock order.');
+        setPicks({});
+        setAddToStock(false);
+        await load();
+      }
+    }
     catch (e) { setError(e instanceof Error ? e.message : 'Could not create the re-order PF'); }
     finally { setMakingPf(false); }
   };
@@ -13769,11 +13783,17 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
                   {pfLines.length} product(s), {pfLines.reduce((s, l) => s + l.quantity, 0)} pcs selected · one page per vendor, next stock code
                 </span>
                 <div style={{ flex: 1 }} />
+                {notice && <span style={{ fontSize: 12, color: '#15803d', fontWeight: 600 }}>{notice}</span>}
+                <label title="Also record this PF in Trust Stock as a new stock order (products pending verification), as if the PDF had been uploaded"
+                  style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#0f172a', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={addToStock} onChange={e => setAddToStock(e.target.checked)} />
+                  Add to Trust Stock
+                </label>
                 <button onClick={() => setPicks({})} disabled={!Object.keys(picks).length}
                   style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #cbd5e1', background: '#fff', fontSize: 12, cursor: 'pointer' }}>Clear</button>
                 <button onClick={createPf} disabled={!pfLines.length || makingPf}
                   style={{ padding: '6px 14px', borderRadius: 6, border: 'none', fontSize: 12, fontWeight: 700, cursor: pfLines.length && !makingPf ? 'pointer' : 'default', background: pfLines.length ? '#f59e0b' : '#cbd5e1', color: '#1e293b' }}>
-                  {makingPf ? 'Creating PF…' : `⬇ Create PF${pfLines.length ? ` (${pfLines.length})` : ''}`}
+                  {makingPf ? 'Creating PF…' : `⬇ Create PF${addToStock ? ' + add to stock' : ''}${pfLines.length ? ` (${pfLines.length})` : ''}`}
                 </button>
               </div>
               <ReorderPanel products={needReorder} others={reorderOthers} picks={picks} setPicks={setPicks} />
@@ -19905,9 +19925,9 @@ export async function openTrustStockPdf(itemId: string): Promise<void> {
 }
 
 /** Builds the re-order PF (everything with an Order quantity) and downloads it. */
-/** Production form for the picked products and quantities (RE-ORDER tab) */
-export async function downloadReorderPf(lines: { productId: string; quantity: number }[]): Promise<void> {
-  const res = await apiFetch(`${API_BASE}/reorder-pf`, { method: 'POST', body: JSON.stringify({ lines }) });
+/** Production form for the picked products and quantities (RE-ORDER tab); addToStock also records it as a new stock order */
+export async function downloadReorderPf(lines: { productId: string; quantity: number }[], addToStock = false): Promise<void> {
+  const res = await apiFetch(`${API_BASE}/reorder-pf`, { method: 'POST', body: JSON.stringify({ lines, addToStock }) });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Could not create the re-order PF');

@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNotEmpty, IsIn, IsNumber, IsArray, ValidateNested, ArrayMinSize, Min, ValidateIf, IsEnum } from 'class-validator';
+import { IsString, IsOptional, IsNotEmpty, IsIn, IsNumber, IsArray, ValidateNested, ArrayMinSize, Min, ValidateIf, IsEnum, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ProjectItemType } from '@prisma/client';
 
@@ -46,6 +46,8 @@ export class ReorderPfLineDto {
 /** Re-order PF: the products and quantities picked in the RE-ORDER tab */
 export class ReorderPfDto {
   @IsArray() @ArrayMinSize(1) @ValidateNested({ each: true }) @Type(() => ReorderPfLineDto) lines: ReorderPfLineDto[];
+  /** Also record it in Trust Stock: a new stock order with this PF (as if the PDF had been imported) */
+  @IsOptional() @IsBoolean() addToStock?: boolean;
 }
 
 export class CreateStockUsageDto {

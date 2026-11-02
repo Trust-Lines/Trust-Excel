@@ -11,6 +11,7 @@ import {
   Req,
   UsePipes,
   ValidationPipe,
+  BadRequestException,
 } from '@nestjs/common';
 import { DirectOrdersService } from './direct-orders.service';
 import { CreateDirectOrderProjectDto, UpdateDirectOrderProjectDto } from './dto/create-direct-order-project.dto';
@@ -78,6 +79,13 @@ export class DirectOrdersController {
   async bulkAssignHalf(@Body() bulkAssignHalfDto: BulkAssignHalfDto, @Req() req: any) {
     const userId = req.user?.id;
     return this.directOrdersService.bulkAssignHalf(bulkAssignHalfDto, userId);
+  }
+
+  /** Region change from the project menu */
+  @Patch(':id/move-region')
+  async moveRegion(@Param('id') id: string, @Body('bucket') bucket: ProjectBucket, @Req() req: any) {
+    if (!Object.values(ProjectBucket).includes(bucket)) throw new BadRequestException('Invalid region');
+    return this.directOrdersService.updateProject(id, { bucket } as UpdateDirectOrderProjectDto, req.user?.id);
   }
 
   @Patch(':id')

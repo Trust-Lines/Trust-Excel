@@ -10,7 +10,9 @@ import {
   Request,
   ValidationPipe,
   UsePipes,
+  BadRequestException,
 } from '@nestjs/common';
+import { ProjectBucket } from '@prisma/client';
 import { MissingExtraService } from './missing-extra.service';
 import { CreateMissingExtraCaseDto } from './dto/create-case.dto';
 import { UpdateMissingExtraCaseDto } from './dto/update-case.dto';
@@ -94,6 +96,17 @@ export class MissingExtraController {
     @Request() req: any,
   ): Promise<{ updatedCount: number }> {
     return this.missingExtraService.bulkAssignHalf(bulkAssignHalfDto, req.user?.userId || req.user?.id);
+  }
+
+  /** Region change from the project menu (the case keeps its region in `section`) */
+  @Patch('cases/:id/move-region')
+  moveRegion(
+    @Param('id') id: string,
+    @Body('bucket') bucket: ProjectBucket,
+    @Request() req: any,
+  ): Promise<MissingExtraCaseResponse> {
+    if (!Object.values(ProjectBucket).includes(bucket)) throw new BadRequestException('Invalid region');
+    return this.missingExtraService.updateCase(id, { section: bucket }, req.user?.userId || req.user?.id);
   }
 
   @Patch('cases/:id')

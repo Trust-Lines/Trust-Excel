@@ -40,52 +40,52 @@ Third-party packages used by these files: `react` 18, `react-dom`, `react-router
 | `components/TodayPfControl.tsx` | 12803 | 3.2 KB |
 | `components/TodayPfManageModal.tsx` | 12911 | 24.4 KB |
 | `components/TrustStockContentsModal.tsx` | 13419 | 31.2 KB |
-| `components/VendorDropdownField.tsx` | 13919 | 13.8 KB |
-| `components/ui/AnchoredDropdown.tsx` | 14349 | 8.7 KB |
-| `constants.ts` | 14619 | 0.2 KB |
-| `contexts/AuthContext.tsx` | 14629 | 8.3 KB |
-| `contexts/PaymentRulesContext.tsx` | 14899 | 2.3 KB |
-| `contexts/SocketContext.tsx` | 14982 | 6.1 KB |
-| `hooks/useColumnPermissions.ts` | 15194 | 5.8 KB |
-| `hooks/useLivePatchStore.ts` | 15373 | 8.7 KB |
-| `hooks/usePagePermissions.ts` | 15629 | 2.2 KB |
-| `hooks/useSocketEvent.ts` | 15702 | 0.6 KB |
-| `hooks/useUndoStack.ts` | 15732 | 5.6 KB |
-| `lib/api.ts` | 15927 | 3.6 KB |
-| `lib/auth.ts` | 16060 | 6.5 KB |
-| `lib/columns.ts` | 16324 | 7.2 KB |
-| `lib/containers.ts` | 16625 | 4.6 KB |
-| `lib/dateUtils.ts` | 16813 | 1.7 KB |
-| `lib/direct-orders.ts` | 16880 | 5.4 KB |
-| `lib/displayHelpers.ts` | 17069 | 1.8 KB |
-| `lib/expenses-direct-order.ts` | 17132 | 5.3 KB |
-| `lib/expenses-missing-extra.ts` | 17293 | 5.3 KB |
-| `lib/expenses-p.ts` | 17454 | 5.5 KB |
-| `lib/gridWidth.ts` | 17623 | 2.4 KB |
-| `lib/missing-extra.ts` | 17739 | 9.9 KB |
-| `lib/payment-rules.ts` | 18045 | 1.1 KB |
-| `lib/pf-groups.ts` | 18098 | 3.7 KB |
-| `lib/projectColor.ts` | 18221 | 10.0 KB |
-| `lib/projectTotalApi.ts` | 18555 | 4.0 KB |
-| `lib/projects.ts` | 18683 | 27.0 KB |
-| `lib/sanitizePayload.ts` | 19528 | 2.1 KB |
-| `lib/today-pf.ts` | 19603 | 2.5 KB |
-| `lib/trust-stock.ts` | 19680 | 15.3 KB |
-| `pages/OperationalBoard.tsx` | 20098 | 36.9 KB |
-| `types.ts` | 21123 | 9.7 KB |
-| `types/expensesDirectOrder.ts` | 21414 | 1.4 KB |
-| `types/expensesMissingExtra.ts` | 21471 | 1.4 KB |
-| `types/expensesP.ts` | 21529 | 1.3 KB |
-| `types/projectTotal.ts` | 21586 | 0.4 KB |
-| `utils/containerUtils.ts` | 21616 | 2.3 KB |
-| `utils/excel/exportProjectTotalExcel.ts` | 21703 | 11.0 KB |
-| `utils/excel/exportProjectsAllTabsExcel.ts` | 21995 | 8.0 KB |
-| `utils/excel/exportProjectsExcel.ts` | 22226 | 19.2 KB |
-| `utils/excel/statusColorsExcel.ts` | 22696 | 2.6 KB |
-| `utils/filterUtils.ts` | 22798 | 7.1 KB |
-| `utils/moneyUtils.ts` | 23000 | 5.1 KB |
-| `utils/statusStyles.ts` | 23174 | 4.2 KB |
-| `styles.css` | 23367 | 101.0 KB |
+| `components/VendorDropdownField.tsx` | 13918 | 13.8 KB |
+| `components/ui/AnchoredDropdown.tsx` | 14348 | 8.7 KB |
+| `constants.ts` | 14618 | 0.2 KB |
+| `contexts/AuthContext.tsx` | 14628 | 8.3 KB |
+| `contexts/PaymentRulesContext.tsx` | 14898 | 2.3 KB |
+| `contexts/SocketContext.tsx` | 14981 | 6.1 KB |
+| `hooks/useColumnPermissions.ts` | 15193 | 5.8 KB |
+| `hooks/useLivePatchStore.ts` | 15372 | 8.7 KB |
+| `hooks/usePagePermissions.ts` | 15628 | 2.2 KB |
+| `hooks/useSocketEvent.ts` | 15701 | 0.6 KB |
+| `hooks/useUndoStack.ts` | 15731 | 5.6 KB |
+| `lib/api.ts` | 15926 | 3.6 KB |
+| `lib/auth.ts` | 16059 | 6.5 KB |
+| `lib/columns.ts` | 16323 | 7.2 KB |
+| `lib/containers.ts` | 16624 | 4.6 KB |
+| `lib/dateUtils.ts` | 16812 | 1.7 KB |
+| `lib/direct-orders.ts` | 16879 | 5.4 KB |
+| `lib/displayHelpers.ts` | 17068 | 1.8 KB |
+| `lib/expenses-direct-order.ts` | 17131 | 5.3 KB |
+| `lib/expenses-missing-extra.ts` | 17292 | 5.3 KB |
+| `lib/expenses-p.ts` | 17453 | 5.5 KB |
+| `lib/gridWidth.ts` | 17622 | 2.4 KB |
+| `lib/missing-extra.ts` | 17738 | 9.9 KB |
+| `lib/payment-rules.ts` | 18044 | 1.1 KB |
+| `lib/pf-groups.ts` | 18097 | 3.7 KB |
+| `lib/projectColor.ts` | 18220 | 10.0 KB |
+| `lib/projectTotalApi.ts` | 18554 | 4.0 KB |
+| `lib/projects.ts` | 18682 | 27.0 KB |
+| `lib/sanitizePayload.ts` | 19527 | 2.1 KB |
+| `lib/today-pf.ts` | 19602 | 2.5 KB |
+| `lib/trust-stock.ts` | 19679 | 15.3 KB |
+| `pages/OperationalBoard.tsx` | 20097 | 36.9 KB |
+| `types.ts` | 21122 | 9.7 KB |
+| `types/expensesDirectOrder.ts` | 21413 | 1.4 KB |
+| `types/expensesMissingExtra.ts` | 21470 | 1.4 KB |
+| `types/expensesP.ts` | 21528 | 1.3 KB |
+| `types/projectTotal.ts` | 21585 | 0.4 KB |
+| `utils/containerUtils.ts` | 21615 | 2.3 KB |
+| `utils/excel/exportProjectTotalExcel.ts` | 21702 | 11.0 KB |
+| `utils/excel/exportProjectsAllTabsExcel.ts` | 21994 | 8.0 KB |
+| `utils/excel/exportProjectsExcel.ts` | 22225 | 19.2 KB |
+| `utils/excel/statusColorsExcel.ts` | 22695 | 2.6 KB |
+| `utils/filterUtils.ts` | 22797 | 7.1 KB |
+| `utils/moneyUtils.ts` | 22999 | 5.1 KB |
+| `utils/statusStyles.ts` | 23173 | 4.2 KB |
+| `styles.css` | 23366 | 101.0 KB |
 
 ---
 
@@ -13608,8 +13608,8 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
   const [view, setView] = useState<'list' | 'reorder'>('list');
   /** RE-ORDER tab: product id → quantity typed for the PF */
   const [picks, setPicks] = useState<Record<string, string>>({});
-  /** RE-ORDER tab: also record the PF as a new stock order in Trust Stock */
-  const [addToStock, setAddToStock] = useState(false);
+  /** RE-ORDER tab: also record the PF as a new stock order in Trust Stock (on unless unticked) */
+  const [addToStock, setAddToStock] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
 
   // Edits from this table; reload afterwards (the live event isn't sent back to the editor)
@@ -13698,7 +13698,6 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
         // the new stock order's products are pending verification until the warehouse confirms them
         setNotice('Added to Trust Stock as a new stock order.');
         setPicks({});
-        setAddToStock(false);
         await load();
       }
     }

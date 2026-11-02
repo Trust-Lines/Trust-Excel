@@ -187,8 +187,8 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
   const [view, setView] = useState<'list' | 'reorder'>('list');
   /** RE-ORDER tab: product id → quantity typed for the PF */
   const [picks, setPicks] = useState<Record<string, string>>({});
-  /** RE-ORDER tab: also record the PF as a new stock order in Trust Stock */
-  const [addToStock, setAddToStock] = useState(false);
+  /** RE-ORDER tab: also record the PF as a new stock order in Trust Stock (on unless unticked) */
+  const [addToStock, setAddToStock] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
 
   // Edits from this table; reload afterwards (the live event isn't sent back to the editor)
@@ -277,7 +277,6 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
         // the new stock order's products are pending verification until the warehouse confirms them
         setNotice('Added to Trust Stock as a new stock order.');
         setPicks({});
-        setAddToStock(false);
         await load();
       }
     }

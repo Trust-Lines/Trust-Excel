@@ -476,11 +476,14 @@ export class TrustStockService implements OnModuleInit {
   //   available  = on hand − reserved
   //   base       = target stock (entered by hand) if set, else confirmed received
   //   remaining% = available ÷ base
-  //   reorder at ≤ ROUNDDOWN(25% × base)
-  //   status     = PENDING VERIFICATION (no receipt) | OUT OF STOCK (≤ 0) | REORDER NOW (≤ 25%)
-  //                | WATCH (≤ 50%) | HEALTHY (> 50%)
+  //   reorder %  = entered by hand per product, default 25%
+  //   reorder at ≤ ROUNDDOWN(reorder % × base)
+  //   status     = PENDING VERIFICATION (no receipt) | OUT OF STOCK (≤ 0) | REORDER NOW (≤ reorder %)
+  //                | WATCH (≤ 2 × reorder %) | HEALTHY (above that)
 
-  private static stats(p: { quantity: any; receivedQuantity: any; targetQuantity?: any; usages: { kind: string; quantity: any; projectItemId?: string }[] }) {
+  static readonly DEFAULT_REORDER_PCT = 25;
+
+  private static stats(p: { quantity: any; receivedQuantity: any; targetQuantity?: any; reorderPct?: any; usages: { kind: string; quantity: any; projectItemId?: string }[] }) {
     const sum = (kind: string) => p.usages.filter(u => u.kind === kind).reduce((s, u) => s + Number(u.quantity), 0);
     const ordered = Number(p.quantity);
     const received = p.receivedQuantity != null ? Number(p.receivedQuantity) : null;
@@ -492,18 +495,20 @@ export class TrustStockService implements OnModuleInit {
     const available = onHand != null ? onHand - reserved : null;
     const base = target ?? received;
     const remainingPct = received != null && base ? (available as number) / base : null;
-    const reorderThreshold = received != null && base != null ? Math.floor(base * 0.25) : null;
+    const reorderPct = p.reorderPct != null ? Number(p.reorderPct) : null; // as entered; null = default
+    const r = (reorderPct ?? TrustStockService.DEFAULT_REORDER_PCT) / 100;
+    const reorderThreshold = received != null && base != null ? Math.floor(base * r) : null;
     let status: 'PENDING_VERIFICATION' | 'OUT_OF_STOCK' | 'REORDER_NOW' | 'WATCH' | 'HEALTHY';
     if (received == null) status = 'PENDING_VERIFICATION';
     else if ((available as number) <= 0) status = 'OUT_OF_STOCK';
-    else if ((remainingPct as number) <= 0.25) status = 'REORDER_NOW';
-    else if ((remainingPct as number) <= 0.5) status = 'WATCH';
+    else if ((remainingPct as number) <= r) status = 'REORDER_NOW';
+    else if ((remainingPct as number) <= 2 * r) status = 'WATCH';
     else status = 'HEALTHY';
     // What can still be handed out: before the warehouse receipt is confirmed, the ordered quantity is the cap
     const takeable = (received ?? ordered) - taken + returned - reserved;
     // Suggested re-order once the reorder point is hit: what's missing to get back to the target (or the ordered quantity)
     const reorderQty = status === 'REORDER_NOW' || status === 'OUT_OF_STOCK' ? Math.max(0, (target ?? ordered) - (available as number)) : 0;
-    return { ordered, received, target, taken, returned, netUsed: taken - returned, reserved, onHand, available, remainingPct, reorderThreshold, reorderQty, status, takeable };
+    return { ordered, received, target, taken, returned, netUsed: taken - returned, reserved, onHand, available, remainingPct, reorderPct, reorderThreshold, reorderQty, status, takeable };
   }
 
   /** "( D=32.5"-W=40"-H=32.75")" at the end of a description → dimensions + clean description */

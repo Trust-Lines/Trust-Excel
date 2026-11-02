@@ -39,53 +39,53 @@ Third-party packages used by these files: `react` 18, `react-dom`, `react-router
 | `components/StockUsageModal.tsx` | 12503 | 16.7 KB |
 | `components/TodayPfControl.tsx` | 12803 | 3.2 KB |
 | `components/TodayPfManageModal.tsx` | 12911 | 24.4 KB |
-| `components/TrustStockContentsModal.tsx` | 13419 | 31.2 KB |
-| `components/VendorDropdownField.tsx` | 13918 | 13.8 KB |
-| `components/ui/AnchoredDropdown.tsx` | 14348 | 8.7 KB |
-| `constants.ts` | 14618 | 0.2 KB |
-| `contexts/AuthContext.tsx` | 14628 | 8.3 KB |
-| `contexts/PaymentRulesContext.tsx` | 14898 | 2.3 KB |
-| `contexts/SocketContext.tsx` | 14981 | 6.1 KB |
-| `hooks/useColumnPermissions.ts` | 15193 | 5.8 KB |
-| `hooks/useLivePatchStore.ts` | 15372 | 8.7 KB |
-| `hooks/usePagePermissions.ts` | 15628 | 2.2 KB |
-| `hooks/useSocketEvent.ts` | 15701 | 0.6 KB |
-| `hooks/useUndoStack.ts` | 15731 | 5.6 KB |
-| `lib/api.ts` | 15926 | 3.6 KB |
-| `lib/auth.ts` | 16059 | 6.5 KB |
-| `lib/columns.ts` | 16323 | 7.2 KB |
-| `lib/containers.ts` | 16624 | 4.6 KB |
-| `lib/dateUtils.ts` | 16812 | 1.7 KB |
-| `lib/direct-orders.ts` | 16879 | 5.4 KB |
-| `lib/displayHelpers.ts` | 17068 | 1.8 KB |
-| `lib/expenses-direct-order.ts` | 17131 | 5.3 KB |
-| `lib/expenses-missing-extra.ts` | 17292 | 5.3 KB |
-| `lib/expenses-p.ts` | 17453 | 5.5 KB |
-| `lib/gridWidth.ts` | 17622 | 2.4 KB |
-| `lib/missing-extra.ts` | 17738 | 9.9 KB |
-| `lib/payment-rules.ts` | 18044 | 1.1 KB |
-| `lib/pf-groups.ts` | 18097 | 3.7 KB |
-| `lib/projectColor.ts` | 18220 | 10.0 KB |
-| `lib/projectTotalApi.ts` | 18554 | 4.0 KB |
-| `lib/projects.ts` | 18682 | 27.0 KB |
-| `lib/sanitizePayload.ts` | 19527 | 2.1 KB |
-| `lib/today-pf.ts` | 19602 | 2.5 KB |
-| `lib/trust-stock.ts` | 19679 | 15.3 KB |
-| `pages/OperationalBoard.tsx` | 20097 | 36.9 KB |
-| `types.ts` | 21122 | 9.7 KB |
-| `types/expensesDirectOrder.ts` | 21413 | 1.4 KB |
-| `types/expensesMissingExtra.ts` | 21470 | 1.4 KB |
-| `types/expensesP.ts` | 21528 | 1.3 KB |
-| `types/projectTotal.ts` | 21585 | 0.4 KB |
-| `utils/containerUtils.ts` | 21615 | 2.3 KB |
-| `utils/excel/exportProjectTotalExcel.ts` | 21702 | 11.0 KB |
-| `utils/excel/exportProjectsAllTabsExcel.ts` | 21994 | 8.0 KB |
-| `utils/excel/exportProjectsExcel.ts` | 22225 | 19.2 KB |
-| `utils/excel/statusColorsExcel.ts` | 22695 | 2.6 KB |
-| `utils/filterUtils.ts` | 22797 | 7.1 KB |
-| `utils/moneyUtils.ts` | 22999 | 5.1 KB |
-| `utils/statusStyles.ts` | 23173 | 4.2 KB |
-| `styles.css` | 23366 | 101.0 KB |
+| `components/TrustStockContentsModal.tsx` | 13419 | 31.4 KB |
+| `components/VendorDropdownField.tsx` | 13925 | 13.8 KB |
+| `components/ui/AnchoredDropdown.tsx` | 14355 | 8.7 KB |
+| `constants.ts` | 14625 | 0.2 KB |
+| `contexts/AuthContext.tsx` | 14635 | 8.3 KB |
+| `contexts/PaymentRulesContext.tsx` | 14905 | 2.3 KB |
+| `contexts/SocketContext.tsx` | 14988 | 6.1 KB |
+| `hooks/useColumnPermissions.ts` | 15200 | 5.8 KB |
+| `hooks/useLivePatchStore.ts` | 15379 | 8.7 KB |
+| `hooks/usePagePermissions.ts` | 15635 | 2.2 KB |
+| `hooks/useSocketEvent.ts` | 15708 | 0.6 KB |
+| `hooks/useUndoStack.ts` | 15738 | 5.6 KB |
+| `lib/api.ts` | 15933 | 3.6 KB |
+| `lib/auth.ts` | 16066 | 6.5 KB |
+| `lib/columns.ts` | 16330 | 7.2 KB |
+| `lib/containers.ts` | 16631 | 4.6 KB |
+| `lib/dateUtils.ts` | 16819 | 1.7 KB |
+| `lib/direct-orders.ts` | 16886 | 5.4 KB |
+| `lib/displayHelpers.ts` | 17075 | 1.8 KB |
+| `lib/expenses-direct-order.ts` | 17138 | 5.3 KB |
+| `lib/expenses-missing-extra.ts` | 17299 | 5.3 KB |
+| `lib/expenses-p.ts` | 17460 | 5.5 KB |
+| `lib/gridWidth.ts` | 17629 | 2.4 KB |
+| `lib/missing-extra.ts` | 17745 | 9.9 KB |
+| `lib/payment-rules.ts` | 18051 | 1.1 KB |
+| `lib/pf-groups.ts` | 18104 | 3.7 KB |
+| `lib/projectColor.ts` | 18227 | 10.0 KB |
+| `lib/projectTotalApi.ts` | 18561 | 4.0 KB |
+| `lib/projects.ts` | 18689 | 27.0 KB |
+| `lib/sanitizePayload.ts` | 19534 | 2.1 KB |
+| `lib/today-pf.ts` | 19609 | 2.5 KB |
+| `lib/trust-stock.ts` | 19686 | 15.4 KB |
+| `pages/OperationalBoard.tsx` | 20106 | 36.9 KB |
+| `types.ts` | 21131 | 9.7 KB |
+| `types/expensesDirectOrder.ts` | 21422 | 1.4 KB |
+| `types/expensesMissingExtra.ts` | 21479 | 1.4 KB |
+| `types/expensesP.ts` | 21537 | 1.3 KB |
+| `types/projectTotal.ts` | 21594 | 0.4 KB |
+| `utils/containerUtils.ts` | 21624 | 2.3 KB |
+| `utils/excel/exportProjectTotalExcel.ts` | 21711 | 11.0 KB |
+| `utils/excel/exportProjectsAllTabsExcel.ts` | 22003 | 8.0 KB |
+| `utils/excel/exportProjectsExcel.ts` | 22234 | 19.2 KB |
+| `utils/excel/statusColorsExcel.ts` | 22704 | 2.6 KB |
+| `utils/filterUtils.ts` | 22806 | 7.1 KB |
+| `utils/moneyUtils.ts` | 23008 | 5.1 KB |
+| `utils/statusStyles.ts` | 23182 | 4.2 KB |
+| `styles.css` | 23375 | 101.0 KB |
 
 ---
 
@@ -13438,15 +13438,16 @@ const fmtDate = (s: string | null) => (s ? new Date(s).toLocaleDateString('en-GB
 
 const STATUS_FILTERS: (StockStatus | 'ALL')[] = ['ALL', 'HEALTHY', 'WATCH', 'REORDER_NOW', 'OUT_OF_STOCK', 'PENDING_VERIFICATION'];
 
-/** Always-visible number box saved on Enter / leaving it; empty = null. Used for Confirmed Received and Target Stock. */
+/** Always-visible number box saved on Enter / leaving it; empty = null. Used for Confirmed Received, Target Stock and Reorder %. */
 const QtyCell: React.FC<{
   p: StockProduct;
-  field: 'receivedQuantity' | 'targetQuantity';
+  field: 'receivedQuantity' | 'targetQuantity' | 'reorderPct';
   current: number | null;
   title: string;
+  placeholder?: string;
   onError: (m: string) => void;
   onSaved: () => void;
-}> = ({ p, field, current, title, onError, onSaved }) => {
+}> = ({ p, field, current, title, placeholder = '—', onError, onSaved }) => {
   const [value, setValue] = useState(current == null ? '' : String(current));
   useEffect(() => { setValue(current == null ? '' : String(current)); }, [current]);
   const commit = async () => {
@@ -13462,7 +13463,7 @@ const QtyCell: React.FC<{
       onChange={e => setValue(e.target.value)}
       onBlur={commit}
       onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setValue(current == null ? '' : String(current)); }}
-      placeholder="—"
+      placeholder={placeholder}
       title={title}
       inputMode="decimal"
       style={{ width: 56, padding: '3px 5px', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: 12, textAlign: 'center', background: current == null ? '#f8fafc' : '#fff' }}
@@ -13714,7 +13715,7 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
 
   const th: React.CSSProperties = { padding: '6px 6px', fontSize: 10.5, color: '#fff', background: '#1e293b', textAlign: 'center', fontWeight: 600, position: 'sticky', top: 0, zIndex: 1, lineHeight: 1.2 };
   const td: React.CSSProperties = { padding: '5px 6px', fontSize: 12, borderBottom: '1px solid #eef2f7', textAlign: 'center', verticalAlign: 'middle' };
-  const COLS = ['Stock Order', 'Item Code', 'Description', 'Dimensions', 'Ordered', 'Confirmed\nReceived', 'Target\nStock', 'Taken', 'Returned', 'On Hand', 'Reserved', 'Available', 'Remaining %', 'Reorder at ≤', 'Order', 'Status', 'Used by'];
+  const COLS = ['Stock Order', 'Item Code', 'Description', 'Dimensions', 'Ordered', 'Confirmed\nReceived', 'Target\nStock', 'Taken', 'Returned', 'On Hand', 'Reserved', 'Available', 'Remaining %', 'Reorder\nat %', 'Order', 'Status', 'Used by'];
 
   return (
     <div onMouseDown={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', zIndex: readOnly ? 100001 : 20000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }}>
@@ -13844,7 +13845,13 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
                         <td style={td}>{p.reserved}</td>
                         <td style={{ ...td, fontWeight: 700 }}>{dash(p.available)}</td>
                         <td style={td}>{fmtPct(p.remainingPct)}</td>
-                        <td style={td}>{dash(p.reorderThreshold)}</td>
+                        <td style={{ ...td, whiteSpace: 'nowrap' }}>
+                          {readOnly ? `${p.reorderPct ?? 25}%` : (
+                            <><QtyCell p={p} field="reorderPct" current={p.reorderPct} placeholder="25"
+                              title="Reorder point in % — REORDER NOW at or below it, WATCH up to twice it (empty = 25%)" onError={setError} onSaved={load} /> %</>
+                          )}
+                          <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>{p.reorderThreshold != null ? `≤ ${p.reorderThreshold} pcs` : ''}</div>
+                        </td>
                         <td style={{ ...td, fontWeight: 800, color: p.reorderQty > 0 ? '#c2410c' : '#9ca3af', background: p.reorderQty > 0 ? '#fff7ed' : undefined }}
                           title={p.reorderQty > 0 ? `Re-order ${p.reorderQty} to get back to the ${p.target != null ? `target ${p.target}` : `ordered ${p.ordered}`}` : 'Not at the reorder point'}>
                           {p.reorderQty > 0 ? p.reorderQty : '—'}
@@ -13903,7 +13910,7 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
           )}
         </div>
         <div style={{ padding: '6px 18px', fontSize: 11, color: '#64748b', borderTop: '1px solid #e5e7eb' }}>
-          Status per model, Remaining % = Available ÷ Target Stock (or Confirmed Received when no target is set): HEALTHY &gt; 50% · WATCH 25–50% · REORDER NOW ≤ 25% · OUT OF STOCK ≤ 0 · PENDING VERIFICATION = no warehouse receipt yet (enter it in “Confirmed Received”).
+          Status per model, Remaining % = Available ÷ Target Stock (or Confirmed Received when no target is set): REORDER NOW ≤ “Reorder at %” (25% unless changed) · WATCH up to twice that · HEALTHY above · OUT OF STOCK ≤ 0 · PENDING VERIFICATION = no warehouse receipt yet (enter it in “Confirmed Received”).
         </div>
       </div>
     </div>
@@ -19979,6 +19986,8 @@ export interface StockProduct {
   onHand: number | null;
   available: number | null;
   remainingPct: number | null;
+  /** reorder point in % as entered; null = default 25% */
+  reorderPct: number | null;
   reorderThreshold: number | null;
   /** suggested re-order ((target or ordered) − available) once at the reorder point; 0 otherwise */
   reorderQty: number;
@@ -20010,7 +20019,7 @@ export async function getAvailableStockProducts(): Promise<StockProduct[]> {
   return json(await apiFetch(`${API_BASE}/usage/products`), 'Failed to load stock');
 }
 
-export async function updateStockProduct(id: string, data: Partial<Pick<StockProduct, 'itemCode' | 'description' | 'dimensions' | 'quantity' | 'unitPrice' | 'totalPrice'>> & { receivedQuantity?: number | null; targetQuantity?: number | null }) {
+export async function updateStockProduct(id: string, data: Partial<Pick<StockProduct, 'itemCode' | 'description' | 'dimensions' | 'quantity' | 'unitPrice' | 'totalPrice'>> & { receivedQuantity?: number | null; targetQuantity?: number | null; reorderPct?: number | null }) {
   return json(await apiFetch(`${API_BASE}/products/${id}`, {
     method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data),
   }), 'Failed to update product');

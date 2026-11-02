@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNotEmpty, IsIn, IsNumber, IsArray, ValidateNested, ArrayMinSize, Min, ValidateIf, IsEnum, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsNotEmpty, IsIn, IsNumber, IsArray, ValidateNested, ArrayMinSize, Min, ValidateIf, IsEnum, IsBoolean, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ProjectItemType } from '@prisma/client';
 
@@ -34,6 +34,8 @@ export class UpdateStockProductDto {
   @IsOptional() @IsNumber() @Min(0) quantity?: number;
   /** Target stock level; null = measure against Confirmed Received */
   @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumber() @Min(0) targetQuantity?: number | null;
+  /** Reorder point in % (REORDER NOW at or below it, WATCH up to twice it); null = 25% */
+  @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumber() @Min(1) @Max(99) reorderPct?: number | null;
   @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumber() unitPrice?: number | null;
   @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumber() totalPrice?: number | null;
 }

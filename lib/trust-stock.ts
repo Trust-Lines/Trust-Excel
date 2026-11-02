@@ -298,6 +298,8 @@ export interface StockProduct {
   onHand: number | null;
   available: number | null;
   remainingPct: number | null;
+  /** reorder point in % as entered; null = default 25% */
+  reorderPct: number | null;
   reorderThreshold: number | null;
   /** suggested re-order ((target or ordered) − available) once at the reorder point; 0 otherwise */
   reorderQty: number;
@@ -329,7 +331,7 @@ export async function getAvailableStockProducts(): Promise<StockProduct[]> {
   return json(await apiFetch(`${API_BASE}/usage/products`), 'Failed to load stock');
 }
 
-export async function updateStockProduct(id: string, data: Partial<Pick<StockProduct, 'itemCode' | 'description' | 'dimensions' | 'quantity' | 'unitPrice' | 'totalPrice'>> & { receivedQuantity?: number | null; targetQuantity?: number | null }) {
+export async function updateStockProduct(id: string, data: Partial<Pick<StockProduct, 'itemCode' | 'description' | 'dimensions' | 'quantity' | 'unitPrice' | 'totalPrice'>> & { receivedQuantity?: number | null; targetQuantity?: number | null; reorderPct?: number | null }) {
   return json(await apiFetch(`${API_BASE}/products/${id}`, {
     method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data),
   }), 'Failed to update product');

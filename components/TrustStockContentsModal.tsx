@@ -17,15 +17,16 @@ const fmtDate = (s: string | null) => (s ? new Date(s).toLocaleDateString('en-GB
 
 const STATUS_FILTERS: (StockStatus | 'ALL')[] = ['ALL', 'HEALTHY', 'WATCH', 'REORDER_NOW', 'OUT_OF_STOCK', 'PENDING_VERIFICATION'];
 
-/** Always-visible number box saved on Enter / leaving it; empty = null. Used for Confirmed Received and Target Stock. */
+/** Always-visible number box saved on Enter / leaving it; empty = null. Used for Confirmed Received, Target Stock and Reorder %. */
 const QtyCell: React.FC<{
   p: StockProduct;
-  field: 'receivedQuantity' | 'targetQuantity';
+  field: 'receivedQuantity' | 'targetQuantity' | 'reorderPct';
   current: number | null;
   title: string;
+  placeholder?: string;
   onError: (m: string) => void;
   onSaved: () => void;
-}> = ({ p, field, current, title, onError, onSaved }) => {
+}> = ({ p, field, current, title, placeholder = '—', onError, onSaved }) => {
   const [value, setValue] = useState(current == null ? '' : String(current));
   useEffect(() => { setValue(current == null ? '' : String(current)); }, [current]);
   const commit = async () => {
@@ -41,7 +42,7 @@ const QtyCell: React.FC<{
       onChange={e => setValue(e.target.value)}
       onBlur={commit}
       onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setValue(current == null ? '' : String(current)); }}
-      placeholder="—"
+      placeholder={placeholder}
       title={title}
       inputMode="decimal"
       style={{ width: 56, padding: '3px 5px', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: 12, textAlign: 'center', background: current == null ? '#f8fafc' : '#fff' }}
@@ -293,7 +294,7 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
 
   const th: React.CSSProperties = { padding: '6px 6px', fontSize: 10.5, color: '#fff', background: '#1e293b', textAlign: 'center', fontWeight: 600, position: 'sticky', top: 0, zIndex: 1, lineHeight: 1.2 };
   const td: React.CSSProperties = { padding: '5px 6px', fontSize: 12, borderBottom: '1px solid #eef2f7', textAlign: 'center', verticalAlign: 'middle' };
-  const COLS = ['Stock Order', 'Item Code', 'Description', 'Dimensions', 'Ordered', 'Confirmed\nReceived', 'Target\nStock', 'Taken', 'Returned', 'On Hand', 'Reserved', 'Available', 'Remaining %', 'Reorder at ≤', 'Order', 'Status', 'Used by'];
+  const COLS = ['Stock Order', 'Item Code', 'Description', 'Dimensions', 'Ordered', 'Confirmed\nReceived', 'Target\nStock', 'Taken', 'Returned', 'On Hand', 'Reserved', 'Available', 'Remaining %', 'Reorder\nat %', 'Order', 'Status', 'Used by'];
 
   return (
     <div onMouseDown={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', zIndex: readOnly ? 100001 : 20000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }}>
@@ -423,7 +424,13 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
                         <td style={td}>{p.reserved}</td>
                         <td style={{ ...td, fontWeight: 700 }}>{dash(p.available)}</td>
                         <td style={td}>{fmtPct(p.remainingPct)}</td>
-                        <td style={td}>{dash(p.reorderThreshold)}</td>
+                        <td style={{ ...td, whiteSpace: 'nowrap' }}>
+                          {readOnly ? `${p.reorderPct ?? 25}%` : (
+                            <><QtyCell p={p} field="reorderPct" current={p.reorderPct} placeholder="25"
+                              title="Reorder point in % — REORDER NOW at or below it, WATCH up to twice it (empty = 25%)" onError={setError} onSaved={load} /> %</>
+                          )}
+                          <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>{p.reorderThreshold != null ? `≤ ${p.reorderThreshold} pcs` : ''}</div>
+                        </td>
                         <td style={{ ...td, fontWeight: 800, color: p.reorderQty > 0 ? '#c2410c' : '#9ca3af', background: p.reorderQty > 0 ? '#fff7ed' : undefined }}
                           title={p.reorderQty > 0 ? `Re-order ${p.reorderQty} to get back to the ${p.target != null ? `target ${p.target}` : `ordered ${p.ordered}`}` : 'Not at the reorder point'}>
                           {p.reorderQty > 0 ? p.reorderQty : '—'}
@@ -482,7 +489,7 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
           )}
         </div>
         <div style={{ padding: '6px 18px', fontSize: 11, color: '#64748b', borderTop: '1px solid #e5e7eb' }}>
-          Status per model, Remaining % = Available ÷ Target Stock (or Confirmed Received when no target is set): HEALTHY &gt; 50% · WATCH 25–50% · REORDER NOW ≤ 25% · OUT OF STOCK ≤ 0 · PENDING VERIFICATION = no warehouse receipt yet (enter it in “Confirmed Received”).
+          Status per model, Remaining % = Available ÷ Target Stock (or Confirmed Received when no target is set): REORDER NOW ≤ “Reorder at %” (25% unless changed) · WATCH up to twice that · HEALTHY above · OUT OF STOCK ≤ 0 · PENDING VERIFICATION = no warehouse receipt yet (enter it in “Confirmed Received”).
         </div>
       </div>
     </div>

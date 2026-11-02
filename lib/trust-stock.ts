@@ -243,8 +243,9 @@ export async function openTrustStockPdf(itemId: string): Promise<void> {
 }
 
 /** Builds the re-order PF (everything with an Order quantity) and downloads it. */
-export async function downloadReorderPf(productIds?: string[]): Promise<void> {
-  const res = await apiFetch(`${API_BASE}/reorder-pf`, { method: 'POST', body: JSON.stringify({ productIds }) });
+/** Production form for the picked products and quantities (RE-ORDER tab) */
+export async function downloadReorderPf(lines: { productId: string; quantity: number }[]): Promise<void> {
+  const res = await apiFetch(`${API_BASE}/reorder-pf`, { method: 'POST', body: JSON.stringify({ lines }) });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Could not create the re-order PF');
@@ -288,6 +289,8 @@ export interface StockProduct {
   // stock-sheet figures (see TrustStockService.stats)
   ordered: number;
   received: number | null;
+  /** target stock level entered by hand; when set, Remaining % and the status use it instead of received */
+  target: number | null;
   taken: number;
   returned: number;
   netUsed: number;
@@ -296,7 +299,7 @@ export interface StockProduct {
   available: number | null;
   remainingPct: number | null;
   reorderThreshold: number | null;
-  /** suggested re-order (ordered − available) once at the reorder point; 0 otherwise */
+  /** suggested re-order ((target or ordered) − available) once at the reorder point; 0 otherwise */
   reorderQty: number;
   status: StockStatus;
   /** what can still be taken/reserved (ordered qty is the cap until the receipt is confirmed) */
@@ -326,7 +329,7 @@ export async function getAvailableStockProducts(): Promise<StockProduct[]> {
   return json(await apiFetch(`${API_BASE}/usage/products`), 'Failed to load stock');
 }
 
-export async function updateStockProduct(id: string, data: Partial<Pick<StockProduct, 'itemCode' | 'description' | 'dimensions' | 'quantity' | 'unitPrice' | 'totalPrice'>> & { receivedQuantity?: number | null }) {
+export async function updateStockProduct(id: string, data: Partial<Pick<StockProduct, 'itemCode' | 'description' | 'dimensions' | 'quantity' | 'unitPrice' | 'totalPrice'>> & { receivedQuantity?: number | null; targetQuantity?: number | null }) {
   return json(await apiFetch(`${API_BASE}/products/${id}`, {
     method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data),
   }), 'Failed to update product');

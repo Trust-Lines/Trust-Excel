@@ -32,8 +32,20 @@ export class UpdateStockProductDto {
   /** Confirmed received in the warehouse; null = back to pending verification */
   @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumber() @Min(0) receivedQuantity?: number | null;
   @IsOptional() @IsNumber() @Min(0) quantity?: number;
+  /** Target stock level; null = measure against Confirmed Received */
+  @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumber() @Min(0) targetQuantity?: number | null;
   @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumber() unitPrice?: number | null;
   @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumber() totalPrice?: number | null;
+}
+
+export class ReorderPfLineDto {
+  @IsString() @IsNotEmpty() productId: string;
+  @IsNumber() @Min(0.01) quantity: number;
+}
+
+/** Re-order PF: the products and quantities picked in the RE-ORDER tab */
+export class ReorderPfDto {
+  @IsArray() @ArrayMinSize(1) @ValidateNested({ each: true }) @Type(() => ReorderPfLineDto) lines: ReorderPfLineDto[];
 }
 
 export class CreateStockUsageDto {

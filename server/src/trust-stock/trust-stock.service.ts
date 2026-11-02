@@ -4,7 +4,7 @@ import { EventsGateway } from '../events/events.gateway';
 import { applyStatusDateAutomation } from '../common/helpers/status-date-automation';
 import { CreateTrustStockGroupDto, UpdateTrustStockGroupDto, TrustStockItemDto } from './dto/trust-stock.dto';
 import { ImportPfDto, UpdateStockProductDto, CreateStockUsageDto, StockMovementsDto } from './dto/trust-stock-pdf.dto';
-import { parsePfPdf, normalizeCode, PfItemLayout } from './pf-pdf-parser';
+import { parsePfPdf, normalizeCode, normalizeItemCode, PfItemLayout } from './pf-pdf-parser';
 import { renderReorderPf, ReorderPfPage } from './reorder-pf';
 import { FileStorage } from '../common/storage/file-storage';
 import { plainToInstance } from 'class-transformer';
@@ -369,12 +369,15 @@ export class TrustStockService implements OnModuleInit {
   }
 
   /**
-   * Re-order PF: a PRODUCTION FORM for everything whose Order column is > 0,
+   * Re-order PF: a PRODUCTION FORM for the products and quantities picked in the RE-ORDER tab,
    * one page per vendor, under the next stock code (STOCK-TR-04 → STOCK-TR-05).
+   * The same item code picked from several stock orders becomes one line.
    * Pictures are copied from the products' original PFs. Nothing is saved.
    */
-  async reorderPf(productIds?: string[]) {
-    const products = (await this.listProducts()).filter(p => p.reorderQty > 0 && (!productIds?.length || productIds.includes(p.id)));
+  async reorderPf(lines: { productId: string; quantity: number }[]) {
+    const qty = new Map<string, number>();
+    for (const l of lines) if (l.quantity > 0) qty.set(l.productId, (qty.get(l.productId) || 0) + l.quantity);
+    const products = (await this.listProducts()).filter(p => qty.has(p.id));
     if (!products.length) throw new BadRequestException('Nothing to re-order');
 
     const codes = (await this.prisma.trustStockGroup.findMany({ select: { code: true } })).map(g => g.code.replace(/\s*~deleted-\d+$/, '').replace(/\s*\(restored\)$/i, ''));
@@ -408,9 +411,12 @@ export class TrustStockService implements OnModuleInit {
           lines: [],
         });
       }
-      pages.get(key)!.lines.push({
+      const page = pages.get(key)!;
+      const same = page.lines.find(l => normalizeItemCode(l.itemCode) === normalizeItemCode(p.itemCode));
+      if (same) same.quantity += qty.get(p.id)!;
+      else page.lines.push({
         itemCode: p.itemCode, description: p.description, dimensions: p.dimensions, category: p.category,
-        quantity: p.reorderQty, unitPrice: p.unitPrice, currency: p.currency || 'USD',
+        quantity: qty.get(p.id)!, unitPrice: p.unitPrice, currency: p.currency || 'USD',
       });
       if (p.stockItem.hasPdf) sourceItemIds.add(p.stockItem.id);
     }
@@ -438,22 +444,25 @@ export class TrustStockService implements OnModuleInit {
   // Same rules as the "Cabinet Stock Management" sheet, per product (model):
   //   on hand    = confirmed received − taken + returned     (none until received)
   //   available  = on hand − reserved
-  //   remaining% = available ÷ received
-  //   reorder at ≤ ROUNDDOWN(25% × received)
+  //   base       = target stock (entered by hand) if set, else confirmed received
+  //   remaining% = available ÷ base
+  //   reorder at ≤ ROUNDDOWN(25% × base)
   //   status     = PENDING VERIFICATION (no receipt) | OUT OF STOCK (≤ 0) | REORDER NOW (≤ 25%)
   //                | WATCH (≤ 50%) | HEALTHY (> 50%)
 
-  private static stats(p: { quantity: any; receivedQuantity: any; usages: { kind: string; quantity: any; projectItemId?: string }[] }) {
+  private static stats(p: { quantity: any; receivedQuantity: any; targetQuantity?: any; usages: { kind: string; quantity: any; projectItemId?: string }[] }) {
     const sum = (kind: string) => p.usages.filter(u => u.kind === kind).reduce((s, u) => s + Number(u.quantity), 0);
     const ordered = Number(p.quantity);
     const received = p.receivedQuantity != null ? Number(p.receivedQuantity) : null;
+    const target = p.targetQuantity != null ? Number(p.targetQuantity) : null;
     const taken = sum('TAKEN');
     const returned = sum('RETURNED');
     const reserved = sum('RESERVED');
     const onHand = received != null ? received - taken + returned : null;
     const available = onHand != null ? onHand - reserved : null;
-    const remainingPct = received ? (available as number) / received : null;
-    const reorderThreshold = received != null ? Math.floor(received * 0.25) : null;
+    const base = target ?? received;
+    const remainingPct = received != null && base ? (available as number) / base : null;
+    const reorderThreshold = received != null && base != null ? Math.floor(base * 0.25) : null;
     let status: 'PENDING_VERIFICATION' | 'OUT_OF_STOCK' | 'REORDER_NOW' | 'WATCH' | 'HEALTHY';
     if (received == null) status = 'PENDING_VERIFICATION';
     else if ((available as number) <= 0) status = 'OUT_OF_STOCK';
@@ -462,9 +471,9 @@ export class TrustStockService implements OnModuleInit {
     else status = 'HEALTHY';
     // What can still be handed out: before the warehouse receipt is confirmed, the ordered quantity is the cap
     const takeable = (received ?? ordered) - taken + returned - reserved;
-    // Suggested re-order once the reorder point is hit: what's missing to get back to the ordered quantity
-    const reorderQty = status === 'REORDER_NOW' || status === 'OUT_OF_STOCK' ? Math.max(0, ordered - (available as number)) : 0;
-    return { ordered, received, taken, returned, netUsed: taken - returned, reserved, onHand, available, remainingPct, reorderThreshold, reorderQty, status, takeable };
+    // Suggested re-order once the reorder point is hit: what's missing to get back to the target (or the ordered quantity)
+    const reorderQty = status === 'REORDER_NOW' || status === 'OUT_OF_STOCK' ? Math.max(0, (target ?? ordered) - (available as number)) : 0;
+    return { ordered, received, target, taken, returned, netUsed: taken - returned, reserved, onHand, available, remainingPct, reorderThreshold, reorderQty, status, takeable };
   }
 
   /** "( D=32.5"-W=40"-H=32.75")" at the end of a description → dimensions + clean description */

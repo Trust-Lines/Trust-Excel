@@ -6,7 +6,7 @@ import { PageAccessGuard } from '../auth/guards/page-access.guard';
 import { RequirePageAccess } from '../auth/decorators/page-access.decorator';
 import { TrustStockService } from './trust-stock.service';
 import { CreateTrustStockGroupDto, UpdateTrustStockGroupDto, TrustStockItemDto } from './dto/trust-stock.dto';
-import { UpdateStockProductDto, CreateStockUsageDto, StockMovementsDto } from './dto/trust-stock-pdf.dto';
+import { UpdateStockProductDto, CreateStockUsageDto, StockMovementsDto, ReorderPfDto } from './dto/trust-stock-pdf.dto';
 
 // Vercel caps request bodies at 4.5 MB
 const PDF_UPLOAD = FileInterceptor('file', { limits: { fileSize: 4 * 1024 * 1024 } });
@@ -96,10 +96,10 @@ export class TrustStockController {
     return this.service.listCatalog();
   }
 
-  /** Re-order PF (PDF) for the products whose Order column is > 0; body.productIds narrows it */
+  /** Re-order PF (PDF) for the products and quantities picked in the RE-ORDER tab */
   @Post('reorder-pf')
-  async reorderPf(@Body('productIds') productIds: string[] | undefined, @Res() res: Response) {
-    const { data, fileName } = await this.service.reorderPf(Array.isArray(productIds) ? productIds : undefined);
+  async reorderPf(@Body() dto: ReorderPfDto, @Res() res: Response) {
+    const { data, fileName } = await this.service.reorderPf(dto.lines);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
     res.send(data);

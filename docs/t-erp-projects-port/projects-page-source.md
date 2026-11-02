@@ -1,6 +1,6 @@
 # Trust System — Projects page source (for T-ERP)
 
-Generated 2026-10-30 from the Trust-Lines/Trust-Excel repo.
+Generated 2026-11-02 from the Trust-Lines/Trust-Excel repo.
 Every file the Projects page (`pages/OperationalBoard.tsx`) imports, plus the global `styles.css`.
 Paths are relative to the repo root; recreate them as they are so the relative imports keep working.
 
@@ -39,53 +39,53 @@ Third-party packages used by these files: `react` 18, `react-dom`, `react-router
 | `components/StockUsageModal.tsx` | 12503 | 16.7 KB |
 | `components/TodayPfControl.tsx` | 12803 | 3.2 KB |
 | `components/TodayPfManageModal.tsx` | 12911 | 24.4 KB |
-| `components/TrustStockContentsModal.tsx` | 13419 | 22.1 KB |
-| `components/VendorDropdownField.tsx` | 13775 | 13.8 KB |
-| `components/ui/AnchoredDropdown.tsx` | 14205 | 8.7 KB |
-| `constants.ts` | 14475 | 0.2 KB |
-| `contexts/AuthContext.tsx` | 14485 | 8.3 KB |
-| `contexts/PaymentRulesContext.tsx` | 14755 | 2.3 KB |
-| `contexts/SocketContext.tsx` | 14838 | 6.1 KB |
-| `hooks/useColumnPermissions.ts` | 15050 | 5.8 KB |
-| `hooks/useLivePatchStore.ts` | 15229 | 8.7 KB |
-| `hooks/usePagePermissions.ts` | 15485 | 2.2 KB |
-| `hooks/useSocketEvent.ts` | 15558 | 0.6 KB |
-| `hooks/useUndoStack.ts` | 15588 | 5.6 KB |
-| `lib/api.ts` | 15783 | 3.6 KB |
-| `lib/auth.ts` | 15916 | 6.5 KB |
-| `lib/columns.ts` | 16180 | 7.2 KB |
-| `lib/containers.ts` | 16481 | 4.6 KB |
-| `lib/dateUtils.ts` | 16669 | 1.7 KB |
-| `lib/direct-orders.ts` | 16736 | 5.4 KB |
-| `lib/displayHelpers.ts` | 16925 | 1.8 KB |
-| `lib/expenses-direct-order.ts` | 16988 | 5.3 KB |
-| `lib/expenses-missing-extra.ts` | 17149 | 5.3 KB |
-| `lib/expenses-p.ts` | 17310 | 5.5 KB |
-| `lib/gridWidth.ts` | 17479 | 2.4 KB |
-| `lib/missing-extra.ts` | 17595 | 9.9 KB |
-| `lib/payment-rules.ts` | 17901 | 1.1 KB |
-| `lib/pf-groups.ts` | 17954 | 3.7 KB |
-| `lib/projectColor.ts` | 18077 | 10.0 KB |
-| `lib/projectTotalApi.ts` | 18411 | 4.0 KB |
-| `lib/projects.ts` | 18539 | 27.0 KB |
-| `lib/sanitizePayload.ts` | 19384 | 2.1 KB |
-| `lib/today-pf.ts` | 19459 | 2.5 KB |
-| `lib/trust-stock.ts` | 19536 | 14.9 KB |
-| `pages/OperationalBoard.tsx` | 19951 | 36.9 KB |
-| `types.ts` | 20976 | 9.7 KB |
-| `types/expensesDirectOrder.ts` | 21267 | 1.4 KB |
-| `types/expensesMissingExtra.ts` | 21324 | 1.4 KB |
-| `types/expensesP.ts` | 21382 | 1.3 KB |
-| `types/projectTotal.ts` | 21439 | 0.4 KB |
-| `utils/containerUtils.ts` | 21469 | 2.3 KB |
-| `utils/excel/exportProjectTotalExcel.ts` | 21556 | 11.0 KB |
-| `utils/excel/exportProjectsAllTabsExcel.ts` | 21848 | 8.0 KB |
-| `utils/excel/exportProjectsExcel.ts` | 22079 | 19.2 KB |
-| `utils/excel/statusColorsExcel.ts` | 22549 | 2.6 KB |
-| `utils/filterUtils.ts` | 22651 | 7.1 KB |
-| `utils/moneyUtils.ts` | 22853 | 5.1 KB |
-| `utils/statusStyles.ts` | 23027 | 4.2 KB |
-| `styles.css` | 23220 | 101.0 KB |
+| `components/TrustStockContentsModal.tsx` | 13419 | 30.1 KB |
+| `components/VendorDropdownField.tsx` | 13899 | 13.8 KB |
+| `components/ui/AnchoredDropdown.tsx` | 14329 | 8.7 KB |
+| `constants.ts` | 14599 | 0.2 KB |
+| `contexts/AuthContext.tsx` | 14609 | 8.3 KB |
+| `contexts/PaymentRulesContext.tsx` | 14879 | 2.3 KB |
+| `contexts/SocketContext.tsx` | 14962 | 6.1 KB |
+| `hooks/useColumnPermissions.ts` | 15174 | 5.8 KB |
+| `hooks/useLivePatchStore.ts` | 15353 | 8.7 KB |
+| `hooks/usePagePermissions.ts` | 15609 | 2.2 KB |
+| `hooks/useSocketEvent.ts` | 15682 | 0.6 KB |
+| `hooks/useUndoStack.ts` | 15712 | 5.6 KB |
+| `lib/api.ts` | 15907 | 3.6 KB |
+| `lib/auth.ts` | 16040 | 6.5 KB |
+| `lib/columns.ts` | 16304 | 7.2 KB |
+| `lib/containers.ts` | 16605 | 4.6 KB |
+| `lib/dateUtils.ts` | 16793 | 1.7 KB |
+| `lib/direct-orders.ts` | 16860 | 5.4 KB |
+| `lib/displayHelpers.ts` | 17049 | 1.8 KB |
+| `lib/expenses-direct-order.ts` | 17112 | 5.3 KB |
+| `lib/expenses-missing-extra.ts` | 17273 | 5.3 KB |
+| `lib/expenses-p.ts` | 17434 | 5.5 KB |
+| `lib/gridWidth.ts` | 17603 | 2.4 KB |
+| `lib/missing-extra.ts` | 17719 | 9.9 KB |
+| `lib/payment-rules.ts` | 18025 | 1.1 KB |
+| `lib/pf-groups.ts` | 18078 | 3.7 KB |
+| `lib/projectColor.ts` | 18201 | 10.0 KB |
+| `lib/projectTotalApi.ts` | 18535 | 4.0 KB |
+| `lib/projects.ts` | 18663 | 27.0 KB |
+| `lib/sanitizePayload.ts` | 19508 | 2.1 KB |
+| `lib/today-pf.ts` | 19583 | 2.5 KB |
+| `lib/trust-stock.ts` | 19660 | 15.6 KB |
+| `pages/OperationalBoard.tsx` | 20078 | 36.9 KB |
+| `types.ts` | 21103 | 9.7 KB |
+| `types/expensesDirectOrder.ts` | 21394 | 1.4 KB |
+| `types/expensesMissingExtra.ts` | 21451 | 1.4 KB |
+| `types/expensesP.ts` | 21509 | 1.3 KB |
+| `types/projectTotal.ts` | 21566 | 0.4 KB |
+| `utils/containerUtils.ts` | 21596 | 2.3 KB |
+| `utils/excel/exportProjectTotalExcel.ts` | 21683 | 11.0 KB |
+| `utils/excel/exportProjectsAllTabsExcel.ts` | 21975 | 8.0 KB |
+| `utils/excel/exportProjectsExcel.ts` | 22206 | 19.2 KB |
+| `utils/excel/statusColorsExcel.ts` | 22676 | 2.6 KB |
+| `utils/filterUtils.ts` | 22778 | 7.1 KB |
+| `utils/moneyUtils.ts` | 22980 | 5.1 KB |
+| `utils/statusStyles.ts` | 23154 | 4.2 KB |
+| `styles.css` | 23347 | 101.0 KB |
 
 ---
 
@@ -13438,27 +13438,111 @@ const fmtDate = (s: string | null) => (s ? new Date(s).toLocaleDateString('en-GB
 
 const STATUS_FILTERS: (StockStatus | 'ALL')[] = ['ALL', 'HEALTHY', 'WATCH', 'REORDER_NOW', 'OUT_OF_STOCK', 'PENDING_VERIFICATION'];
 
-const ReceivedCell: React.FC<{ p: StockProduct; onError: (m: string) => void; onSaved: () => void }> = ({ p, onError, onSaved }) => {
-  const [value, setValue] = useState(p.received == null ? '' : String(p.received));
-  useEffect(() => { setValue(p.received == null ? '' : String(p.received)); }, [p.received]);
+/** Always-visible number box saved on Enter / leaving it; empty = null. Used for Confirmed Received and Target Stock. */
+const QtyCell: React.FC<{
+  p: StockProduct;
+  field: 'receivedQuantity' | 'targetQuantity';
+  current: number | null;
+  title: string;
+  onError: (m: string) => void;
+  onSaved: () => void;
+}> = ({ p, field, current, title, onError, onSaved }) => {
+  const [value, setValue] = useState(current == null ? '' : String(current));
+  useEffect(() => { setValue(current == null ? '' : String(current)); }, [current]);
   const commit = async () => {
     const trimmed = value.trim();
     const next = trimmed === '' ? null : Number(trimmed.replace(',', '.'));
-    if (next === p.received || (next != null && !Number.isFinite(next))) { setValue(p.received == null ? '' : String(p.received)); return; }
-    try { await updateStockProduct(p.id, { receivedQuantity: next }); onSaved(); }
-    catch (e) { onError(e instanceof Error ? e.message : 'Save failed'); setValue(p.received == null ? '' : String(p.received)); }
+    if (next === current || (next != null && !(Number.isFinite(next) && next >= 0))) { setValue(current == null ? '' : String(current)); return; }
+    try { await updateStockProduct(p.id, { [field]: next }); onSaved(); }
+    catch (e) { onError(e instanceof Error ? e.message : 'Save failed'); setValue(current == null ? '' : String(current)); }
   };
   return (
     <input
       value={value}
       onChange={e => setValue(e.target.value)}
       onBlur={commit}
-      onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setValue(p.received == null ? '' : String(p.received)); }}
+      onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setValue(current == null ? '' : String(current)); }}
       placeholder="—"
-      title="Confirmed received in the warehouse (empty = pending verification)"
+      title={title}
       inputMode="decimal"
-      style={{ width: 56, padding: '3px 5px', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: 12, textAlign: 'center', background: p.received == null ? '#f8fafc' : '#fff' }}
+      style={{ width: 56, padding: '3px 5px', border: '1px solid #cbd5e1', borderRadius: 4, fontSize: 12, textAlign: 'center', background: current == null ? '#f8fafc' : '#fff' }}
     />
+  );
+};
+
+/** Suggested quantity when a product is ticked in the RE-ORDER tab */
+const suggestedQty = (p: StockProduct) =>
+  p.reorderQty > 0 ? p.reorderQty
+    : p.target != null && p.available != null && p.target > p.available ? p.target - p.available
+      : p.ordered;
+
+/**
+ * RE-ORDER tab: the products at the reorder point (ticked, with the suggested quantity),
+ * and below them every other product, which can be added to the same PF.
+ */
+const ReorderPanel: React.FC<{
+  products: StockProduct[];
+  others: StockProduct[];
+  picks: Record<string, string>;
+  setPicks: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+}> = ({ products, others, picks, setPicks }) => {
+  const th: React.CSSProperties = { padding: '6px 6px', fontSize: 10.5, color: '#fff', background: '#1e293b', textAlign: 'center', fontWeight: 600, lineHeight: 1.2 };
+  const td: React.CSSProperties = { padding: '5px 6px', fontSize: 12, borderBottom: '1px solid #eef2f7', textAlign: 'center', verticalAlign: 'middle' };
+  const COLS = ['', 'Stock Order', 'Item Code', 'Description', 'Dimensions', 'Vendor', 'Available', 'Target Stock', 'Remaining %', 'Status', 'PF Quantity'];
+  const toggle = (p: StockProduct) => setPicks(prev => {
+    const next = { ...prev };
+    if (p.id in next) delete next[p.id]; else next[p.id] = String(suggestedQty(p));
+    return next;
+  });
+  const setQty = (p: StockProduct, v: string) => setPicks(prev => ({ ...prev, [p.id]: v }));
+
+  const table = (title: string, note: string, rows: StockProduct[], head: string) => (
+    <div style={{ marginBottom: 18 }}>
+      <div style={{ padding: '6px 10px', background: head, color: '#fff', fontSize: 12, fontWeight: 800, letterSpacing: '.3px' }}>
+        {title} <span style={{ fontWeight: 400, opacity: .85, marginLeft: 8 }}>{note}</span>
+      </div>
+      {rows.length === 0 ? <div style={{ padding: 14, color: '#6b7280', fontSize: 12 }}>Nothing here.</div> : (
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead><tr>{COLS.map(h => <th key={h} style={th}>{h}</th>)}</tr></thead>
+          <tbody>
+            {rows.map(p => {
+              const st = STOCK_STATUS_STYLE[p.status];
+              const picked = p.id in picks;
+              return (
+                <tr key={p.id} style={{ background: picked ? '#fff7ed' : undefined }}>
+                  <td style={td}><input type="checkbox" checked={picked} onChange={() => toggle(p)} style={{ cursor: 'pointer' }} /></td>
+                  <td style={td}>{p.stockItem.group.code}</td>
+                  <td style={{ ...td, fontWeight: 700, color: '#15803d', whiteSpace: 'nowrap' }}>{p.itemCode}</td>
+                  <td style={{ ...td, textAlign: 'left', color: '#15803d', maxWidth: 280 }}>{p.description}</td>
+                  <td style={{ ...td, whiteSpace: 'nowrap' }}>{p.dimensions || '—'}</td>
+                  <td style={td}>{p.stockItem.vendor ? `${p.stockItem.vendor.code} - ${p.stockItem.vendor.name}` : '—'}</td>
+                  <td style={{ ...td, fontWeight: 700 }}>{dash(p.available)}</td>
+                  <td style={td}>{dash(p.target)}</td>
+                  <td style={td}>{fmtPct(p.remainingPct)}</td>
+                  <td style={td}><span style={{ display: 'inline-block', padding: '3px 6px', borderRadius: 4, background: st.bg, color: st.fg, fontSize: 10, fontWeight: 700, lineHeight: 1.2 }}>{st.label}</span></td>
+                  <td style={td}>
+                    <input
+                      value={picks[p.id] ?? ''}
+                      onChange={e => setQty(p, e.target.value)}
+                      placeholder="—"
+                      inputMode="decimal"
+                      style={{ width: 60, padding: '3px 5px', border: `1px solid ${picked ? '#f59e0b' : '#cbd5e1'}`, borderRadius: 4, fontSize: 12, textAlign: 'center', fontWeight: 700 }}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+
+  return (
+    <div style={{ padding: '10px 0' }}>
+      {table('NEEDS RE-ORDER', 'at or below the reorder point — ticked with the quantity back to the target', products, '#b91c1c')}
+      {table('ADD OTHER PRODUCTS TO THE PF', 'tick a product or type a quantity to add it', others, '#334155')}
+    </div>
   );
 };
 
@@ -13521,6 +13605,9 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
   const [orderFilter, setOrderFilter] = useState('');
   const [open, setOpen] = useState<Set<string>>(new Set());
   const [makingPf, setMakingPf] = useState(false);
+  const [view, setView] = useState<'list' | 'reorder'>('list');
+  /** RE-ORDER tab: product id → quantity typed for the PF */
+  const [picks, setPicks] = useState<Record<string, string>>({});
 
   // Edits from this table; reload afterwards (the live event isn't sent back to the editor)
   const save = async (p: StockProduct, patch: Parameters<typeof updateStockProduct>[1]) => {
@@ -13576,6 +13663,35 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
 
   const toggle = (id: string) => setOpen(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
 
+  // RE-ORDER tab: products at the reorder point first, everything else (search / stock order filters apply) below
+  const needReorder = useMemo(() => products.filter(p => p.reorderQty > 0), [products]);
+  const reorderOthers = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return products
+      .filter(p => p.reorderQty <= 0)
+      .filter(p => !orderFilter || p.stockItem.group.code === orderFilter)
+      .filter(p => !q || [p.itemCode, p.description, p.dimensions, p.stockItem.pfCode, p.stockItem.group.code, p.stockItem.vendor?.name].some(v => (v || '').toLowerCase().includes(q)))
+      .sort((a, b) => a.stockItem.group.code.localeCompare(b.stockItem.group.code, undefined, { numeric: true }));
+  }, [products, search, orderFilter]);
+  const openReorder = () => {
+    // tick everything at the reorder point that isn't picked yet
+    setPicks(prev => {
+      const next = { ...prev };
+      for (const p of needReorder) if (!(p.id in next)) next[p.id] = String(p.reorderQty);
+      return next;
+    });
+    setView('reorder');
+  };
+  const pfLines = useMemo(() => Object.entries(picks)
+    .map(([productId, v]) => ({ productId, quantity: Number(String(v).replace(',', '.')) }))
+    .filter(l => products.some(p => p.id === l.productId) && Number.isFinite(l.quantity) && l.quantity > 0), [picks, products]);
+  const createPf = async () => {
+    setMakingPf(true);
+    try { await downloadReorderPf(pfLines); setError(null); }
+    catch (e) { setError(e instanceof Error ? e.message : 'Could not create the re-order PF'); }
+    finally { setMakingPf(false); }
+  };
+
   const card = (label: string, value: number, head: string, color = '#0f172a') => (
     <div key={label} style={{ flex: '1 1 150px', minWidth: 140, border: '1px solid #e2e8f0', borderRadius: 6, overflow: 'hidden', textAlign: 'center' }}>
       <div style={{ background: head, color: '#fff', fontSize: 10.5, fontWeight: 700, padding: '5px 4px', letterSpacing: '.3px' }}>{label}</div>
@@ -13585,7 +13701,7 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
 
   const th: React.CSSProperties = { padding: '6px 6px', fontSize: 10.5, color: '#fff', background: '#1e293b', textAlign: 'center', fontWeight: 600, position: 'sticky', top: 0, zIndex: 1, lineHeight: 1.2 };
   const td: React.CSSProperties = { padding: '5px 6px', fontSize: 12, borderBottom: '1px solid #eef2f7', textAlign: 'center', verticalAlign: 'middle' };
-  const COLS = ['Stock Order', 'Item Code', 'Description', 'Dimensions', 'Ordered', 'Confirmed\nReceived', 'Taken', 'Returned', 'On Hand', 'Reserved', 'Available', 'Remaining %', 'Reorder at ≤', 'Order', 'Status', 'Used by'];
+  const COLS = ['Stock Order', 'Item Code', 'Description', 'Dimensions', 'Ordered', 'Confirmed\nReceived', 'Target\nStock', 'Taken', 'Returned', 'On Hand', 'Reserved', 'Available', 'Remaining %', 'Reorder at ≤', 'Order', 'Status', 'Used by'];
 
   return (
     <div onMouseDown={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', zIndex: readOnly ? 100001 : 20000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }}>
@@ -13593,24 +13709,6 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
         <div style={{ padding: '10px 18px', background: '#1e293b', color: '#fff', borderRadius: '10px 10px 0 0', display: 'flex', alignItems: 'center' }}>
           <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: '.4px' }}>TRUST LINES — STOCK OVERVIEW</div>
           <div style={{ flex: 1 }} />
-          {!readOnly && (() => {
-            const lines = products.filter(p => p.reorderQty > 0);
-            const qty = lines.reduce((s, p) => s + p.reorderQty, 0);
-            return (
-              <button
-                disabled={!lines.length || makingPf}
-                onClick={async () => {
-                  setMakingPf(true);
-                  try { await downloadReorderPf(); setError(null); }
-                  catch (e) { setError(e instanceof Error ? e.message : 'Could not create the re-order PF'); }
-                  finally { setMakingPf(false); }
-                }}
-                title={lines.length ? `Production form for ${lines.length} product(s), ${qty} pcs — the Order column` : 'Nothing at the reorder point'}
-                style={{ marginRight: 14, padding: '6px 14px', borderRadius: 6, border: 'none', fontSize: 12, fontWeight: 700, cursor: lines.length && !makingPf ? 'pointer' : 'default', background: lines.length ? '#f59e0b' : '#475569', color: lines.length ? '#1e293b' : '#cbd5e1' }}>
-                {makingPf ? 'Creating PF…' : `⬇ Re-order PF${lines.length ? ` (${lines.length})` : ''}`}
-              </button>
-            );
-          })()}
           <button onClick={onClose} style={{ border: 'none', background: 'none', fontSize: 22, cursor: 'pointer', color: '#fff' }}>×</button>
         </div>
 
@@ -13635,15 +13733,21 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
         {/* Filters */}
         <div style={{ padding: '8px 18px', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', borderBottom: '1px solid #e5e7eb' }}>
           {STATUS_FILTERS.map(s => {
-            const active = statusFilter === s;
+            const active = view === 'list' && statusFilter === s;
             const style = s === 'ALL' ? { label: 'ALL', bg: '#1e293b', fg: '#fff' } : STOCK_STATUS_STYLE[s];
             return (
-              <button key={s} onClick={() => setStatusFilter(s)} style={{
+              <button key={s} onClick={() => { setStatusFilter(s); setView('list'); }} style={{
                 padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer',
                 border: active ? '2px solid #0f172a' : '1px solid #d1d5db', background: active ? style.bg : '#fff', color: active ? style.fg : '#374151',
               }}>{style.label}</button>
             );
           })}
+          {!readOnly && (
+            <button onClick={openReorder} title="Pick products and quantities for a re-order production form" style={{
+              padding: '4px 12px', borderRadius: 999, fontSize: 11, fontWeight: 800, cursor: 'pointer',
+              border: view === 'reorder' ? '2px solid #0f172a' : '1px solid #f59e0b', background: view === 'reorder' ? '#f59e0b' : '#fff7ed', color: '#9a3412',
+            }}>RE-ORDER{needReorder.length ? ` (${needReorder.length})` : ''}</button>
+          )}
           <select value={orderFilter} onChange={e => setOrderFilter(e.target.value)} style={{ padding: '5px 8px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 12 }}>
             <option value="">All stock orders</option>
             {orders.map(o => <option key={o}>{o}</option>)}
@@ -13657,7 +13761,25 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
         <div style={{ flex: 1, overflow: 'auto' }}>
           {loading && <div style={{ padding: 24, color: '#6b7280' }}>Loading…</div>}
           {!loading && products.length === 0 && <div style={{ padding: 24, color: '#6b7280' }}>No products yet — upload a PF PDF to fill the stock.</div>}
-          {!loading && products.length > 0 && (
+          {!loading && products.length > 0 && view === 'reorder' && (
+            <>
+              <div style={{ position: 'sticky', top: 0, zIndex: 2, background: '#fff', padding: '8px 18px', display: 'flex', alignItems: 'center', gap: 10, borderBottom: '1px solid #e5e7eb' }}>
+                <b style={{ fontSize: 13 }}>Re-order PF</b>
+                <span style={{ fontSize: 12, color: '#475569' }}>
+                  {pfLines.length} product(s), {pfLines.reduce((s, l) => s + l.quantity, 0)} pcs selected · one page per vendor, next stock code
+                </span>
+                <div style={{ flex: 1 }} />
+                <button onClick={() => setPicks({})} disabled={!Object.keys(picks).length}
+                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #cbd5e1', background: '#fff', fontSize: 12, cursor: 'pointer' }}>Clear</button>
+                <button onClick={createPf} disabled={!pfLines.length || makingPf}
+                  style={{ padding: '6px 14px', borderRadius: 6, border: 'none', fontSize: 12, fontWeight: 700, cursor: pfLines.length && !makingPf ? 'pointer' : 'default', background: pfLines.length ? '#f59e0b' : '#cbd5e1', color: '#1e293b' }}>
+                  {makingPf ? 'Creating PF…' : `⬇ Create PF${pfLines.length ? ` (${pfLines.length})` : ''}`}
+                </button>
+              </div>
+              <ReorderPanel products={needReorder} others={reorderOthers} picks={picks} setPicks={setPicks} />
+            </>
+          )}
+          {!loading && products.length > 0 && view === 'list' && (
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead><tr>{COLS.map(h => <th key={h} style={th}>{h.split('\n').map((l, i) => <div key={i}>{l}</div>)}</th>)}</tr></thead>
               <tbody>
@@ -13695,7 +13817,8 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
                         <td style={td}>
                           <EditCell editable={!readOnly} numeric value={String(p.ordered)} onSave={v => save(p, { quantity: Number(v.replace(',', '.')) })} />
                         </td>
-                        <td style={td}>{readOnly ? dash(p.received) : <ReceivedCell p={p} onError={setError} onSaved={load} />}</td>
+                        <td style={td}>{readOnly ? dash(p.received) : <QtyCell p={p} field="receivedQuantity" current={p.received} title="Confirmed received in the warehouse (empty = pending verification)" onError={setError} onSaved={load} />}</td>
+                        <td style={td}>{readOnly ? dash(p.target) : <QtyCell p={p} field="targetQuantity" current={p.target} title="Target stock level — Remaining % and the status are measured against it (empty = use Confirmed Received)" onError={setError} onSaved={load} />}</td>
                         <td style={td}>{p.taken}</td>
                         <td style={td}>{p.returned}</td>
                         <td style={{ ...td, fontWeight: 600 }}>{dash(p.onHand)}</td>
@@ -13704,7 +13827,7 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
                         <td style={td}>{fmtPct(p.remainingPct)}</td>
                         <td style={td}>{dash(p.reorderThreshold)}</td>
                         <td style={{ ...td, fontWeight: 800, color: p.reorderQty > 0 ? '#c2410c' : '#9ca3af', background: p.reorderQty > 0 ? '#fff7ed' : undefined }}
-                          title={p.reorderQty > 0 ? `Re-order ${p.reorderQty} to get back to the ordered ${p.ordered}` : 'Not at the reorder point'}>
+                          title={p.reorderQty > 0 ? `Re-order ${p.reorderQty} to get back to the ${p.target != null ? `target ${p.target}` : `ordered ${p.ordered}`}` : 'Not at the reorder point'}>
                           {p.reorderQty > 0 ? p.reorderQty : '—'}
                         </td>
                         <td style={td}><span style={{ display: 'inline-block', padding: '3px 6px', borderRadius: 4, background: st.bg, color: st.fg, fontSize: 10, fontWeight: 700, lineHeight: 1.2 }}>{st.label}</span></td>
@@ -13727,7 +13850,7 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
                             {u.takenBy && <span style={{ marginLeft: 8, color: '#0f172a' }}>· {u.takenBy}</span>}
                             {u.rowDeleted && <span style={{ color: '#dc2626', marginLeft: 6 }}>(row deleted)</span>}
                           </td>
-                          <td style={td} colSpan={2} />
+                          <td style={td} colSpan={3} />
                           <td style={{ ...td, color: '#b45309', fontWeight: 600 }}>{u.kind === 'TAKEN' ? u.quantity : ''}</td>
                           <td style={{ ...td, color: '#0369a1', fontWeight: 600 }}>{u.kind === 'RETURNED' ? u.quantity : ''}</td>
                           <td style={td} />
@@ -13745,6 +13868,7 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
                   {[
                     visible.reduce((s, p) => s + p.ordered, 0),
                     visible.reduce((s, p) => s + (p.received ?? 0), 0),
+                    visible.reduce((s, p) => s + (p.target ?? 0), 0),
                     visible.reduce((s, p) => s + p.taken, 0),
                     visible.reduce((s, p) => s + p.returned, 0),
                     visible.reduce((s, p) => s + (p.onHand ?? 0), 0),
@@ -13760,7 +13884,7 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
           )}
         </div>
         <div style={{ padding: '6px 18px', fontSize: 11, color: '#64748b', borderTop: '1px solid #e5e7eb' }}>
-          Status per model, Remaining % = Available ÷ Confirmed Received: HEALTHY &gt; 50% · WATCH 25–50% · REORDER NOW ≤ 25% · OUT OF STOCK ≤ 0 · PENDING VERIFICATION = no warehouse receipt yet (enter it in “Confirmed Received”).
+          Status per model, Remaining % = Available ÷ Target Stock (or Confirmed Received when no target is set): HEALTHY &gt; 50% · WATCH 25–50% · REORDER NOW ≤ 25% · OUT OF STOCK ≤ 0 · PENDING VERIFICATION = no warehouse receipt yet (enter it in “Confirmed Received”).
         </div>
       </div>
     </div>
@@ -19781,8 +19905,9 @@ export async function openTrustStockPdf(itemId: string): Promise<void> {
 }
 
 /** Builds the re-order PF (everything with an Order quantity) and downloads it. */
-export async function downloadReorderPf(productIds?: string[]): Promise<void> {
-  const res = await apiFetch(`${API_BASE}/reorder-pf`, { method: 'POST', body: JSON.stringify({ productIds }) });
+/** Production form for the picked products and quantities (RE-ORDER tab) */
+export async function downloadReorderPf(lines: { productId: string; quantity: number }[]): Promise<void> {
+  const res = await apiFetch(`${API_BASE}/reorder-pf`, { method: 'POST', body: JSON.stringify({ lines }) });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Could not create the re-order PF');
@@ -19826,6 +19951,8 @@ export interface StockProduct {
   // stock-sheet figures (see TrustStockService.stats)
   ordered: number;
   received: number | null;
+  /** target stock level entered by hand; when set, Remaining % and the status use it instead of received */
+  target: number | null;
   taken: number;
   returned: number;
   netUsed: number;
@@ -19834,7 +19961,7 @@ export interface StockProduct {
   available: number | null;
   remainingPct: number | null;
   reorderThreshold: number | null;
-  /** suggested re-order (ordered − available) once at the reorder point; 0 otherwise */
+  /** suggested re-order ((target or ordered) − available) once at the reorder point; 0 otherwise */
   reorderQty: number;
   status: StockStatus;
   /** what can still be taken/reserved (ordered qty is the cap until the receipt is confirmed) */
@@ -19864,7 +19991,7 @@ export async function getAvailableStockProducts(): Promise<StockProduct[]> {
   return json(await apiFetch(`${API_BASE}/usage/products`), 'Failed to load stock');
 }
 
-export async function updateStockProduct(id: string, data: Partial<Pick<StockProduct, 'itemCode' | 'description' | 'dimensions' | 'quantity' | 'unitPrice' | 'totalPrice'>> & { receivedQuantity?: number | null }) {
+export async function updateStockProduct(id: string, data: Partial<Pick<StockProduct, 'itemCode' | 'description' | 'dimensions' | 'quantity' | 'unitPrice' | 'totalPrice'>> & { receivedQuantity?: number | null; targetQuantity?: number | null }) {
   return json(await apiFetch(`${API_BASE}/products/${id}`, {
     method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data),
   }), 'Failed to update product');

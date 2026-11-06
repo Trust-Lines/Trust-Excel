@@ -49,7 +49,7 @@ import { createTrustStockItem, updateTrustStockItem, deleteTrustStockItem, isSto
 import StockUsageModal from './StockUsageModal';
 
 // Trust Stock page: columns shown (plus the Trust-Stock-only ORDER NO column)
-const TRUST_STOCK_COLS = ['projectNo', 'type', 'pfCode', 'vendor', 'pfSignStatus', 'status', 'std', 'etd', 'rtr', 'rtd', 'pfUsd', 'pfTl', 'invoice', 'invoiceTl', 'paymentRule'];
+const TRUST_STOCK_COLS = ['projectNo', 'type', 'pfCode', 'vendor', 'orderNo', 'pfSignStatus', 'status', 'std', 'etd', 'rtr', 'rtd', 'pfUsd', 'pfTl', 'invoice', 'invoiceTl', 'paymentRule'];
 const ORDER_NO_WIDTH = 160; // keep in sync with .col-order-no in styles.css
 import { useAuth } from '../contexts/AuthContext';
 
@@ -422,7 +422,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
   const EXPENSES_SHOW_COLS = ['expensesUsd', 'expensesTl'];
   const isTrustStockMode = mode === 'trust-stock';
   const isColumnVisible = useCallback((key: string) => {
-    // Trust Stock shows a fixed column set (ORDER NO is rendered separately, see orderNo below)
+    // Trust Stock shows a fixed column set, ORDER NO included
     if (isTrustStockMode) {
       return TRUST_STOCK_COLS.includes(key) && baseIsColumnVisible(key);
     }
@@ -752,7 +752,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
   // Calculate dynamic grid width based on visible columns
   const gridWidthPx = useMemo(() => {
     const base = getGridWidthPx(isColumnVisible, isSupplierMode);
-    return isTrustStockMode ? `${parseInt(base, 10) + ORDER_NO_WIDTH}px` : base;
+    return isTrustStockMode && isColumnVisible('orderNo' as ColumnKey) ? `${parseInt(base, 10) + ORDER_NO_WIDTH}px` : base;
   }, [isColumnVisible, isSupplierMode, isTrustStockMode]);
 
   // 💰 CALCULATE TOTALS for PF USD and PF TL (excluding restricted rows)
@@ -2931,7 +2931,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
               <div className="header-right">
                 <div className="column-header-cell col-pf-code" style={getHeaderCellStyle('pfCode' as ColumnKey)}>PF CODE</div>
                 <div className="column-header-cell col-vendor" style={getHeaderCellStyle('vendor' as ColumnKey)}>VENDOR</div>
-                {isTrustStockMode && (
+                {isTrustStockMode && isColumnVisible('orderNo' as ColumnKey) && (
                   <div className="column-header-cell col-order-no" style={{ ...getHeaderCellStyle('vendor' as ColumnKey), width: ORDER_NO_WIDTH }}>ORDER NO</div>
                 )}
                 <div className="column-header-cell col-order-type" style={getHeaderCellStyle('orderType' as ColumnKey)}>ORDER TYPE</div>
@@ -3113,7 +3113,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
                             const scrollableFields = [
                               { field: 'pfCode', value: row.pfCode, className: 'col-pf-code', editable: (isTrustStockMode || !!row.customTypeId) && isColumnEditable('pfCode') },
                               { field: 'vendor', value: row.vendor, className: 'col-vendor', editable: isColumnEditable('vendor') },
-                              ...(isTrustStockMode ? [{ field: 'orderNo', value: (row as any).orderNo, className: 'col-order-no', editable: isColumnEditable('vendor') }] : []),
+                              ...(isTrustStockMode ? [{ field: 'orderNo', value: (row as any).orderNo, className: 'col-order-no', editable: isColumnEditable('orderNo' as ColumnKey) }] : []),
                               { field: 'orderType', value: row.orderType, className: 'col-order-type', editable: isColumnEditable('orderType') },
                               // PO SIGN STATUS - show only on first row of type group
                               ...(isSupplierMode ? [] : [{
@@ -3558,6 +3558,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
                       const allScrollableColumns = [
                         { field: 'pfCode', className: 'col-pf-code' },
                         { field: 'vendor', className: 'col-vendor' },
+                        ...(isTrustStockMode ? [{ field: 'orderNo', className: 'col-order-no' }] : []),
                         { field: 'orderType', className: 'col-order-type' },
                         ...(isSupplierMode ? [] : [{ field: 'poSignStatus', className: 'col-po-sign-status' }]),
                         { field: 'pfSignStatus', className: 'col-pf-sign-status' },

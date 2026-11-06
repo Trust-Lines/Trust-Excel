@@ -81,3 +81,14 @@ export class RoleWithPolicyDto {
   @Type(() => RolePolicyResponseDto)
   policy: RolePolicyResponseDto;
 }
+
+/** Trust Stock column rules of one role (Admin > Roles > Trust Stock columns) */
+export class UpdateTrustStockColumnsDto {
+  @IsArray()
+  @IsString({ each: true })
+  columnsHidden: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  columnsReadOnly: string[];
+}

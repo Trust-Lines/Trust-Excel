@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { apiFetch } from '../lib/auth';
 import './AdminRoles.css';
+import TrustStockColumnsPanel from './admin/TrustStockColumnsPanel';
 import { SUPPLIER_REGISTRY, getTabTables, getTableColumns, getSupplierTableKey } from '../src/permissions/supplierRegistry';
 import {
   getTableDisplayName,
@@ -60,7 +61,7 @@ const AdminRoles: React.FC = () => {
   const [roles, setRoles] = useState<Role[]>([]);
   const [rolesLoading, setRolesLoading] = useState(true);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
-  const [roleSubTab, setRoleSubTab] = useState<'pages' | 'columns' | 'suppliers' | 'types' | 'projects'>('pages');
+  const [roleSubTab, setRoleSubTab] = useState<'pages' | 'columns' | 'suppliers' | 'trustStock' | 'types' | 'projects'>('pages');
 
   // ✅ GATE 2: Supplier Permissions State (3-Level Structure)
   const [selectedSupplierMainTab, setSelectedSupplierMainTab] = useState<string>('P'); // P, ME, DO
@@ -1496,6 +1497,15 @@ const AdminRoles: React.FC = () => {
                         Supplier Tracking
                       </button>
                       <button
+                        className={`subtab-button ${roleSubTab === 'trustStock' ? 'active' : ''}`}
+                        onClick={() => setRoleSubTab('trustStock')}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                          <path d="M3 7l9-4 9 4v10l-9 4-9-4V7zm0 0l9 4 9-4M12 11v10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        Trust Stock Columns
+                      </button>
+                      <button
                         className={`subtab-button ${roleSubTab === 'types' ? 'active' : ''}`}
                         onClick={() => setRoleSubTab('types')}
                       >
@@ -1748,6 +1758,10 @@ const AdminRoles: React.FC = () => {
                           ))}
                         </div>
                         </div>
+                      )}
+
+                      {roleSubTab === 'trustStock' && (
+                        <TrustStockColumnsPanel roleId={selectedRole.id} isSystem={selectedRole.isSystem} />
                       )}
 
                       {roleSubTab === 'types' && (

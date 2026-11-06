@@ -7,8 +7,10 @@ import {
   UpdateRolePolicyDto,
   RolePolicyResponseDto,
   ColumnDefinitionDto,
-  RoleWithPolicyDto
+  RoleWithPolicyDto,
+  UpdateTrustStockColumnsDto,
 } from './dto/role-policy.dto';
+import { TRUST_STOCK_TABLE_KEY, TRUST_STOCK_COLUMNS, TRUST_STOCK_COLUMN_KEYS } from '../trust-stock/trust-stock-columns';
 import { TypeVisibilityService } from '../permissions/services/type-visibility.service';
 import { ProjectScopeService } from '../permissions/services/project-scope.service';
 import * as crypto from 'crypto';
@@ -1649,6 +1651,50 @@ export class AdminService {
   /**
    * Invalidate permission cache (placeholder for future cache implementation)
    */
+  // ================== TRUST STOCK COLUMNS ==================
+  // Own table registry key, so these never mix with the Projects rules (same column names).
+
+  async getTrustStockColumns(roleId: string) {
+    const role = await this.prisma.role.findUnique({ where: { id: roleId }, select: { id: true } });
+    if (!role) throw new BadRequestException('Role not found');
+    const table = await this.prisma.tableRegistry.findUnique({ where: { key: TRUST_STOCK_TABLE_KEY }, select: { id: true } });
+    const rows = table
+      ? await this.prisma.roleColumnVisibility.findMany({ where: { roleId, tableId: table.id } })
+      : [];
+    return {
+      columns: TRUST_STOCK_COLUMNS,
+      columnsHidden: rows.filter(r => r.isHidden).map(r => r.columnKey),
+      columnsReadOnly: rows.filter(r => !r.isHidden && r.isReadOnly).map(r => r.columnKey),
+    };
+  }
+
+  async updateTrustStockColumns(roleId: string, dto: UpdateTrustStockColumnsDto) {
+    const role = await this.prisma.role.findUnique({ where: { id: roleId }, select: { id: true } });
+    if (!role) throw new BadRequestException('Role not found');
+    const unknown = [...dto.columnsHidden, ...dto.columnsReadOnly].filter(k => !TRUST_STOCK_COLUMN_KEYS.includes(k));
+    if (unknown.length) throw new BadRequestException(`Unknown Trust Stock column(s): ${unknown.join(', ')}`);
+    const hidden = new Set(dto.columnsHidden);
+    const readOnly = new Set(dto.columnsReadOnly.filter(k => !hidden.has(k)));
+
+    await this.prisma.$transaction(async (tx) => {
+      const page = await tx.pageRegistry.findUnique({ where: { key: 'trust_stock' }, select: { id: true } });
+      const table = await tx.tableRegistry.upsert({
+        where: { key: TRUST_STOCK_TABLE_KEY },
+        update: {},
+        create: { key: TRUST_STOCK_TABLE_KEY, name: 'Trust Stock', description: 'Trust Stock purchases table', pageId: page?.id ?? null },
+      });
+      // only this role's Trust Stock rows are replaced
+      await tx.roleColumnVisibility.deleteMany({ where: { roleId, tableId: table.id } });
+      const data = [
+        ...[...hidden].map(columnKey => ({ roleId, tableId: table.id, columnKey, isHidden: true, isReadOnly: false })),
+        ...[...readOnly].map(columnKey => ({ roleId, tableId: table.id, columnKey, isHidden: false, isReadOnly: true })),
+      ];
+      if (data.length) await tx.roleColumnVisibility.createMany({ data });
+    });
+    this.logger.log(`Trust Stock columns updated for role ${roleId}: hidden=[${[...hidden]}] readOnly=[${[...readOnly]}]`);
+    return this.getTrustStockColumns(roleId);
+  }
+
   async invalidatePermissionCache() {
     try {
       // TODO: Implement actual cache invalidation when cache is added

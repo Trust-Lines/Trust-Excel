@@ -6,6 +6,7 @@ import { CreateTrustStockGroupDto, UpdateTrustStockGroupDto, TrustStockItemDto }
 import { ImportPfDto, UpdateStockProductDto, CreateStockUsageDto, StockMovementsDto } from './dto/trust-stock-pdf.dto';
 import { parsePfPdf, normalizeCode, normalizeItemCode, PfItemLayout } from './pf-pdf-parser';
 import { renderReorderPf, ReorderPfPage } from './reorder-pf';
+import { TRUST_STOCK_TABLE_KEY, TRUST_STOCK_COLUMN_FIELDS, TrustStockColumnRules, NO_RULES } from './trust-stock-columns';
 import { FileStorage } from '../common/storage/file-storage';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
@@ -33,6 +34,11 @@ const GROUP_INCLUDE = {
 const LIVE_USAGE = { deletedAt: null, projectItem: { deletedAt: null, project: { deletedAt: null } } };
 
 const DATE_FIELDS = ['std', 'etd', 'rtr', 'rtd', 'rdy', 'ftd', 'snd', 'paidUsd1Date', 'paidUsd2Date', 'paidTl1Date', 'paidTl2Date'] as const;
+/** Item fields under the price / accounting columns: never sent in live messages */
+const PRICE_FIELDS = new Set([
+  ...['pfUsd', 'pfTl', 'invoice', 'invoiceTl', 'accounting'].flatMap(c => TRUST_STOCK_COLUMN_FIELDS[c]),
+  'priceNotes',
+]);
 const PLAIN_FIELDS = [
   'type', 'customTypeId', 'vendorId', 'pfCode', 'orderNo', 'orderType', 'pfSignStatus', 'poSignStatus',
   'pfUsd', 'pfTl', 'invoice', 'invoiceTl', 'paidUsd1', 'paidUsd2', 'paidTl1', 'paidTl2',
@@ -69,6 +75,30 @@ export class TrustStockService implements OnModuleInit {
     } catch (err: any) {
       this.logger.warn(`Could not seed trust_stock page permission: ${err?.message || err}`);
     }
+  }
+
+  // ==================== COLUMN RULES ====================
+
+  private stockTableId: string | null = null;
+
+  /** The caller's Trust Stock column rules (Admin > Roles > Trust Stock columns); none = everything visible. */
+  async columnRules(user: any): Promise<TrustStockColumnRules> {
+    const visibility: { tableId: string | null; columnKey: string; isHidden: boolean; isReadOnly: boolean }[] = user?.role?.roleColumnVisibility || [];
+    if (!visibility.length) return NO_RULES;
+    // the registry row appears with the first rule saved; remember it once found
+    if (!this.stockTableId) {
+      this.stockTableId = (await this.prisma.tableRegistry.findUnique({ where: { key: TRUST_STOCK_TABLE_KEY }, select: { id: true } }))?.id ?? null;
+      if (!this.stockTableId) return NO_RULES;
+    }
+    const rules: TrustStockColumnRules = { hidden: new Set(), readOnly: new Set() };
+    for (const v of visibility) {
+      if (v.tableId !== this.stockTableId) continue;
+      if (v.isHidden) rules.hidden.add(v.columnKey);
+      else if (v.isReadOnly) rules.readOnly.add(v.columnKey);
+    }
+    // accounting (remaining = PF − paid) would give away the hidden prices
+    if (['pfUsd', 'pfTl', 'invoice', 'invoiceTl'].some(c => rules.hidden.has(c))) rules.hidden.add('accounting');
+    return rules;
   }
 
   // ==================== GROUPS ====================
@@ -118,7 +148,7 @@ export class TrustStockService implements OnModuleInit {
       data: { code, name: dto.name?.trim() || '', notes: dto.notes || null },
       include: GROUP_INCLUDE,
     });
-    this.events.emitToRooms(ROOMS, 'trust-stock:group-created', { group }, userId);
+    this.events.emitToRooms(ROOMS, 'trust-stock:group-created', { groupId: group.id }, userId);
     return group;
   }
 
@@ -135,7 +165,7 @@ export class TrustStockService implements OnModuleInit {
     if (dto.notes !== undefined) data.notes = dto.notes || null;
 
     const group = await this.prisma.trustStockGroup.update({ where: { id }, data, include: GROUP_INCLUDE });
-    this.events.emitToRooms(ROOMS, 'trust-stock:group-updated', { group }, userId);
+    this.events.emitToRooms(ROOMS, 'trust-stock:group-updated', { groupId: group.id }, userId);
     return group;
   }
 
@@ -195,7 +225,7 @@ export class TrustStockService implements OnModuleInit {
       } as any,
       include: ITEM_INCLUDE,
     });
-    this.events.emitToRooms(ROOMS, 'trust-stock:item-created', { item, groupId }, userId);
+    this.events.emitToRooms(ROOMS, 'trust-stock:item-created', { itemId: item.id, groupId }, userId);
     return item;
   }
 
@@ -212,11 +242,17 @@ export class TrustStockService implements OnModuleInit {
 
     const updated = await this.prisma.trustStockItem.update({ where: { id: itemId }, data, include: ITEM_INCLUDE });
 
-    // Cell-level live update for other open pages
+    // Cell-level live update for other open pages. Live messages reach every listener,
+    // so prices aren't put in them: a price change makes the other pages reload through
+    // the API instead, which leaves out what each role may not see.
     const patch: Record<string, any> = {};
     for (const key of [...Object.keys(data), ...DATE_FIELDS]) {
+      if (PRICE_FIELDS.has(key)) continue;
       const v = (updated as any)[key];
       patch[key] = v instanceof Date ? v.toISOString() : v ?? null;
+    }
+    if (Object.keys(data).some(k => PRICE_FIELDS.has(k))) {
+      this.events.emitToRooms(ROOMS, 'trust-stock:group-updated', { groupId: existing.groupId }, userId);
     }
     if (userId) {
       this.events.emitPatchEvent(ROOMS, {
@@ -356,7 +392,7 @@ export class TrustStockService implements OnModuleInit {
       return tx.trustStockItem.findUnique({ where: { id: created.id }, include: ITEM_INCLUDE });
     });
 
-    this.events.emitToRooms(ROOMS, 'trust-stock:item-created', { item, groupId: item!.groupId }, userId);
+    this.events.emitToRooms(ROOMS, 'trust-stock:item-created', { itemId: item!.id, groupId: item!.groupId }, userId);
     return item;
   }
 

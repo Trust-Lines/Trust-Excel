@@ -37,6 +37,8 @@ interface UserAccessPolicy {
   pagePermissions?: Record<string, boolean>; // DB-driven: { dashboard: true, suppliers_vendors: false, ... }
   allowedTypes?: { enumTypes: string[] | null; customTypeIds: string[] | null } | null;
   projectScope?: { enabled: boolean; projectIds: string[] } | null;
+  /** Per-table column rules (Supplier sheets, Trust Stock), keyed by table registry key */
+  tablePermissions?: Record<string, { columnsHidden: string[]; columnsReadOnly: string[] }>;
 }
 
 interface AuthContextType {

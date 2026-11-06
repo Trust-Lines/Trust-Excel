@@ -18,7 +18,7 @@ import { PageAccessGuard } from '../auth/guards/page-access.guard';
 import { RequirePageAccess } from '../auth/decorators/page-access.decorator';
 import { AdminService } from './admin.service';
 import { InviteUserDto, InviteUserResponseDto } from './dto/invite-user.dto';
-import { UpdateRolePolicyDto, RolePolicyResponseDto, ColumnDefinitionDto, RoleWithPolicyDto } from './dto/role-policy.dto';
+import { UpdateRolePolicyDto, RolePolicyResponseDto, ColumnDefinitionDto, RoleWithPolicyDto, UpdateTrustStockColumnsDto } from './dto/role-policy.dto';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, PageAccessGuard)
@@ -255,6 +255,17 @@ export class AdminController {
         HttpStatus.BAD_REQUEST,
       );
     }
+  }
+
+  /** Trust Stock column rules of a role: which columns it sees, which it can only read */
+  @Get('roles/:roleId/trust-stock-columns')
+  getTrustStockColumns(@Param('roleId') roleId: string) {
+    return this.adminService.getTrustStockColumns(roleId);
+  }
+
+  @Put('roles/:roleId/trust-stock-columns')
+  updateTrustStockColumns(@Param('roleId') roleId: string, @Body() dto: UpdateTrustStockColumnsDto) {
+    return this.adminService.updateTrustStockColumns(roleId, dto);
   }
 
   // ================== GATE B: PROJECTS-ONLY PERMISSION ENDPOINTS ==================

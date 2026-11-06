@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Request, Res, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Request, Res, UseInterceptors, UploadedFile, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -7,6 +7,7 @@ import { RequirePageAccess } from '../auth/decorators/page-access.decorator';
 import { TrustStockService } from './trust-stock.service';
 import { CreateTrustStockGroupDto, UpdateTrustStockGroupDto, TrustStockItemDto } from './dto/trust-stock.dto';
 import { UpdateStockProductDto, CreateStockUsageDto, StockMovementsDto, ReorderPfDto } from './dto/trust-stock-pdf.dto';
+import { TrustStockColumnRules, redactStockItem, redactProductPrices, blockedStockItemFields, hidesProductPrices } from './trust-stock-columns';
 
 // Vercel caps request bodies at 4.5 MB
 const PDF_UPLOAD = FileInterceptor('file', { limits: { fileSize: 4 * 1024 * 1024 } });
@@ -22,20 +23,38 @@ const requirePdf = (file?: Express.Multer.File) => {
 export class TrustStockController {
   constructor(private readonly service: TrustStockService) {}
 
+  // Role column rules (Admin > Roles > Trust Stock columns): hidden prices are left out of
+  // every response, hidden / read-only columns can't be written, PDFs need the PF PDF column.
+  private rules(req: any) {
+    return this.service.columnRules(req.user);
+  }
+  private static group<G extends { items?: any[] }>(g: G, r: TrustStockColumnRules): G {
+    return g?.items ? { ...g, items: g.items.map(i => redactStockItem(i, r)) } : g;
+  }
+  private static checkWrite(dto: Record<string, any>, r: TrustStockColumnRules) {
+    const blocked = blockedStockItemFields(dto, r);
+    if (blocked.length) throw new ForbiddenException(`Your role can't change: ${blocked.join(', ')}`);
+  }
+  private static requirePdfAccess(r: TrustStockColumnRules) {
+    if (r.hidden.has('pfPdf')) throw new ForbiddenException('Your role has no access to the PF PDFs');
+  }
+
   // ── Groups (STOCK 1, STOCK 2, …) ──
   @Get('groups')
-  findAll() {
-    return this.service.findAllGroups();
+  async findAll(@Request() req: any) {
+    const r = await this.rules(req);
+    const { data } = await this.service.findAllGroups();
+    return { data: data.map(g => TrustStockController.group(g, r)) };
   }
 
   @Post('groups')
-  createGroup(@Body() dto: CreateTrustStockGroupDto, @Request() req: any) {
-    return this.service.createGroup(dto, req.user?.id);
+  async createGroup(@Body() dto: CreateTrustStockGroupDto, @Request() req: any) {
+    return TrustStockController.group(await this.service.createGroup(dto, req.user?.id), await this.rules(req));
   }
 
   @Patch('groups/:id')
-  updateGroup(@Param('id') id: string, @Body() dto: UpdateTrustStockGroupDto, @Request() req: any) {
-    return this.service.updateGroup(id, dto, req.user?.id);
+  async updateGroup(@Param('id') id: string, @Body() dto: UpdateTrustStockGroupDto, @Request() req: any) {
+    return TrustStockController.group(await this.service.updateGroup(id, dto, req.user?.id), await this.rules(req));
   }
 
   @Delete('groups/:id')
@@ -45,13 +64,17 @@ export class TrustStockController {
 
   // ── Items ──
   @Post('groups/:groupId/items')
-  createItem(@Param('groupId') groupId: string, @Body() dto: TrustStockItemDto, @Request() req: any) {
-    return this.service.createItem(groupId, dto, req.user?.id);
+  async createItem(@Param('groupId') groupId: string, @Body() dto: TrustStockItemDto, @Request() req: any) {
+    const r = await this.rules(req);
+    TrustStockController.checkWrite(dto, r);
+    return redactStockItem(await this.service.createItem(groupId, dto, req.user?.id), r);
   }
 
   @Patch('items/:itemId')
-  updateItem(@Param('itemId') itemId: string, @Body() dto: TrustStockItemDto, @Request() req: any) {
-    return this.service.updateItem(itemId, dto, req.user?.id);
+  async updateItem(@Param('itemId') itemId: string, @Body() dto: TrustStockItemDto, @Request() req: any) {
+    const r = await this.rules(req);
+    TrustStockController.checkWrite(dto, r);
+    return redactStockItem(await this.service.updateItem(itemId, dto, req.user?.id), r);
   }
 
   @Delete('items/:itemId')
@@ -62,22 +85,26 @@ export class TrustStockController {
   // ── PF PDF import ──
   @Post('pdf/preview')
   @UseInterceptors(PDF_UPLOAD)
-  previewPdf(@UploadedFile() file: Express.Multer.File) {
+  async previewPdf(@UploadedFile() file: Express.Multer.File, @Request() req: any) {
+    TrustStockController.requirePdfAccess(await this.rules(req));
     return this.service.previewPdf(requirePdf(file).buffer);
   }
 
   /** multipart: file = the PDF, data = JSON of the (corrected) preview */
   @Post('pdf/import')
   @UseInterceptors(PDF_UPLOAD)
-  importPdf(@UploadedFile() file: Express.Multer.File, @Body('data') data: string, @Request() req: any) {
+  async importPdf(@UploadedFile() file: Express.Multer.File, @Body('data') data: string, @Request() req: any) {
+    const r = await this.rules(req);
+    TrustStockController.requirePdfAccess(r);
     let parsed: unknown;
     try { parsed = JSON.parse(data || ''); } catch { throw new BadRequestException('Invalid import data'); }
     const pdf = requirePdf(file);
-    return this.service.importPdf(pdf.buffer, pdf.originalname, parsed, req.user?.id);
+    return redactStockItem(await this.service.importPdf(pdf.buffer, pdf.originalname, parsed, req.user?.id) as any, r);
   }
 
   @Get('items/:itemId/pdf')
-  async getPdf(@Param('itemId') itemId: string, @Res() res: Response) {
+  async getPdf(@Param('itemId') itemId: string, @Request() req: any, @Res() res: Response) {
+    TrustStockController.requirePdfAccess(await this.rules(req));
     const { data, fileName } = await this.service.getPdf(itemId);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(fileName)}"`);
@@ -86,19 +113,20 @@ export class TrustStockController {
 
   // ── Stock contents ──
   @Get('products')
-  listProducts() {
-    return this.service.listProducts();
+  async listProducts(@Request() req: any) {
+    return redactProductPrices(await this.service.listProducts(), await this.rules(req));
   }
 
   /** Product catalog (every item code entered so far) for the manual-entry dropdown */
   @Get('catalog')
-  catalog() {
-    return this.service.listCatalog();
+  async catalog(@Request() req: any) {
+    return redactProductPrices(await this.service.listCatalog(), await this.rules(req));
   }
 
   /** Re-order PF (PDF) for the products and quantities picked in the RE-ORDER tab */
   @Post('reorder-pf')
-  async reorderPf(@Body() dto: ReorderPfDto, @Res() res: Response) {
+  async reorderPf(@Body() dto: ReorderPfDto, @Request() req: any, @Res() res: Response) {
+    TrustStockController.requirePdfAccess(await this.rules(req));
     const { data, fileName } = await this.service.reorderPf(dto.lines, { addToStock: dto.addToStock });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
@@ -106,8 +134,12 @@ export class TrustStockController {
   }
 
   @Patch('products/:id')
-  updateProduct(@Param('id') id: string, @Body() dto: UpdateStockProductDto, @Request() req: any) {
-    return this.service.updateProduct(id, dto, req.user?.id);
+  async updateProduct(@Param('id') id: string, @Body() dto: UpdateStockProductDto, @Request() req: any) {
+    const r = await this.rules(req);
+    if (hidesProductPrices(r) && (dto.unitPrice !== undefined || dto.totalPrice !== undefined)) {
+      throw new ForbiddenException("Your role can't change prices");
+    }
+    return redactProductPrices([await this.service.updateProduct(id, dto, req.user?.id) as any], r)[0];
   }
 
   @Delete('products/:id')
@@ -118,15 +150,15 @@ export class TrustStockController {
   // ── Usage from the Projects table (Projects page access, not Trust Stock) ──
   @Get('usage/products')
   @RequirePageAccess('operational_board')
-  availableProducts() {
-    return this.service.listProducts();
+  async availableProducts(@Request() req: any) {
+    return redactProductPrices(await this.service.listProducts(), await this.rules(req));
   }
 
   @Get('usage')
   @RequirePageAccess('operational_board')
-  usageForRow(@Query('projectItemId') projectItemId: string) {
+  async usageForRow(@Query('projectItemId') projectItemId: string, @Request() req: any) {
     if (!projectItemId) throw new BadRequestException('projectItemId is required');
-    return this.service.usageForProjectItem(projectItemId);
+    return redactProductPrices(await this.service.usageForProjectItem(projectItemId) as any[], await this.rules(req));
   }
 
   @Post('usage')

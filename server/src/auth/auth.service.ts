@@ -12,6 +12,7 @@ import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
+import { TRUST_STOCK_TABLE_KEY } from '../trust-stock/trust-stock-columns';
 import {
   AuthResponseDto,
   MeResponseDto,
@@ -511,6 +512,7 @@ export class AuthService {
       'supplier-p-sheet': { hidden: [], readOnly: [] },
       'supplier-me-sheet': { hidden: [], readOnly: [] },
       'supplier-do-sheet': { hidden: [], readOnly: [] },
+      [TRUST_STOCK_TABLE_KEY]: { hidden: [], readOnly: [] },
     };
 
     roleColumnVisibility.forEach(cv => {
@@ -554,6 +556,10 @@ export class AuthService {
           columnsHidden: supplierColumns['supplier-do-sheet'].hidden,
           columnsReadOnly: supplierColumns['supplier-do-sheet'].readOnly,
         },
+        [TRUST_STOCK_TABLE_KEY]: {
+          columnsHidden: supplierColumns[TRUST_STOCK_TABLE_KEY].hidden,
+          columnsReadOnly: supplierColumns[TRUST_STOCK_TABLE_KEY].readOnly,
+        },
       }
     };
   }
@@ -566,6 +572,8 @@ export class AuthService {
       pagePermissions: pagePermissions || { operationalBoardView: true, createProject: true, canAddItems: true, canManageMasterData: true },
       rowScopes: { ...roleBasedPolicy.rowScopes, ...(userAccessPolicy.rowScopes || {}) },
       modulePermissions: { ...roleBasedPolicy.modulePermissions, ...(userAccessPolicy.modulePermissions || {}) },
+      // per-table rules (Supplier sheets, Trust Stock) are role-only; keep them for users with a personal policy too
+      tablePermissions: roleBasedPolicy.tablePermissions,
     };
   }
 

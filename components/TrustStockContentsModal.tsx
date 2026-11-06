@@ -4,6 +4,7 @@ import {
   StockProduct, StockStatus, STOCK_STATUS_STYLE,
 } from '../lib/trust-stock';
 import { useSocketEvent } from '../hooks/useSocketEvent';
+import { useTrustStockColumns } from '../hooks/useTrustStockColumns';
 
 /**
  * Trust Lines — Cabinet Stock Overview (same columns and rules as the
@@ -177,6 +178,8 @@ const EditCell: React.FC<{
 
 /** readOnly: opened from a Projects row (Projects access) — figures only, no receipt editing */
 const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolean }> = ({ onClose, readOnly = false }) => {
+  // View PDF and the RE-ORDER PF show prices: only for roles that may see the PF PDFs
+  const { canUsePdfs } = useTrustStockColumns();
   const [products, setProducts] = useState<StockProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -335,7 +338,7 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
               }}>{style.label}</button>
             );
           })}
-          {!readOnly && (
+          {!readOnly && canUsePdfs && (
             <button onClick={openReorder} title="Pick products and quantities for a re-order production form" style={{
               padding: '4px 12px', borderRadius: 999, fontSize: 11, fontWeight: 800, cursor: 'pointer',
               border: view === 'reorder' ? '2px solid #0f172a' : '1px solid #f59e0b', background: view === 'reorder' ? '#f59e0b' : '#fff7ed', color: '#9a3412',
@@ -395,7 +398,7 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
                             <span style={{ margin: '0 10px', fontFamily: 'monospace' }}>{p.stockItem.pfCode}</span>
                             {p.stockItem.vendor && <span>{p.stockItem.vendor.code} - {p.stockItem.vendor.name}</span>}
                             <span style={{ marginLeft: 10, color: '#475569' }}>{fmtDate(p.stockItem.pfDate)}</span>
-                            {p.stockItem.hasPdf && (
+                            {p.stockItem.hasPdf && canUsePdfs && (
                               <button onClick={() => openTrustStockPdf(p.stockItem.id).catch(e => setError(e.message))}
                                 style={{ marginLeft: 10, padding: '1px 8px', borderRadius: 4, border: '1px solid #94a3b8', background: '#fff', fontSize: 11, cursor: 'pointer' }}>View PDF</button>
                             )}

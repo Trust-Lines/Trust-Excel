@@ -1,6 +1,6 @@
 # Trust System — Projects page source (for T-ERP)
 
-Generated 2026-11-02 from the Trust-Lines/Trust-Excel repo.
+Generated 2026-11-06 from the Trust-Lines/Trust-Excel repo.
 Every file the Projects page (`pages/OperationalBoard.tsx`) imports, plus the global `styles.css`.
 Paths are relative to the repo root; recreate them as they are so the relative imports keep working.
 
@@ -11,81 +11,82 @@ Third-party packages used by these files: `react` 18, `react-dom`, `react-router
 
 | File | Line in this document | Size |
 |---|---|---|
-| `components/AccessDenied.tsx` | 92 | 1.9 KB |
-| `components/AccountingColumns.tsx` | 164 | 8.1 KB |
-| `components/AddProjectDrawer.tsx` | 476 | 27.0 KB |
-| `components/AddToGroupModal.tsx` | 1244 | 8.7 KB |
-| `components/AddVendorModal.tsx` | 1449 | 10.5 KB |
-| `components/CellOrderTypeAutocomplete.tsx` | 1806 | 11.0 KB |
-| `components/CellStatusAutocomplete.tsx` | 2176 | 11.4 KB |
-| `components/CellVendorAutocomplete.tsx` | 2526 | 19.5 KB |
-| `components/ContainerCellEditor.tsx` | 3073 | 15.5 KB |
-| `components/FilterBar.tsx` | 3501 | 26.6 KB |
-| `components/FilterEditMenu.tsx` | 4318 | 3.0 KB |
-| `components/GroupedPfTable.tsx` | 4412 | 4.4 KB |
-| `components/HalfAssignmentToolbar.tsx` | 4524 | 4.1 KB |
-| `components/InlineEditPanel.tsx` | 4672 | 22.6 KB |
-| `components/InlineEditors.tsx` | 5346 | 12.6 KB |
-| `components/OperationalBoardGrid.tsx` | 5768 | 38.2 KB |
-| `components/OrderTypeDropdownField.tsx` | 6713 | 10.7 KB |
-| `components/PaymentRuleDropdownEditor.tsx` | 7053 | 8.6 KB |
-| `components/PfGroupFilterControl.tsx` | 7333 | 2.3 KB |
-| `components/PfGroupManageModal.tsx` | 7412 | 10.4 KB |
-| `components/ProjectBlock.tsx` | 7614 | 206.0 KB |
-| `components/ProjectHeader.tsx` | 11934 | 0.9 KB |
-| `components/ProjectMenu.tsx` | 11974 | 18.0 KB |
-| `components/SectionSeparator.tsx` | 12423 | 0.3 KB |
-| `components/SignWaitingFilters.tsx` | 12445 | 2.2 KB |
-| `components/StockUsageModal.tsx` | 12503 | 16.7 KB |
-| `components/TodayPfControl.tsx` | 12803 | 3.2 KB |
-| `components/TodayPfManageModal.tsx` | 12911 | 24.4 KB |
-| `components/TrustStockContentsModal.tsx` | 13419 | 31.4 KB |
-| `components/VendorDropdownField.tsx` | 13925 | 13.8 KB |
-| `components/ui/AnchoredDropdown.tsx` | 14355 | 8.7 KB |
-| `constants.ts` | 14625 | 0.2 KB |
-| `contexts/AuthContext.tsx` | 14635 | 8.3 KB |
-| `contexts/PaymentRulesContext.tsx` | 14905 | 2.3 KB |
-| `contexts/SocketContext.tsx` | 14988 | 6.1 KB |
-| `hooks/useColumnPermissions.ts` | 15200 | 5.8 KB |
-| `hooks/useLivePatchStore.ts` | 15379 | 8.7 KB |
-| `hooks/usePagePermissions.ts` | 15635 | 2.2 KB |
-| `hooks/useSocketEvent.ts` | 15708 | 0.6 KB |
-| `hooks/useUndoStack.ts` | 15738 | 5.6 KB |
-| `lib/api.ts` | 15933 | 3.6 KB |
-| `lib/auth.ts` | 16066 | 6.5 KB |
-| `lib/columns.ts` | 16330 | 7.2 KB |
-| `lib/containers.ts` | 16631 | 4.6 KB |
-| `lib/dateUtils.ts` | 16819 | 1.7 KB |
-| `lib/direct-orders.ts` | 16886 | 5.4 KB |
-| `lib/displayHelpers.ts` | 17075 | 1.8 KB |
-| `lib/expenses-direct-order.ts` | 17138 | 5.3 KB |
-| `lib/expenses-missing-extra.ts` | 17299 | 5.3 KB |
-| `lib/expenses-p.ts` | 17460 | 5.5 KB |
-| `lib/gridWidth.ts` | 17629 | 2.4 KB |
-| `lib/missing-extra.ts` | 17745 | 9.9 KB |
-| `lib/payment-rules.ts` | 18051 | 1.1 KB |
-| `lib/pf-groups.ts` | 18104 | 3.7 KB |
-| `lib/projectColor.ts` | 18227 | 10.0 KB |
-| `lib/projectTotalApi.ts` | 18561 | 4.0 KB |
-| `lib/projects.ts` | 18689 | 27.0 KB |
-| `lib/sanitizePayload.ts` | 19534 | 2.1 KB |
-| `lib/today-pf.ts` | 19609 | 2.5 KB |
-| `lib/trust-stock.ts` | 19686 | 15.4 KB |
-| `pages/OperationalBoard.tsx` | 20106 | 36.9 KB |
-| `types.ts` | 21131 | 9.7 KB |
-| `types/expensesDirectOrder.ts` | 21422 | 1.4 KB |
-| `types/expensesMissingExtra.ts` | 21479 | 1.4 KB |
-| `types/expensesP.ts` | 21537 | 1.3 KB |
-| `types/projectTotal.ts` | 21594 | 0.4 KB |
-| `utils/containerUtils.ts` | 21624 | 2.3 KB |
-| `utils/excel/exportProjectTotalExcel.ts` | 21711 | 11.0 KB |
-| `utils/excel/exportProjectsAllTabsExcel.ts` | 22003 | 8.0 KB |
-| `utils/excel/exportProjectsExcel.ts` | 22234 | 19.2 KB |
-| `utils/excel/statusColorsExcel.ts` | 22704 | 2.6 KB |
-| `utils/filterUtils.ts` | 22806 | 7.1 KB |
-| `utils/moneyUtils.ts` | 23008 | 5.1 KB |
-| `utils/statusStyles.ts` | 23182 | 4.2 KB |
-| `styles.css` | 23375 | 101.0 KB |
+| `components/AccessDenied.tsx` | 93 | 1.9 KB |
+| `components/AccountingColumns.tsx` | 165 | 8.1 KB |
+| `components/AddProjectDrawer.tsx` | 477 | 27.0 KB |
+| `components/AddToGroupModal.tsx` | 1245 | 8.7 KB |
+| `components/AddVendorModal.tsx` | 1450 | 10.5 KB |
+| `components/CellOrderTypeAutocomplete.tsx` | 1807 | 11.0 KB |
+| `components/CellStatusAutocomplete.tsx` | 2177 | 11.4 KB |
+| `components/CellVendorAutocomplete.tsx` | 2527 | 19.5 KB |
+| `components/ContainerCellEditor.tsx` | 3074 | 15.5 KB |
+| `components/FilterBar.tsx` | 3502 | 26.6 KB |
+| `components/FilterEditMenu.tsx` | 4319 | 3.0 KB |
+| `components/GroupedPfTable.tsx` | 4413 | 4.4 KB |
+| `components/HalfAssignmentToolbar.tsx` | 4525 | 4.1 KB |
+| `components/InlineEditPanel.tsx` | 4673 | 22.6 KB |
+| `components/InlineEditors.tsx` | 5347 | 12.6 KB |
+| `components/OperationalBoardGrid.tsx` | 5769 | 38.2 KB |
+| `components/OrderTypeDropdownField.tsx` | 6714 | 10.7 KB |
+| `components/PaymentRuleDropdownEditor.tsx` | 7054 | 8.6 KB |
+| `components/PfGroupFilterControl.tsx` | 7334 | 2.3 KB |
+| `components/PfGroupManageModal.tsx` | 7413 | 10.4 KB |
+| `components/ProjectBlock.tsx` | 7615 | 201.9 KB |
+| `components/ProjectHeader.tsx` | 11936 | 0.9 KB |
+| `components/ProjectMenu.tsx` | 11976 | 18.0 KB |
+| `components/SectionSeparator.tsx` | 12425 | 0.3 KB |
+| `components/SignWaitingFilters.tsx` | 12447 | 2.2 KB |
+| `components/StockUsageModal.tsx` | 12505 | 16.7 KB |
+| `components/TodayPfControl.tsx` | 12805 | 3.2 KB |
+| `components/TodayPfManageModal.tsx` | 12913 | 24.4 KB |
+| `components/TrustStockContentsModal.tsx` | 13421 | 31.6 KB |
+| `components/VendorDropdownField.tsx` | 13930 | 13.8 KB |
+| `components/ui/AnchoredDropdown.tsx` | 14360 | 8.7 KB |
+| `constants.ts` | 14630 | 0.2 KB |
+| `contexts/AuthContext.tsx` | 14640 | 8.5 KB |
+| `contexts/PaymentRulesContext.tsx` | 14912 | 2.3 KB |
+| `contexts/SocketContext.tsx` | 14995 | 6.1 KB |
+| `hooks/useColumnPermissions.ts` | 15207 | 5.8 KB |
+| `hooks/useLivePatchStore.ts` | 15386 | 8.7 KB |
+| `hooks/usePagePermissions.ts` | 15642 | 2.2 KB |
+| `hooks/useSocketEvent.ts` | 15715 | 0.6 KB |
+| `hooks/useTrustStockColumns.ts` | 15745 | 1.4 KB |
+| `hooks/useUndoStack.ts` | 15784 | 5.6 KB |
+| `lib/api.ts` | 15979 | 3.6 KB |
+| `lib/auth.ts` | 16112 | 6.5 KB |
+| `lib/columns.ts` | 16376 | 7.2 KB |
+| `lib/containers.ts` | 16677 | 4.6 KB |
+| `lib/dateUtils.ts` | 16865 | 1.7 KB |
+| `lib/direct-orders.ts` | 16932 | 5.4 KB |
+| `lib/displayHelpers.ts` | 17121 | 1.8 KB |
+| `lib/expenses-direct-order.ts` | 17184 | 5.3 KB |
+| `lib/expenses-missing-extra.ts` | 17345 | 5.3 KB |
+| `lib/expenses-p.ts` | 17506 | 5.5 KB |
+| `lib/gridWidth.ts` | 17675 | 2.4 KB |
+| `lib/missing-extra.ts` | 17791 | 9.9 KB |
+| `lib/payment-rules.ts` | 18097 | 1.1 KB |
+| `lib/pf-groups.ts` | 18150 | 3.7 KB |
+| `lib/projectColor.ts` | 18273 | 10.0 KB |
+| `lib/projectTotalApi.ts` | 18607 | 4.0 KB |
+| `lib/projects.ts` | 18735 | 27.0 KB |
+| `lib/sanitizePayload.ts` | 19580 | 2.1 KB |
+| `lib/today-pf.ts` | 19655 | 2.5 KB |
+| `lib/trust-stock.ts` | 19732 | 15.4 KB |
+| `pages/OperationalBoard.tsx` | 20152 | 36.9 KB |
+| `types.ts` | 21177 | 9.7 KB |
+| `types/expensesDirectOrder.ts` | 21468 | 1.4 KB |
+| `types/expensesMissingExtra.ts` | 21525 | 1.4 KB |
+| `types/expensesP.ts` | 21583 | 1.3 KB |
+| `types/projectTotal.ts` | 21640 | 0.4 KB |
+| `utils/containerUtils.ts` | 21670 | 2.3 KB |
+| `utils/excel/exportProjectTotalExcel.ts` | 21757 | 11.0 KB |
+| `utils/excel/exportProjectsAllTabsExcel.ts` | 22049 | 8.0 KB |
+| `utils/excel/exportProjectsExcel.ts` | 22280 | 19.2 KB |
+| `utils/excel/statusColorsExcel.ts` | 22750 | 2.6 KB |
+| `utils/filterUtils.ts` | 22852 | 7.1 KB |
+| `utils/moneyUtils.ts` | 23054 | 5.1 KB |
+| `utils/statusStyles.ts` | 23228 | 4.2 KB |
+| `styles.css` | 23421 | 101.0 KB |
 
 ---
 
@@ -7665,7 +7666,7 @@ import { createTrustStockItem, updateTrustStockItem, deleteTrustStockItem, isSto
 import StockUsageModal from './StockUsageModal';
 
 // Trust Stock page: columns shown (plus the Trust-Stock-only ORDER NO column)
-const TRUST_STOCK_COLS = ['projectNo', 'type', 'pfCode', 'vendor', 'pfSignStatus', 'status', 'std', 'etd', 'rtr', 'rtd', 'pfUsd', 'pfTl', 'invoice', 'invoiceTl', 'paymentRule'];
+const TRUST_STOCK_COLS = ['projectNo', 'type', 'pfCode', 'vendor', 'orderNo', 'pfSignStatus', 'status', 'std', 'etd', 'rtr', 'rtd', 'pfUsd', 'pfTl', 'invoice', 'invoiceTl', 'paymentRule'];
 const ORDER_NO_WIDTH = 160; // keep in sync with .col-order-no in styles.css
 import { useAuth } from '../contexts/AuthContext';
 
@@ -8038,7 +8039,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
   const EXPENSES_SHOW_COLS = ['expensesUsd', 'expensesTl'];
   const isTrustStockMode = mode === 'trust-stock';
   const isColumnVisible = useCallback((key: string) => {
-    // Trust Stock shows a fixed column set (ORDER NO is rendered separately, see orderNo below)
+    // Trust Stock shows a fixed column set, ORDER NO included
     if (isTrustStockMode) {
       return TRUST_STOCK_COLS.includes(key) && baseIsColumnVisible(key);
     }
@@ -8368,7 +8369,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
   // Calculate dynamic grid width based on visible columns
   const gridWidthPx = useMemo(() => {
     const base = getGridWidthPx(isColumnVisible, isSupplierMode);
-    return isTrustStockMode ? `${parseInt(base, 10) + ORDER_NO_WIDTH}px` : base;
+    return isTrustStockMode && isColumnVisible('orderNo' as ColumnKey) ? `${parseInt(base, 10) + ORDER_NO_WIDTH}px` : base;
   }, [isColumnVisible, isSupplierMode, isTrustStockMode]);
 
   // 💰 CALCULATE TOTALS for PF USD and PF TL (excluding restricted rows)
@@ -10547,7 +10548,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
               <div className="header-right">
                 <div className="column-header-cell col-pf-code" style={getHeaderCellStyle('pfCode' as ColumnKey)}>PF CODE</div>
                 <div className="column-header-cell col-vendor" style={getHeaderCellStyle('vendor' as ColumnKey)}>VENDOR</div>
-                {isTrustStockMode && (
+                {isTrustStockMode && isColumnVisible('orderNo' as ColumnKey) && (
                   <div className="column-header-cell col-order-no" style={{ ...getHeaderCellStyle('vendor' as ColumnKey), width: ORDER_NO_WIDTH }}>ORDER NO</div>
                 )}
                 <div className="column-header-cell col-order-type" style={getHeaderCellStyle('orderType' as ColumnKey)}>ORDER TYPE</div>
@@ -10729,7 +10730,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
                             const scrollableFields = [
                               { field: 'pfCode', value: row.pfCode, className: 'col-pf-code', editable: (isTrustStockMode || !!row.customTypeId) && isColumnEditable('pfCode') },
                               { field: 'vendor', value: row.vendor, className: 'col-vendor', editable: isColumnEditable('vendor') },
-                              ...(isTrustStockMode ? [{ field: 'orderNo', value: (row as any).orderNo, className: 'col-order-no', editable: isColumnEditable('vendor') }] : []),
+                              ...(isTrustStockMode ? [{ field: 'orderNo', value: (row as any).orderNo, className: 'col-order-no', editable: isColumnEditable('orderNo' as ColumnKey) }] : []),
                               { field: 'orderType', value: row.orderType, className: 'col-order-type', editable: isColumnEditable('orderType') },
                               // PO SIGN STATUS - show only on first row of type group
                               ...(isSupplierMode ? [] : [{
@@ -11174,6 +11175,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
                       const allScrollableColumns = [
                         { field: 'pfCode', className: 'col-pf-code' },
                         { field: 'vendor', className: 'col-vendor' },
+                        ...(isTrustStockMode ? [{ field: 'orderNo', className: 'col-order-no' }] : []),
                         { field: 'orderType', className: 'col-order-type' },
                         ...(isSupplierMode ? [] : [{ field: 'poSignStatus', className: 'col-po-sign-status' }]),
                         { field: 'pfSignStatus', className: 'col-pf-sign-status' },
@@ -13425,6 +13427,7 @@ import {
   StockProduct, StockStatus, STOCK_STATUS_STYLE,
 } from '../lib/trust-stock';
 import { useSocketEvent } from '../hooks/useSocketEvent';
+import { useTrustStockColumns } from '../hooks/useTrustStockColumns';
 
 /**
  * Trust Lines — Cabinet Stock Overview (same columns and rules as the
@@ -13598,6 +13601,8 @@ const EditCell: React.FC<{
 
 /** readOnly: opened from a Projects row (Projects access) — figures only, no receipt editing */
 const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolean }> = ({ onClose, readOnly = false }) => {
+  // View PDF and the RE-ORDER PF show prices: only for roles that may see the PF PDFs
+  const { canUsePdfs } = useTrustStockColumns();
   const [products, setProducts] = useState<StockProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -13756,7 +13761,7 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
               }}>{style.label}</button>
             );
           })}
-          {!readOnly && (
+          {!readOnly && canUsePdfs && (
             <button onClick={openReorder} title="Pick products and quantities for a re-order production form" style={{
               padding: '4px 12px', borderRadius: 999, fontSize: 11, fontWeight: 800, cursor: 'pointer',
               border: view === 'reorder' ? '2px solid #0f172a' : '1px solid #f59e0b', background: view === 'reorder' ? '#f59e0b' : '#fff7ed', color: '#9a3412',
@@ -13816,7 +13821,7 @@ const TrustStockContentsModal: React.FC<{ onClose: () => void; readOnly?: boolea
                             <span style={{ margin: '0 10px', fontFamily: 'monospace' }}>{p.stockItem.pfCode}</span>
                             {p.stockItem.vendor && <span>{p.stockItem.vendor.code} - {p.stockItem.vendor.name}</span>}
                             <span style={{ marginLeft: 10, color: '#475569' }}>{fmtDate(p.stockItem.pfDate)}</span>
-                            {p.stockItem.hasPdf && (
+                            {p.stockItem.hasPdf && canUsePdfs && (
                               <button onClick={() => openTrustStockPdf(p.stockItem.id).catch(e => setError(e.message))}
                                 style={{ marginLeft: 10, padding: '1px 8px', borderRadius: 4, border: '1px solid #94a3b8', background: '#fff', fontSize: 11, cursor: 'pointer' }}>View PDF</button>
                             )}
@@ -14674,6 +14679,8 @@ interface UserAccessPolicy {
   pagePermissions?: Record<string, boolean>; // DB-driven: { dashboard: true, suppliers_vendors: false, ... }
   allowedTypes?: { enumTypes: string[] | null; customTypeIds: string[] | null } | null;
   projectScope?: { enabled: boolean; projectIds: string[] } | null;
+  /** Per-table column rules (Supplier sheets, Trust Stock), keyed by table registry key */
+  tablePermissions?: Record<string, { columnsHidden: string[]; columnsReadOnly: string[] }>;
 }
 
 interface AuthContextType {
@@ -15731,6 +15738,45 @@ export function useSocketEvent(event: string, handler: (data: any) => void) {
     };
   }, [socket, event]);
 }
+```
+
+---
+
+## FILE: hooks/useTrustStockColumns.ts
+
+```ts
+import { useMemo } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+
+/** Same key as the server (server/src/trust-stock/trust-stock-columns.ts) */
+export const TRUST_STOCK_TABLE_KEY = 'trust-stock-grid';
+
+const PRICE_COLUMNS = ['pfUsd', 'pfTl', 'invoice', 'invoiceTl'];
+
+/**
+ * The role's Trust Stock column rules (Admin > Roles > Trust Stock columns).
+ * Only the listed Trust Stock columns can be restricted; the rest stay as they are.
+ * The server applies the same rules, so hidden prices never reach the browser.
+ */
+export const useTrustStockColumns = () => {
+  const { userAccessPolicy } = useAuth();
+  return useMemo(() => {
+    const rules = userAccessPolicy?.tablePermissions?.[TRUST_STOCK_TABLE_KEY];
+    const hidden = new Set(rules?.columnsHidden || []);
+    const readOnly = new Set(rules?.columnsReadOnly || []);
+    // accounting (remaining = PF − paid) would give away hidden prices
+    if (PRICE_COLUMNS.some(c => hidden.has(c))) hidden.add('accounting');
+    const isColumnVisible = (key: string) => !hidden.has(key);
+    const isColumnEditable = (key: string) => !hidden.has(key) && !readOnly.has(key);
+    return {
+      isColumnVisible,
+      isColumnEditable,
+      showAccounting: isColumnVisible('accounting'),
+      /** View PDF, Upload PF PDF and the RE-ORDER PF (all show prices) */
+      canUsePdfs: isColumnVisible('pfPdf'),
+    };
+  }, [userAccessPolicy]);
+};
 ```
 
 ---

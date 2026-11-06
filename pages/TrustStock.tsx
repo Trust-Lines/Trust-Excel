@@ -5,6 +5,7 @@ import AccountingGrid from '../components/AccountingGrid';
 import TrustStockPdfImportModal from '../components/TrustStockPdfImportModal';
 import TrustStockContentsModal from '../components/TrustStockContentsModal';
 import { useTablePermissions, PAGE_KEYS } from '../hooks/useTablePermissions';
+import { useTrustStockColumns } from '../hooks/useTrustStockColumns';
 import { useSocket } from '../contexts/SocketContext';
 import { useSocketEvent } from '../hooks/useSocketEvent';
 import { apiFetch } from '../lib/auth';
@@ -34,12 +35,11 @@ interface GroupView {
   backendItems: BackendProjectItem[];
 }
 
-// Same column permissions apply on every row of this page (page access is the gate)
-const ALLOW_ALL = { isColumnVisible: () => true, isColumnEditable: () => true };
-
 const TrustStock: React.FC = () => {
   const { hasPageAccess, loading: permissionsLoading } = useTablePermissions();
   const canAccessPage = hasPageAccess(PAGE_KEYS.TRUST_STOCK);
+  // The role's Trust Stock columns (Admin > Roles > Trust Stock columns), not the Projects ones
+  const stockColumns = useTrustStockColumns();
 
   const [groups, setGroups] = useState<GroupView[]>([]);
   const [globalItemsById, setGlobalItemsById] = useState<Map<string, BackendProjectItem>>(new Map());
@@ -231,12 +231,14 @@ const TrustStock: React.FC = () => {
           >
             Stock Contents
           </button>
-          <button
-            onClick={() => setPdfOpen(true)}
-            style={{ padding: '8px 14px', backgroundColor: '#115e59', color: 'white', border: 'none', borderRadius: 4, fontSize: 14, cursor: 'pointer', fontWeight: 600 }}
-          >
-            Upload PF PDF
-          </button>
+          {stockColumns.canUsePdfs && (
+            <button
+              onClick={() => setPdfOpen(true)}
+              style={{ padding: '8px 14px', backgroundColor: '#115e59', color: 'white', border: 'none', borderRadius: 4, fontSize: 14, cursor: 'pointer', fontWeight: 600 }}
+            >
+              Upload PF PDF
+            </button>
+          )}
           <button
             onClick={() => setNewOpen(true)}
             style={{ padding: '8px 16px', backgroundColor: '#0f766e', color: 'white', border: 'none', borderRadius: 4, fontSize: 14, cursor: 'pointer', fontWeight: 600 }}
@@ -296,19 +298,21 @@ const TrustStock: React.FC = () => {
                     onSupplierItemUpdated={onItemUpdated}
                     onItemCreated={handleItemCreated}
                     showSectionHeader={idx === 0}
-                    permissionOverrides={ALLOW_ALL as any}
+                    permissionOverrides={stockColumns as any}
                   />
                 </div>
-                <div style={{ flex: '0 0 auto' }}>
-                  <AccountingGrid
-                    items={items}
-                    sectionLabel={SECTION_LABEL}
-                    showSectionHeader={idx === 0}
-                    mode="trust-stock"
-                    updateGlobalItem={updateGlobalItem}
-                    onItemUpdated={onItemUpdated}
-                  />
-                </div>
+                {stockColumns.showAccounting && (
+                  <div style={{ flex: '0 0 auto' }}>
+                    <AccountingGrid
+                      items={items}
+                      sectionLabel={SECTION_LABEL}
+                      showSectionHeader={idx === 0}
+                      mode="trust-stock"
+                      updateGlobalItem={updateGlobalItem}
+                      onItemUpdated={onItemUpdated}
+                    />
+                  </div>
+                )}
               </div>
             );
           })}

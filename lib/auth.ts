@@ -103,23 +103,41 @@ export const removeToken = (): void => {
   localStorage.removeItem('auth_token');
 };
 
-// Refresh token helper
-export const refreshToken = async (): Promise<{ accessToken: string }> => {
-  const response = await fetch(buildApiUrl('/auth/refresh'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include', // Include httpOnly cookies
-  });
+// Refresh token helper. A page opening fires many requests at once and they all get 401 when the
+// access token has expired (every morning): they share ONE refresh instead of each rotating the
+// cookie. A refresh that hangs is given up after REFRESH_TIMEOUT_MS so the app never sits on "loading".
+const REFRESH_TIMEOUT_MS = 25_000;
+let refreshInFlight: Promise<{ accessToken: string }> | null = null;
 
-  const data = await response.json();
+export const refreshToken = (): Promise<{ accessToken: string }> => {
+  if (!refreshInFlight) {
+    refreshInFlight = (async () => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), REFRESH_TIMEOUT_MS);
+      try {
+        const response = await fetch(buildApiUrl('/auth/refresh'), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include', // Include httpOnly cookies
+          signal: controller.signal,
+        });
 
-  if (!response.ok) {
-    throw new Error(data.message || 'Token refresh failed');
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Token refresh failed');
+        }
+
+        return data;
+      } finally {
+        clearTimeout(timer);
+        refreshInFlight = null;
+      }
+    })();
   }
-
-  return data;
+  return refreshInFlight;
 };
 
 // Central API client with auto-refresh
@@ -154,12 +172,19 @@ export const apiFetch = async (url: string, options: RequestInit = {}): Promise<
   if (response.status === 401 && token) {
 
     try {
-      const refreshData = await refreshToken();
-      setToken(refreshData.accessToken);
-
+      // Another request may have refreshed meanwhile: then just use the new token
+      const current = getToken();
+      let newToken: string;
+      if (current && current !== token) {
+        newToken = current;
+      } else {
+        const refreshData = await refreshToken();
+        setToken(refreshData.accessToken);
+        newToken = refreshData.accessToken;
+      }
 
       // Retry original request with new token
-      response = await makeRequest(refreshData.accessToken);
+      response = await makeRequest(newToken);
     } catch (refreshError) {
       console.error('❌ Token refresh failed:', refreshError);
 

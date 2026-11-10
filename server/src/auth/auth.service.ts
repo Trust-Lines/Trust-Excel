@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
+import { createHash } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { TRUST_STOCK_TABLE_KEY } from '../trust-stock/trust-stock-columns';
@@ -246,34 +247,9 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token not provided');
     }
 
-    // New format: "userId.rawToken" — extract userId for fast DB lookup
-    // Old format (legacy): plain UUID — fall back to scanning all tokens (backward compat)
-    const dotIndex = refreshToken.indexOf('.');
-    const hasUserIdPrefix = dotIndex > 0;
-    const userId = hasUserIdPrefix ? refreshToken.substring(0, dotIndex) : null;
-    const rawToken = hasUserIdPrefix ? refreshToken.substring(dotIndex + 1) : refreshToken;
-
-    // Filter by userId when available — reduces bcrypt comparisons from O(N users) to O(1 user)
-    const storedTokens = await this.prismaService.withRetry(() =>
-      this.prismaService.refreshToken.findMany({
-        where: {
-          revokedAt: null,
-          expiresAt: { gte: new Date() },
-          ...(userId ? { userId } : {}),
-        },
-        include: { user: true },
-      }),
-    );
-
-    // Find matching token by comparing hashes (now at most 1-3 tokens per user)
-    let matchingToken = null;
-    for (const token of storedTokens) {
-      const isMatch = await bcrypt.compare(rawToken, token.tokenHash);
-      if (isMatch) {
-        matchingToken = token;
-        break;
-      }
-    }
+    // A page opening fires several requests at once; each may refresh with the same cookie.
+    // The first one rotates the token, so the others are still accepted for a short grace window.
+    const matchingToken = await this.findRefreshToken(refreshToken, AuthService.ROTATION_GRACE_MS);
 
     if (!matchingToken || !matchingToken.user.isActive) {
       throw new UnauthorizedException('Invalid or expired refresh token');
@@ -292,10 +268,13 @@ export class AuthService {
     // Generate new refresh token and revoke old one
     const newRefreshToken = await this.generateRefreshToken(matchingToken.user.id, newTTL);
 
-    await this.prismaService.refreshToken.update({
-      where: { id: matchingToken.id },
-      data: { revokedAt: new Date() },
-    });
+    // keep the first revoke time, so the grace window isn't stretched by repeated refreshes
+    if (!matchingToken.revokedAt) {
+      await this.prismaService.refreshToken.update({
+        where: { id: matchingToken.id },
+        data: { revokedAt: new Date() },
+      });
+    }
 
     return {
       accessToken,
@@ -303,25 +282,63 @@ export class AuthService {
     } as { accessToken: string; refreshToken: string };
   }
 
+  /** A refresh token rotated this recently is still accepted (parallel requests of one page load) */
+  private static readonly ROTATION_GRACE_MS = 30_000;
+  /** Sessions (devices / browsers) kept per user; older ones are revoked when a new one is issued */
+  private static readonly MAX_SESSIONS_PER_USER = 20;
+
+  /** Refresh tokens are random UUIDs, so a fast SHA-256 is enough (bcrypt is for passwords). */
+  private static hashRefreshToken(raw: string): string {
+    return createHash('sha256').update(raw).digest('hex');
+  }
+
+  /**
+   * The stored token behind a refresh cookie ("userId.rawToken"; very old cookies are a bare UUID).
+   * New tokens are found directly by their SHA-256. Tokens issued before that are bcrypt hashes:
+   * those are checked newest first — the cookie is almost always the newest — until they rotate away.
+   */
+  private async findRefreshToken(cookie: string, graceMs = 0) {
+    const dot = cookie.indexOf('.');
+    const userId = dot > 0 ? cookie.substring(0, dot) : null;
+    const raw = dot > 0 ? cookie.substring(dot + 1) : cookie;
+    const usable = {
+      expiresAt: { gte: new Date() },
+      OR: [{ revokedAt: null }, ...(graceMs ? [{ revokedAt: { gte: new Date(Date.now() - graceMs) } }] : [])],
+    };
+
+    const direct = await this.prismaService.withRetry(() =>
+      this.prismaService.refreshToken.findFirst({
+        where: { ...usable, tokenHash: AuthService.hashRefreshToken(raw), ...(userId ? { userId } : {}) },
+        include: { user: true },
+      }),
+    );
+    if (direct) return direct;
+
+    // bcrypt-era tokens only exist with a userId prefix worth scanning; never scan every user
+    if (!userId) return null;
+    const legacy = await this.prismaService.withRetry(() =>
+      this.prismaService.refreshToken.findMany({
+        where: { ...usable, userId, tokenHash: { startsWith: '$2' } },
+        include: { user: true },
+        orderBy: { createdAt: 'desc' },
+        // the browser's cookie is one of the newest; an unknown cookie mustn't cost hundreds of bcrypt checks
+        take: AuthService.MAX_SESSIONS_PER_USER * 2,
+      }),
+    );
+    for (const token of legacy) {
+      if (await bcrypt.compare(raw, token.tokenHash)) return token;
+    }
+    return null;
+  }
+
   async logout(refreshToken: string): Promise<{ message: string }> {
     if (refreshToken) {
-      // Find all valid tokens and compare with bcrypt
-      const storedTokens = await this.prismaService.refreshToken.findMany({
-        where: {
-          revokedAt: null,
-        },
-      });
-
-      // Find matching token by comparing hashes and revoke it
-      for (const token of storedTokens) {
-        const isMatch = await bcrypt.compare(refreshToken, token.tokenHash);
-        if (isMatch) {
-          await this.prismaService.refreshToken.update({
-            where: { id: token.id },
-            data: { revokedAt: new Date() },
-          });
-          break;
-        }
+      const token = await this.findRefreshToken(refreshToken);
+      if (token && !token.revokedAt) {
+        await this.prismaService.refreshToken.update({
+          where: { id: token.id },
+          data: { revokedAt: new Date() },
+        });
       }
     }
 
@@ -445,15 +462,28 @@ export class AuthService {
     ttlMs?: number,
   ): Promise<string> {
     const rawToken = uuidv4();
-    const tokenHash = await bcrypt.hash(rawToken, 10);
+    const tokenHash = AuthService.hashRefreshToken(rawToken);
     const expiresAt = new Date(Date.now() + (ttlMs || this.REFRESH_TTL_LONG));
 
-    await this.prismaService.refreshToken.create({
+    const created = await this.prismaService.refreshToken.create({
       data: {
         userId,
         tokenHash,
         expiresAt,
       },
+    });
+
+    // Cap the user's open sessions: tokens beyond the newest MAX are revoked (that device logs in again).
+    // Only sets revokedAt on the user's own refresh tokens; nothing else is touched.
+    const keep = await this.prismaService.refreshToken.findMany({
+      where: { userId, revokedAt: null, expiresAt: { gte: new Date() } },
+      orderBy: { createdAt: 'desc' },
+      take: AuthService.MAX_SESSIONS_PER_USER,
+      select: { id: true },
+    });
+    await this.prismaService.refreshToken.updateMany({
+      where: { userId, revokedAt: null, id: { notIn: [created.id, ...keep.map(k => k.id)] } },
+      data: { revokedAt: new Date() },
     });
 
     // Embed userId as prefix so refresh lookup can filter by userId (O(1) instead of O(N) bcrypt loop)

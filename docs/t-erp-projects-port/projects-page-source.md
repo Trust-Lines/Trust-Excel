@@ -1,6 +1,6 @@
 # Trust System — Projects page source (for T-ERP)
 
-Generated 2026-11-06 from the Trust-Lines/Trust-Excel repo.
+Generated 2026-11-11 from the Trust-Lines/Trust-Excel repo.
 Every file the Projects page (`pages/OperationalBoard.tsx`) imports, plus the global `styles.css`.
 Paths are relative to the repo root; recreate them as they are so the relative imports keep working.
 
@@ -53,40 +53,40 @@ Third-party packages used by these files: `react` 18, `react-dom`, `react-router
 | `hooks/useTrustStockColumns.ts` | 15745 | 1.4 KB |
 | `hooks/useUndoStack.ts` | 15784 | 5.6 KB |
 | `lib/api.ts` | 15979 | 3.6 KB |
-| `lib/auth.ts` | 16112 | 6.5 KB |
-| `lib/columns.ts` | 16376 | 7.2 KB |
-| `lib/containers.ts` | 16677 | 4.6 KB |
-| `lib/dateUtils.ts` | 16865 | 1.7 KB |
-| `lib/direct-orders.ts` | 16932 | 5.4 KB |
-| `lib/displayHelpers.ts` | 17121 | 1.8 KB |
-| `lib/expenses-direct-order.ts` | 17184 | 5.3 KB |
-| `lib/expenses-missing-extra.ts` | 17345 | 5.3 KB |
-| `lib/expenses-p.ts` | 17506 | 5.5 KB |
-| `lib/gridWidth.ts` | 17675 | 2.4 KB |
-| `lib/missing-extra.ts` | 17791 | 9.9 KB |
-| `lib/payment-rules.ts` | 18097 | 1.1 KB |
-| `lib/pf-groups.ts` | 18150 | 3.7 KB |
-| `lib/projectColor.ts` | 18273 | 10.0 KB |
-| `lib/projectTotalApi.ts` | 18607 | 4.0 KB |
-| `lib/projects.ts` | 18735 | 27.0 KB |
-| `lib/sanitizePayload.ts` | 19580 | 2.1 KB |
-| `lib/today-pf.ts` | 19655 | 2.5 KB |
-| `lib/trust-stock.ts` | 19732 | 15.4 KB |
-| `pages/OperationalBoard.tsx` | 20152 | 36.9 KB |
-| `types.ts` | 21177 | 9.7 KB |
-| `types/expensesDirectOrder.ts` | 21468 | 1.4 KB |
-| `types/expensesMissingExtra.ts` | 21525 | 1.4 KB |
-| `types/expensesP.ts` | 21583 | 1.3 KB |
-| `types/projectTotal.ts` | 21640 | 0.4 KB |
-| `utils/containerUtils.ts` | 21670 | 2.3 KB |
-| `utils/excel/exportProjectTotalExcel.ts` | 21757 | 11.0 KB |
-| `utils/excel/exportProjectsAllTabsExcel.ts` | 22049 | 8.0 KB |
-| `utils/excel/exportProjectsExcel.ts` | 22280 | 19.2 KB |
-| `utils/excel/statusColorsExcel.ts` | 22750 | 2.6 KB |
-| `utils/filterUtils.ts` | 22852 | 7.1 KB |
-| `utils/moneyUtils.ts` | 23054 | 5.1 KB |
-| `utils/statusStyles.ts` | 23228 | 4.2 KB |
-| `styles.css` | 23421 | 101.0 KB |
+| `lib/auth.ts` | 16112 | 7.6 KB |
+| `lib/columns.ts` | 16401 | 7.2 KB |
+| `lib/containers.ts` | 16702 | 4.6 KB |
+| `lib/dateUtils.ts` | 16890 | 1.7 KB |
+| `lib/direct-orders.ts` | 16957 | 5.4 KB |
+| `lib/displayHelpers.ts` | 17146 | 1.8 KB |
+| `lib/expenses-direct-order.ts` | 17209 | 5.3 KB |
+| `lib/expenses-missing-extra.ts` | 17370 | 5.3 KB |
+| `lib/expenses-p.ts` | 17531 | 5.5 KB |
+| `lib/gridWidth.ts` | 17700 | 2.4 KB |
+| `lib/missing-extra.ts` | 17816 | 9.9 KB |
+| `lib/payment-rules.ts` | 18122 | 1.1 KB |
+| `lib/pf-groups.ts` | 18175 | 3.7 KB |
+| `lib/projectColor.ts` | 18298 | 10.0 KB |
+| `lib/projectTotalApi.ts` | 18632 | 4.0 KB |
+| `lib/projects.ts` | 18760 | 27.0 KB |
+| `lib/sanitizePayload.ts` | 19605 | 2.1 KB |
+| `lib/today-pf.ts` | 19680 | 2.5 KB |
+| `lib/trust-stock.ts` | 19757 | 15.6 KB |
+| `pages/OperationalBoard.tsx` | 20179 | 36.9 KB |
+| `types.ts` | 21204 | 9.7 KB |
+| `types/expensesDirectOrder.ts` | 21495 | 1.4 KB |
+| `types/expensesMissingExtra.ts` | 21552 | 1.4 KB |
+| `types/expensesP.ts` | 21610 | 1.3 KB |
+| `types/projectTotal.ts` | 21667 | 0.4 KB |
+| `utils/containerUtils.ts` | 21697 | 2.3 KB |
+| `utils/excel/exportProjectTotalExcel.ts` | 21784 | 11.0 KB |
+| `utils/excel/exportProjectsAllTabsExcel.ts` | 22076 | 8.0 KB |
+| `utils/excel/exportProjectsExcel.ts` | 22307 | 19.2 KB |
+| `utils/excel/statusColorsExcel.ts` | 22777 | 2.6 KB |
+| `utils/filterUtils.ts` | 22879 | 7.1 KB |
+| `utils/moneyUtils.ts` | 23081 | 5.1 KB |
+| `utils/statusStyles.ts` | 23255 | 4.2 KB |
+| `styles.css` | 23448 | 101.0 KB |
 
 ---
 
@@ -16217,23 +16217,41 @@ export const removeToken = (): void => {
   localStorage.removeItem('auth_token');
 };
 
-// Refresh token helper
-export const refreshToken = async (): Promise<{ accessToken: string }> => {
-  const response = await fetch(buildApiUrl('/auth/refresh'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include', // Include httpOnly cookies
-  });
+// Refresh token helper. A page opening fires many requests at once and they all get 401 when the
+// access token has expired (every morning): they share ONE refresh instead of each rotating the
+// cookie. A refresh that hangs is given up after REFRESH_TIMEOUT_MS so the app never sits on "loading".
+const REFRESH_TIMEOUT_MS = 25_000;
+let refreshInFlight: Promise<{ accessToken: string }> | null = null;
 
-  const data = await response.json();
+export const refreshToken = (): Promise<{ accessToken: string }> => {
+  if (!refreshInFlight) {
+    refreshInFlight = (async () => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), REFRESH_TIMEOUT_MS);
+      try {
+        const response = await fetch(buildApiUrl('/auth/refresh'), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include', // Include httpOnly cookies
+          signal: controller.signal,
+        });
 
-  if (!response.ok) {
-    throw new Error(data.message || 'Token refresh failed');
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Token refresh failed');
+        }
+
+        return data;
+      } finally {
+        clearTimeout(timer);
+        refreshInFlight = null;
+      }
+    })();
   }
-
-  return data;
+  return refreshInFlight;
 };
 
 // Central API client with auto-refresh
@@ -16268,12 +16286,19 @@ export const apiFetch = async (url: string, options: RequestInit = {}): Promise<
   if (response.status === 401 && token) {
 
     try {
-      const refreshData = await refreshToken();
-      setToken(refreshData.accessToken);
-
+      // Another request may have refreshed meanwhile: then just use the new token
+      const current = getToken();
+      let newToken: string;
+      if (current && current !== token) {
+        newToken = current;
+      } else {
+        const refreshData = await refreshToken();
+        setToken(refreshData.accessToken);
+        newToken = refreshData.accessToken;
+      }
 
       // Retry original request with new token
-      response = await makeRequest(refreshData.accessToken);
+      response = await makeRequest(newToken);
     } catch (refreshError) {
       console.error('❌ Token refresh failed:', refreshError);
 
@@ -19921,6 +19946,8 @@ export interface PfPdfPreview {
   warnings: string[];
   groupStatus: 'new' | 'exists' | 'in-trash';
   duplicateOf: { itemId: string; groupCode: string } | null;
+  /** Where each product row sits in the PDF (points, origin bottom-left; page 0-based). Not sent back on import. */
+  layout?: { itemCode: string; page: number; x0: number; x1: number; y0: number; y1: number }[];
 }
 
 export interface PfImportData {

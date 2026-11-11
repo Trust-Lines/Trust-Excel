@@ -326,7 +326,8 @@ export class TrustStockService implements OnModuleInit {
       ? await this.prisma.trustStockItem.findFirst({ where: { pfCode: parsed.pfCode, ...{ deletedAt: null, group: { deletedAt: null } } }, include: { group: { select: { code: true } } } })
       : null;
     if (duplicate) parsed.warnings.push(`${parsed.pfCode} is already in ${duplicate.group.code}.`);
-    delete parsed.layout; // only used for re-order PFs, not part of the import data
+    // parsed.layout stays: where each product row sits on the page (PDF points, origin bottom-left),
+    // so an upload screen can highlight the rows it read. It isn't part of the import data.
     return {
       ...parsed,
       stockCode,

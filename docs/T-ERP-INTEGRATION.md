@@ -136,6 +136,18 @@ A row whose vendor is TR-STOCK takes products from Trust Stock:
 | GET | `/trust-stock/usage/people` | "taken by" names for the dropdown |
 | DELETE | `/trust-stock/usage/:id` | undo a movement |
 
+### Trust Stock: PF PDF upload
+Full screen spec in `docs/t-erp-pf-import/PROMPT.md`.
+
+| Method | Path | Use |
+|---|---|---|
+| POST | `/trust-stock/pdf/preview` | multipart `file` (PDF, ≤ 4 MB) → read values + `warnings`, `duplicateOf`, `layout` (row positions). **Saves nothing** |
+| POST | `/trust-stock/pdf/import` | multipart `file` + `data` (JSON, exact `ImportPfDto` fields) → stock group / PF row / products, PDF stored |
+| GET | `/trust-stock/catalog` | earlier products, for item-code suggestions |
+| GET | `/trust-stock/groups` | the Trust Stock table (groups with their PF rows) |
+
+The proxy must pass multipart bodies through unchanged (body as bytes, `Content-Type` with its boundary).
+
 ---
 
 ## 3. Live updates (optional, recommended)

@@ -187,6 +187,8 @@ export interface PfPdfPreview {
   warnings: string[];
   groupStatus: 'new' | 'exists' | 'in-trash';
   duplicateOf: { itemId: string; groupCode: string } | null;
+  /** Where each product row sits in the PDF (points, origin bottom-left; page 0-based). Not sent back on import. */
+  layout?: { itemCode: string; page: number; x0: number; x1: number; y0: number; y1: number }[];
 }
 
 export interface PfImportData {

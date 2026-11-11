@@ -11,6 +11,7 @@ import {
   ValidationPipe,
   UsePipes,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ProjectBucket } from '@prisma/client';
 import { MissingExtraService } from './missing-extra.service';
@@ -175,10 +176,22 @@ export class MissingExtraController {
   }
 
   /**
-   * DELETE /missing-extra/dev/clear - Clear all cases and items (ADMIN only, for testing cleanup)
+   * Test-only endpoints below wipe EVERY Missing & Extra case and item for good (no trash).
+   * Page access alone used to be enough to call them; they now refuse unless the server runs
+   * with ALLOW_DEV_ENDPOINTS=true, which the live server never has.
+   */
+  private static requireDevEndpoints() {
+    if (process.env.ALLOW_DEV_ENDPOINTS !== 'true') {
+      throw new ForbiddenException('Test endpoint disabled');
+    }
+  }
+
+  /**
+   * DELETE /missing-extra/dev/clear - Clear all cases and items (test databases only)
    */
   @Delete('dev/clear')
   async clearAllCases(@Request() req: any): Promise<{ message: string; deleted: { cases: number; items: number } }> {
+    MissingExtraController.requireDevEndpoints();
 
     // Count before deletion
     const itemCount = await this.missingExtraService.countAllItems();
@@ -200,10 +213,11 @@ export class MissingExtraController {
   }
 
   /**
-   * POST /missing-extra/dev/reset - Reset and seed with test data (ADMIN only)
+   * POST /missing-extra/dev/reset - Reset and seed with test data (test databases only)
    */
   @Post('dev/reset')
   async resetWithSeedData(@Request() req: any): Promise<{ message: string; deleted: { cases: number; items: number }; seeded: { casesCount: number; itemsCount: number } }> {
+    MissingExtraController.requireDevEndpoints();
 
     // First clear all existing data
     const itemCount = await this.missingExtraService.countAllItems();

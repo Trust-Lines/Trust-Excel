@@ -8,12 +8,46 @@
 
 ---
 
+## Proje numarası hücresi (menünün açıldığı yer)
+
+Tablonun en solundaki renkli, büyük hücre. Projenin **bütün satırları boyunca tek, dikey birleşik**
+hücre: yükseklik = satır sayısı × 40 px. 110 px geniş. Yatay kaydırmada solda sabit kalır.
+
+- **İçerik:** proje numarası. Ortalı, beyaz, **800 kalınlık**, Projects'te 18 px, Missing Extra'da
+  14 px (case kodu daha uzun), hafif yazı gölgesi.
+  - `P123` biçimindeyse baştaki `P` gösterilmez (`123`). Diğer numaralar olduğu gibi (`STNE 440`).
+  - Missing Extra'da proje no yerine case kodu: `440-EX-2`.
+- **Zemin rengi** (öncelik sırasıyla):
+  1. **yeşil `#9FCF63`**: projenin bütün satırları SENT
+  2. **kırmızı `#E53E3E`**: proje Urgent işaretli ya da bir satırın konteyner tarihi 0–10 gün
+     içinde
+  3. **mavi `#6A99D1`**: bir satırın PO'su SIGNED ya da READY TO SIGN
+  4. **turuncu `#DE8244`**: diğer durumlar
+  Renk canlı hesaplanır: bir satır değişince hemen güncellenir.
+- **"OLD DUPLICATE" rozeti:** numara `…_OLD_<zaman>` ile bitiyorsa numaranın altında küçük, koyu
+  yarı saydam, beyaz bir rozet çıkar.
+  - Üzerine gelince: "Renamed on {tarih} when this code was recreated".
+  - Bu, aynı numaralı yeni bir proje açıldığında ya da Move Region ile aynı numaralı bir proje o
+    bölgeye taşındığında eskisinin aldığı işarettir. Veriyi değiştirme, sadece göster.
+- **Seçim kutusu (Half atama):** Projects ve Missing Extra'da sol üst köşede (6 px içeride) 16 px
+  bir onay kutusu.
+  - Half araç çubuğundaki seçim içindir ("Select All", "Assign to First/Second Half").
+  - Kutuya tıklamak menüyü açmaz, sadece seçer.
+- **Sol tık:** hiçbir şey yapmaz (imleç yine de el işareti).
+- **Sağ tık:** aşağıdaki **proje menüsünü** açar. Proje başlığına sağ tıklamak da aynı menüyü
+  açar.
+- Rol PROJECT # kolonunu göremiyorsa hücre gizlenir.
+
+---
+
 ## Menü nasıl açılır
 
-- **Proje başlığına** (koyu gri bant: proje adı + adres) **ya da proje numarası hücresine**
-  (soldaki renkli, birleşik hücre) **sağ tıklayınca** açılır. Sol tık bir şey yapmaz.
-- Proje başlığının **hemen altında, sol kenarına hizalı** açılır (4 px boşluk). Beyaz kutu, ince
-  gri çerçeve, 6 px köşe, gölgeli, en az 200 px geniş.
+- **Proje numarası hücresine** ya da **proje başlığına** (koyu gri bant: proje adı + adres)
+  **sağ tıklayınca** açılır. Tarayıcının kendi sağ tık menüsü açılmaz. Açıkken tekrar sağ
+  tıklamak kapatır. Sol tık bir şey yapmaz.
+- Nereye sağ tıklanırsa tıklansın menü **proje başlığının hemen altında, sol kenarına hizalı**
+  açılır (4 px boşluk), yani proje numarası hücresinin üst kısmının üstünde. Beyaz kutu, ince gri
+  çerçeve, 6 px köşe, gölgeli, en az 200 px geniş. Sayfa kaydırılsa da başlığa bağlı kalır.
 - Kapanma: menü dışına tıklamak, **Esc**, ya da bir işlemin bitmesi.
 - Kayıt sürerken menü yarı saydam olur ve tıklanmaz.
 - Menü her açılışta temiz başlar: açık düzenleme alanı kalmaz, tip seçimleri projenin şu anki
@@ -189,8 +223,10 @@ Missing Extra'da satır uçları: silme `DELETE /missing-extra/items/{itemId}`, 
 
 ## Kontrol listesi
 
-- [ ] Proje başlığına ve proje no hücresine sağ tıklayınca menü başlığın altında açılıyor; Esc ve
-      dışarı tıklama kapatıyor
+- [ ] Proje no hücresi proje boyunca tek; renk kuralı doğru; `P` öneki gizli; Missing Extra'da
+      case kodu; OLD DUPLICATE rozeti; Half seçim kutusu menüyü açmadan seçiyor
+- [ ] Proje no hücresine ve proje başlığına sağ tıklayınca menü başlığın altında açılıyor; sol tık
+      bir şey yapmıyor; Esc, dışarı tıklama ve tekrar sağ tık kapatıyor
 - [ ] Belge Hazırla doğru projeyle fiyat listesi sayfasını açıyor (T-ERP'de yoksa Trust System,
       yeni sekme)
 - [ ] Make / Remove Urgent: proje no kırmızı oluyor / normale dönüyor; yazı ve renk değişiyor

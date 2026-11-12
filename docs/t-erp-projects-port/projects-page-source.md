@@ -33,7 +33,7 @@ Third-party packages used by these files: `react` 18, `react-dom`, `react-router
 | `components/PfGroupManageModal.tsx` | 7418 | 10.4 KB |
 | `components/ProjectBlock.tsx` | 7620 | 202.1 KB |
 | `components/ProjectHeader.tsx` | 11942 | 0.9 KB |
-| `components/ProjectMenu.tsx` | 11982 | 18.0 KB |
+| `components/ProjectMenu.tsx` | 11982 | 17.9 KB |
 | `components/SectionSeparator.tsx` | 12431 | 0.3 KB |
 | `components/SignWaitingFilters.tsx` | 12453 | 2.2 KB |
 | `components/StockUsageModal.tsx` | 12511 | 16.7 KB |
@@ -12074,7 +12074,7 @@ const ProjectMenu: React.FC<ProjectMenuProps> = ({
 
   const handleDeleteClick = () => {
     const isConfirmed = window.confirm(
-      `Are you sure you want to delete the project?\n\n"${projectName}"\n\nThis action cannot be undone and all project data will be permanently deleted.`
+      `Are you sure you want to delete the project?\n\n"${projectName}"\n\nIt will be moved to the Trash Bin, where it can be restored.`
     );
 
     if (isConfirmed) {

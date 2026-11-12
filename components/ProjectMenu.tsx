@@ -90,7 +90,7 @@ const ProjectMenu: React.FC<ProjectMenuProps> = ({
 
   const handleDeleteClick = () => {
     const isConfirmed = window.confirm(
-      `Are you sure you want to delete the project?\n\n"${projectName}"\n\nThis action cannot be undone and all project data will be permanently deleted.`
+      `Are you sure you want to delete the project?\n\n"${projectName}"\n\nIt will be moved to the Trash Bin, where it can be restored.`
     );
 
     if (isConfirmed) {

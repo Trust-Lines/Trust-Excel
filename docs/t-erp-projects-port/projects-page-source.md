@@ -1,6 +1,6 @@
 # Trust System — Projects page source (for T-ERP)
 
-Generated 2026-11-11 from the Trust-Lines/Trust-Excel repo.
+Generated 2026-11-12 from the Trust-Lines/Trust-Excel repo.
 Every file the Projects page (`pages/OperationalBoard.tsx`) imports, plus the global `styles.css`.
 Paths are relative to the repo root; recreate them as they are so the relative imports keep working.
 
@@ -15,78 +15,78 @@ Third-party packages used by these files: `react` 18, `react-dom`, `react-router
 | `components/AccountingColumns.tsx` | 165 | 8.1 KB |
 | `components/AddProjectDrawer.tsx` | 477 | 27.0 KB |
 | `components/AddToGroupModal.tsx` | 1245 | 8.7 KB |
-| `components/AddVendorModal.tsx` | 1450 | 10.5 KB |
-| `components/CellOrderTypeAutocomplete.tsx` | 1807 | 11.0 KB |
-| `components/CellStatusAutocomplete.tsx` | 2177 | 11.4 KB |
-| `components/CellVendorAutocomplete.tsx` | 2527 | 19.5 KB |
-| `components/ContainerCellEditor.tsx` | 3074 | 15.5 KB |
-| `components/FilterBar.tsx` | 3502 | 26.6 KB |
-| `components/FilterEditMenu.tsx` | 4319 | 3.0 KB |
-| `components/GroupedPfTable.tsx` | 4413 | 4.4 KB |
-| `components/HalfAssignmentToolbar.tsx` | 4525 | 4.1 KB |
-| `components/InlineEditPanel.tsx` | 4673 | 22.6 KB |
-| `components/InlineEditors.tsx` | 5347 | 12.6 KB |
-| `components/OperationalBoardGrid.tsx` | 5769 | 38.2 KB |
-| `components/OrderTypeDropdownField.tsx` | 6714 | 10.7 KB |
-| `components/PaymentRuleDropdownEditor.tsx` | 7054 | 8.6 KB |
-| `components/PfGroupFilterControl.tsx` | 7334 | 2.3 KB |
-| `components/PfGroupManageModal.tsx` | 7413 | 10.4 KB |
-| `components/ProjectBlock.tsx` | 7615 | 201.9 KB |
-| `components/ProjectHeader.tsx` | 11936 | 0.9 KB |
-| `components/ProjectMenu.tsx` | 11976 | 18.0 KB |
-| `components/SectionSeparator.tsx` | 12425 | 0.3 KB |
-| `components/SignWaitingFilters.tsx` | 12447 | 2.2 KB |
-| `components/StockUsageModal.tsx` | 12505 | 16.7 KB |
-| `components/TodayPfControl.tsx` | 12805 | 3.2 KB |
-| `components/TodayPfManageModal.tsx` | 12913 | 24.4 KB |
-| `components/TrustStockContentsModal.tsx` | 13421 | 31.6 KB |
-| `components/VendorDropdownField.tsx` | 13930 | 13.8 KB |
-| `components/ui/AnchoredDropdown.tsx` | 14360 | 8.7 KB |
-| `constants.ts` | 14630 | 0.2 KB |
-| `contexts/AuthContext.tsx` | 14640 | 8.5 KB |
-| `contexts/PaymentRulesContext.tsx` | 14912 | 2.3 KB |
-| `contexts/SocketContext.tsx` | 14995 | 6.1 KB |
-| `hooks/useColumnPermissions.ts` | 15207 | 5.8 KB |
-| `hooks/useLivePatchStore.ts` | 15386 | 8.7 KB |
-| `hooks/usePagePermissions.ts` | 15642 | 2.2 KB |
-| `hooks/useSocketEvent.ts` | 15715 | 0.6 KB |
-| `hooks/useTrustStockColumns.ts` | 15745 | 1.4 KB |
-| `hooks/useUndoStack.ts` | 15784 | 5.6 KB |
-| `lib/api.ts` | 15979 | 3.6 KB |
-| `lib/auth.ts` | 16112 | 7.6 KB |
-| `lib/columns.ts` | 16401 | 7.2 KB |
-| `lib/containers.ts` | 16702 | 4.6 KB |
-| `lib/dateUtils.ts` | 16890 | 1.7 KB |
-| `lib/direct-orders.ts` | 16957 | 5.4 KB |
-| `lib/displayHelpers.ts` | 17146 | 1.8 KB |
-| `lib/expenses-direct-order.ts` | 17209 | 5.3 KB |
-| `lib/expenses-missing-extra.ts` | 17370 | 5.3 KB |
-| `lib/expenses-p.ts` | 17531 | 5.5 KB |
-| `lib/gridWidth.ts` | 17700 | 2.4 KB |
-| `lib/missing-extra.ts` | 17816 | 9.9 KB |
-| `lib/payment-rules.ts` | 18122 | 1.1 KB |
-| `lib/pf-groups.ts` | 18175 | 3.7 KB |
-| `lib/projectColor.ts` | 18298 | 10.0 KB |
-| `lib/projectTotalApi.ts` | 18632 | 4.0 KB |
-| `lib/projects.ts` | 18760 | 27.0 KB |
-| `lib/sanitizePayload.ts` | 19605 | 2.1 KB |
-| `lib/today-pf.ts` | 19680 | 2.5 KB |
-| `lib/trust-stock.ts` | 19757 | 15.6 KB |
-| `pages/OperationalBoard.tsx` | 20179 | 36.9 KB |
-| `types.ts` | 21204 | 9.7 KB |
-| `types/expensesDirectOrder.ts` | 21495 | 1.4 KB |
-| `types/expensesMissingExtra.ts` | 21552 | 1.4 KB |
-| `types/expensesP.ts` | 21610 | 1.3 KB |
-| `types/projectTotal.ts` | 21667 | 0.4 KB |
-| `utils/containerUtils.ts` | 21697 | 2.3 KB |
-| `utils/excel/exportProjectTotalExcel.ts` | 21784 | 11.0 KB |
-| `utils/excel/exportProjectsAllTabsExcel.ts` | 22076 | 8.0 KB |
-| `utils/excel/exportProjectsExcel.ts` | 22307 | 19.2 KB |
-| `utils/excel/statusColorsExcel.ts` | 22777 | 2.6 KB |
-| `utils/filterUtils.ts` | 22879 | 7.1 KB |
-| `utils/moneyUtils.ts` | 23081 | 5.1 KB |
-| `utils/statusStyles.ts` | 23255 | 4.2 KB |
-| `styles.css` | 23448 | 101.0 KB |
+| `components/AddVendorModal.tsx` | 1450 | 10.4 KB |
+| `components/CellOrderTypeAutocomplete.tsx` | 1812 | 11.0 KB |
+| `components/CellStatusAutocomplete.tsx` | 2182 | 11.4 KB |
+| `components/CellVendorAutocomplete.tsx` | 2532 | 19.5 KB |
+| `components/ContainerCellEditor.tsx` | 3079 | 15.5 KB |
+| `components/FilterBar.tsx` | 3507 | 26.6 KB |
+| `components/FilterEditMenu.tsx` | 4324 | 3.0 KB |
+| `components/GroupedPfTable.tsx` | 4418 | 4.4 KB |
+| `components/HalfAssignmentToolbar.tsx` | 4530 | 4.1 KB |
+| `components/InlineEditPanel.tsx` | 4678 | 22.6 KB |
+| `components/InlineEditors.tsx` | 5352 | 12.6 KB |
+| `components/OperationalBoardGrid.tsx` | 5774 | 38.2 KB |
+| `components/OrderTypeDropdownField.tsx` | 6719 | 10.7 KB |
+| `components/PaymentRuleDropdownEditor.tsx` | 7059 | 8.6 KB |
+| `components/PfGroupFilterControl.tsx` | 7339 | 2.3 KB |
+| `components/PfGroupManageModal.tsx` | 7418 | 10.4 KB |
+| `components/ProjectBlock.tsx` | 7620 | 202.1 KB |
+| `components/ProjectHeader.tsx` | 11942 | 0.9 KB |
+| `components/ProjectMenu.tsx` | 11982 | 18.0 KB |
+| `components/SectionSeparator.tsx` | 12431 | 0.3 KB |
+| `components/SignWaitingFilters.tsx` | 12453 | 2.2 KB |
+| `components/StockUsageModal.tsx` | 12511 | 16.7 KB |
+| `components/TodayPfControl.tsx` | 12811 | 3.2 KB |
+| `components/TodayPfManageModal.tsx` | 12919 | 24.4 KB |
+| `components/TrustStockContentsModal.tsx` | 13427 | 31.6 KB |
+| `components/VendorDropdownField.tsx` | 13936 | 13.8 KB |
+| `components/ui/AnchoredDropdown.tsx` | 14366 | 8.7 KB |
+| `constants.ts` | 14636 | 0.2 KB |
+| `contexts/AuthContext.tsx` | 14646 | 8.5 KB |
+| `contexts/PaymentRulesContext.tsx` | 14918 | 2.3 KB |
+| `contexts/SocketContext.tsx` | 15001 | 6.1 KB |
+| `hooks/useColumnPermissions.ts` | 15213 | 5.8 KB |
+| `hooks/useLivePatchStore.ts` | 15392 | 8.7 KB |
+| `hooks/usePagePermissions.ts` | 15648 | 2.2 KB |
+| `hooks/useSocketEvent.ts` | 15721 | 0.6 KB |
+| `hooks/useTrustStockColumns.ts` | 15751 | 1.4 KB |
+| `hooks/useUndoStack.ts` | 15790 | 5.6 KB |
+| `lib/api.ts` | 15985 | 3.6 KB |
+| `lib/auth.ts` | 16118 | 7.6 KB |
+| `lib/columns.ts` | 16407 | 7.2 KB |
+| `lib/containers.ts` | 16708 | 4.6 KB |
+| `lib/dateUtils.ts` | 16896 | 1.7 KB |
+| `lib/direct-orders.ts` | 16963 | 5.4 KB |
+| `lib/displayHelpers.ts` | 17152 | 1.8 KB |
+| `lib/expenses-direct-order.ts` | 17215 | 5.3 KB |
+| `lib/expenses-missing-extra.ts` | 17376 | 5.3 KB |
+| `lib/expenses-p.ts` | 17537 | 5.5 KB |
+| `lib/gridWidth.ts` | 17706 | 2.4 KB |
+| `lib/missing-extra.ts` | 17822 | 9.9 KB |
+| `lib/payment-rules.ts` | 18128 | 1.1 KB |
+| `lib/pf-groups.ts` | 18181 | 3.7 KB |
+| `lib/projectColor.ts` | 18304 | 10.0 KB |
+| `lib/projectTotalApi.ts` | 18638 | 4.0 KB |
+| `lib/projects.ts` | 18766 | 27.1 KB |
+| `lib/sanitizePayload.ts` | 19611 | 2.1 KB |
+| `lib/today-pf.ts` | 19686 | 2.5 KB |
+| `lib/trust-stock.ts` | 19763 | 15.6 KB |
+| `pages/OperationalBoard.tsx` | 20185 | 36.9 KB |
+| `types.ts` | 21210 | 9.7 KB |
+| `types/expensesDirectOrder.ts` | 21501 | 1.4 KB |
+| `types/expensesMissingExtra.ts` | 21558 | 1.4 KB |
+| `types/expensesP.ts` | 21616 | 1.3 KB |
+| `types/projectTotal.ts` | 21673 | 0.4 KB |
+| `utils/containerUtils.ts` | 21703 | 2.3 KB |
+| `utils/excel/exportProjectTotalExcel.ts` | 21790 | 11.0 KB |
+| `utils/excel/exportProjectsAllTabsExcel.ts` | 22082 | 8.0 KB |
+| `utils/excel/exportProjectsExcel.ts` | 22313 | 19.2 KB |
+| `utils/excel/statusColorsExcel.ts` | 22783 | 2.6 KB |
+| `utils/filterUtils.ts` | 22885 | 7.1 KB |
+| `utils/moneyUtils.ts` | 23087 | 5.1 KB |
+| `utils/statusStyles.ts` | 23261 | 4.2 KB |
+| `styles.css` | 23454 | 101.0 KB |
 
 ---
 
@@ -1489,6 +1489,11 @@ const AddVendorModal: React.FC<AddVendorModalProps> = ({
       setError('Vendor name is required');
       return;
     }
+    // The code starts every PF code of this vendor; the server requires 2–10 characters
+    if (code.trim().length < 2) {
+      setError('Vendor code is required (2–10 characters, e.g. YSM)');
+      return;
+    }
 
     try {
       setIsSubmitting(true);
@@ -1496,7 +1501,7 @@ const AddVendorModal: React.FC<AddVendorModalProps> = ({
 
       const vendorData = {
         name: name.trim(),
-        ...(code.trim() && { code: code.trim() }),
+        code: code.trim(),
         fixedMillworkCodes,
       };
 
@@ -1659,14 +1664,14 @@ const AddVendorModal: React.FC<AddVendorModalProps> = ({
                   cursor: 'pointer'
                 }}
               >
-                Vendor Code
+                Vendor Code *
               </label>
               <input
                 id="vendorCode"
                 type="text"
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
-                placeholder="e.g., PMS (optional - auto-generated if empty)"
+                placeholder="e.g., PMS (2–10 letters)"
                 disabled={isSubmitting}
                 style={{
                   width: '100%',
@@ -1685,7 +1690,7 @@ const AddVendorModal: React.FC<AddVendorModalProps> = ({
                   color: '#6b7280'
                 }}
               >
-                Leave empty to auto-generate from vendor name
+                Starts every PF code of this vendor (e.g. PMS-440-M01). Must be unique.
               </div>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', fontSize: '14px', color: '#374151', cursor: 'pointer' }}>
                 <input
@@ -1716,7 +1721,7 @@ const AddVendorModal: React.FC<AddVendorModalProps> = ({
               <div>
                 When you assign this vendor to project items, PF codes will be automatically
                 generated using the format: <code style={{ fontFamily: 'monospace' }}>
-                {code.trim() || '[CODE]'}-P[PROJECT_NO]-[TYPE][NUM]
+                {code.trim() || '[CODE]'}-[PROJECT_NO]-[TYPE][NUM]
                 </code>
               </div>
             </div>
@@ -10728,7 +10733,8 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
                             // const isFirstRowInType = __rowIndex === 0; // Unused variable
 
                             const scrollableFields = [
-                              { field: 'pfCode', value: row.pfCode, className: 'col-pf-code', editable: (isTrustStockMode || !!row.customTypeId) && isColumnEditable('pfCode') },
+                              // PF codes come from the server; only Trust Stock and Direct Order custom types accept one typed by hand (Projects / Missing Extra ignore it)
+                              { field: 'pfCode', value: row.pfCode, className: 'col-pf-code', editable: (isTrustStockMode || (mode === 'directOrder' && !!row.customTypeId)) && isColumnEditable('pfCode') },
                               { field: 'vendor', value: row.vendor, className: 'col-vendor', editable: isColumnEditable('vendor') },
                               ...(isTrustStockMode ? [{ field: 'orderNo', value: (row as any).orderNo, className: 'col-order-no', editable: isColumnEditable('orderNo' as ColumnKey) }] : []),
                               { field: 'orderType', value: row.orderType, className: 'col-order-type', editable: isColumnEditable('orderType') },
@@ -18781,7 +18787,7 @@ export interface Vendor {
 
 export interface CreateVendorRequest {
   name: string;
-  code?: string; // Optional, auto-generated if not provided
+  code: string; // Required by the server: 2–10 characters, unique; starts every PF code
   fixedMillworkCodes?: boolean; // Millwork PF codes follow the order-type M01/M02/M03 rule
 }
 

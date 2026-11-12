@@ -37,6 +37,11 @@ const AddVendorModal: React.FC<AddVendorModalProps> = ({
       setError('Vendor name is required');
       return;
     }
+    // The code starts every PF code of this vendor; the server requires 2–10 characters
+    if (code.trim().length < 2) {
+      setError('Vendor code is required (2–10 characters, e.g. YSM)');
+      return;
+    }
 
     try {
       setIsSubmitting(true);
@@ -44,7 +49,7 @@ const AddVendorModal: React.FC<AddVendorModalProps> = ({
 
       const vendorData = {
         name: name.trim(),
-        ...(code.trim() && { code: code.trim() }),
+        code: code.trim(),
         fixedMillworkCodes,
       };
 
@@ -207,14 +212,14 @@ const AddVendorModal: React.FC<AddVendorModalProps> = ({
                   cursor: 'pointer'
                 }}
               >
-                Vendor Code
+                Vendor Code *
               </label>
               <input
                 id="vendorCode"
                 type="text"
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
-                placeholder="e.g., PMS (optional - auto-generated if empty)"
+                placeholder="e.g., PMS (2–10 letters)"
                 disabled={isSubmitting}
                 style={{
                   width: '100%',
@@ -233,7 +238,7 @@ const AddVendorModal: React.FC<AddVendorModalProps> = ({
                   color: '#6b7280'
                 }}
               >
-                Leave empty to auto-generate from vendor name
+                Starts every PF code of this vendor (e.g. PMS-440-M01). Must be unique.
               </div>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', fontSize: '14px', color: '#374151', cursor: 'pointer' }}>
                 <input
@@ -264,7 +269,7 @@ const AddVendorModal: React.FC<AddVendorModalProps> = ({
               <div>
                 When you assign this vendor to project items, PF codes will be automatically
                 generated using the format: <code style={{ fontFamily: 'monospace' }}>
-                {code.trim() || '[CODE]'}-P[PROJECT_NO]-[TYPE][NUM]
+                {code.trim() || '[CODE]'}-[PROJECT_NO]-[TYPE][NUM]
                 </code>
               </div>
             </div>

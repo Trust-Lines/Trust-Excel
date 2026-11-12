@@ -19,7 +19,7 @@ export interface Vendor {
 
 export interface CreateVendorRequest {
   name: string;
-  code?: string; // Optional, auto-generated if not provided
+  code: string; // Required by the server: 2–10 characters, unique; starts every PF code
   fixedMillworkCodes?: boolean; // Millwork PF codes follow the order-type M01/M02/M03 rule
 }
 

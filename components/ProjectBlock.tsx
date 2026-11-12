@@ -3111,7 +3111,8 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
                             // const isFirstRowInType = __rowIndex === 0; // Unused variable
 
                             const scrollableFields = [
-                              { field: 'pfCode', value: row.pfCode, className: 'col-pf-code', editable: (isTrustStockMode || !!row.customTypeId) && isColumnEditable('pfCode') },
+                              // PF codes come from the server; only Trust Stock and Direct Order custom types accept one typed by hand (Projects / Missing Extra ignore it)
+                              { field: 'pfCode', value: row.pfCode, className: 'col-pf-code', editable: (isTrustStockMode || (mode === 'directOrder' && !!row.customTypeId)) && isColumnEditable('pfCode') },
                               { field: 'vendor', value: row.vendor, className: 'col-vendor', editable: isColumnEditable('vendor') },
                               ...(isTrustStockMode ? [{ field: 'orderNo', value: (row as any).orderNo, className: 'col-order-no', editable: isColumnEditable('orderNo' as ColumnKey) }] : []),
                               { field: 'orderType', value: row.orderType, className: 'col-order-type', editable: isColumnEditable('orderType') },

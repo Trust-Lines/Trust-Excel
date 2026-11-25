@@ -51,6 +51,16 @@ import StockUsageModal from './StockUsageModal';
 // Trust Stock page: columns shown (plus the Trust-Stock-only ORDER NO column)
 const TRUST_STOCK_COLS = ['projectNo', 'type', 'pfCode', 'vendor', 'orderNo', 'pfSignStatus', 'status', 'std', 'etd', 'rtr', 'rtd', 'pfUsd', 'pfTl', 'invoice', 'invoiceTl', 'paymentRule'];
 const ORDER_NO_WIDTH = 160; // keep in sync with .col-order-no in styles.css
+
+// PO / USD is one price per type group (saved on every item of the type).
+// Returns the group's price: the first non-empty, non-zero value among its rows.
+const getTypePoUsd = (rows: Array<any>): string => {
+  for (const r of rows) {
+    const v = r?.poUsd;
+    if (v !== undefined && v !== null && v !== '' && (parseFloat(String(v)) || 0) !== 0) return String(v);
+  }
+  return '';
+};
 import { useAuth } from '../contexts/AuthContext';
 
 // Error Boundary to prevent white screen crashes
@@ -792,10 +802,15 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
       return sum + value;
     }, 0);
 
-    const totalPoUsd = visibleRows.reduce((sum, row) => {
-      const value = parseFloat((row as any).poUsd || '') || 0;
-      return sum + value;
-    }, 0);
+    // PO is one price per type group - count each type once, not once per row
+    const poRowsByType = new Map<string, typeof visibleRows>();
+    visibleRows.forEach(row => {
+      const key = String(row.type || '');
+      if (!poRowsByType.has(key)) poRowsByType.set(key, []);
+      poRowsByType.get(key)!.push(row);
+    });
+    let totalPoUsd = 0;
+    poRowsByType.forEach(rows => { totalPoUsd += parseFloat(getTypePoUsd(rows) || '') || 0; });
 
     return {
       pfUsd: totalUsd,
@@ -1542,7 +1557,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
         applyPatch(editingCell.itemId, patchPayload, editingCell.field)
           .then(() => {})
           .catch((_error) => {});
-      } else if (editingCell.field === 'pfUsd' || editingCell.field === 'pfTl' || editingCell.field === 'expensesUsd' || editingCell.field === 'expensesTl' || editingCell.field === 'invoice' || editingCell.field === 'invoiceTl' || editingCell.field === 'poUsd') {
+      } else if (editingCell.field === 'pfUsd' || editingCell.field === 'pfTl' || editingCell.field === 'expensesUsd' || editingCell.field === 'expensesTl' || editingCell.field === 'invoice' || editingCell.field === 'invoiceTl') {
         const parsed = parseFloat(value);
         const numericValue = value === '' ? null : (isNaN(parsed) ? null : parsed);
         const patchPayload = { [editingCell.field]: numericValue };
@@ -1679,6 +1694,38 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
     }
 
     setEditingCell(null);
+  };
+
+  // PO / USD is one price per type group: save the same value on every item of the type
+  // (mirrors handlePoSignStatusSaveByType), so totals count each type once.
+  const handlePoUsdSaveByType = async (typeRows: Array<{ itemId?: string | null }>, rawValue: string) => {
+    setEditingCell(null);
+    const trimmed = (rawValue || '').trim();
+    const parsed = parseFloat(trimmed);
+    const numericValue = trimmed === '' || isNaN(parsed) ? null : parsed;
+
+    const ids = typeRows
+      .map(r => r.itemId)
+      .filter((id): id is string => !!id && !id.startsWith('new-row-'));
+    // Skip if nothing changed on any item
+    const changed = ids.filter(id => {
+      const current = (itemsById.get(id) as any)?.poUsd;
+      const currentNum = current == null || current === '' ? null : Number(current);
+      return currentNum !== numericValue;
+    });
+    if (changed.length === 0) return;
+
+    changed.forEach(id => {
+      pushUndo({
+        entityType: undoEntityType, entityId: id, parentId: project.projectId,
+        previousValues: { poUsd: (itemsById.get(id) as any)?.poUsd ?? null },
+        description: 'Changed PO / USD (type)',
+      });
+    });
+
+    await Promise.all(changed.map(id =>
+      applyPatch(id, { poUsd: numericValue }, 'poUsd').catch(err => console.error('PO / USD save failed', id, err))
+    ));
   };
 
   // Handler for date fields (ETD/RTD/RTR/FTD) with backend persistence
@@ -2958,11 +3005,11 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
                 <div className="column-header-cell col-rdy" style={getHeaderCellStyle('rdy' as ColumnKey)}>RDY</div>
                 <div className="column-header-cell col-ftd" style={getHeaderCellStyle('ftd' as ColumnKey)}>FTD</div>
                 <div className="column-header-cell col-snd" style={getHeaderCellStyle('snd' as ColumnKey)}>SND</div>
+                <div className="column-header-cell col-po-usd" style={getHeaderCellStyle('poUsd' as ColumnKey)}>PO / USD</div>
                 <div className="column-header-cell col-pf-usd" style={getHeaderCellStyle('pfUsd' as ColumnKey)}>PF / USD</div>
                 <div className="column-header-cell col-pf-tl" style={getHeaderCellStyle('pfTl' as ColumnKey)}>PF / TL</div>
                 <div className="column-header-cell col-invoice" style={getHeaderCellStyle('invoice' as ColumnKey)}>INV / USD</div>
                 <div className="column-header-cell col-invoice-tl" style={getHeaderCellStyle('invoiceTl' as ColumnKey)}>INV / TL</div>
-                <div className="column-header-cell col-po-usd" style={getHeaderCellStyle('poUsd' as ColumnKey)}>PO</div>
                 <div className="column-header-cell col-expenses-usd" style={getHeaderCellStyle('expensesUsd' as ColumnKey)}>EXPENSES / USD</div>
                 <div className="column-header-cell col-expenses-tl" style={getHeaderCellStyle('expensesTl' as ColumnKey)}>EXPENSES / TL</div>
                 <div className="column-header-cell col-payment-rule" style={getHeaderCellStyle('paymentRule' as ColumnKey)}>PAYMENT RULE</div>
@@ -3146,11 +3193,19 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
                               { field: 'rdy', value: formatDateCell(row.rdy), className: 'col-rdy', editable: false },
                               { field: 'ftd', value: formatDateCell(row.ftd), className: 'col-ftd', editable: isColumnEditable('ftd') },
                               { field: 'snd', value: formatDateCell(row.snd), className: 'col-snd', editable: false },
+                              // PO / USD - one price per type group (same as PO Sign Status), shown on the first row
+                              {
+                                field: 'poUsd',
+                                value: __rowIndex === 0 ? getTypePoUsd(typeGroup.rows) : '',
+                                className: 'col-po-usd',
+                                editable: __rowIndex === 0 && isColumnEditable('poUsd'),
+                                isFirstInTypeGroup: __rowIndex === 0,
+                                typeRowCount: typeGroup.rows.length
+                              },
                               { field: 'pfUsd', value: row.pfUsd, className: 'col-pf-usd', editable: isColumnEditable('pfUsd') },
                               { field: 'pfTl', value: row.pfTl, className: 'col-pf-tl', editable: isColumnEditable('pfTl') },
                               { field: 'invoice', value: row.invoice || '', className: 'col-invoice', editable: isColumnEditable('invoice') },
                               { field: 'invoiceTl', value: (row as any).invoiceTl || '', className: 'col-invoice-tl', editable: isColumnEditable('invoiceTl') },
-                              { field: 'poUsd', value: (row as any).poUsd || '', className: 'col-po-usd', editable: isColumnEditable('poUsd') },
                               { field: 'expensesUsd', value: row.expensesUsd || '', className: 'col-expenses-usd', editable: isColumnEditable('expensesUsd') },
                               { field: 'expensesTl', value: row.expensesTl || '', className: 'col-expenses-tl', editable: isColumnEditable('expensesTl') },
                               { field: 'paymentRule', value: row.paymentRule, className: 'col-payment-rule', editable: isColumnEditable('paymentRule') },
@@ -3175,6 +3230,69 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
                                   // Regular cells
                                   const cellKey = `${actualRowIndex}-${cellData.field}`;
                                   const cellRef = getCellRef(cellKey);
+
+                                  // PO / USD - spanning cell for the whole type group (one price per type)
+                                  if (cellData.field === 'poUsd') {
+                                    if (!cellData.isFirstInTypeGroup) {
+                                      return (
+                                        <div
+                                          key={cellIndex}
+                                          className={`row-cell ${cellData.className}`}
+                                          style={{ visibility: 'hidden' }}
+                                        />
+                                      );
+                                    }
+                                    const isEditingPoUsd = editingCell?.field === 'poUsd' && editingCell?.itemId === (row.itemId || '');
+                                    const canEditPoUsd = !!cellData.editable && !row.isRestricted;
+                                    return (
+                                      <div
+                                        key={cellIndex}
+                                        ref={cellRef}
+                                        className={`row-cell ${cellData.className}`}
+                                        style={{
+                                          height: `${(cellData.typeRowCount || 1) * ROW_HEIGHT}px`,
+                                          backgroundColor: '#eff6ff',
+                                          border: '1px solid #e5e7eb',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'space-between',
+                                          padding: '0 8px',
+                                          cursor: canEditPoUsd ? 'pointer' : 'default',
+                                          position: 'relative',
+                                          fontFamily: 'monospace',
+                                          fontWeight: 600
+                                        }}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (row.itemId && canEditPoUsd) {
+                                            setEditingCell({ projectId: project.projectId, itemId: row.itemId, field: 'poUsd' });
+                                          }
+                                        }}
+                                      >
+                                        {isEditingPoUsd ? (
+                                          <input
+                                            type="number"
+                                            step="0.01"
+                                            placeholder="0.00"
+                                            defaultValue={cellData.value}
+                                            autoFocus
+                                            style={{ width: '100%', border: 'none', outline: 'none', background: 'white', padding: '4px', fontFamily: 'monospace', textAlign: 'right' }}
+                                            onClick={(e) => e.stopPropagation()}
+                                            onBlur={(e) => handlePoUsdSaveByType(typeGroup.rows, e.target.value)}
+                                            onKeyDown={(e) => {
+                                              if (e.key === 'Enter') e.currentTarget.blur();
+                                              else if (e.key === 'Escape') handleCellCancel();
+                                            }}
+                                          />
+                                        ) : (
+                                          <>
+                                            <span style={{ color: '#6b7280', fontSize: '14px', fontWeight: 500 }}>$</span>
+                                            <span>{formatCurrency(parseFloat(cellData.value || '0') || 0)}</span>
+                                          </>
+                                        )}
+                                      </div>
+                                    );
+                                  }
 
                                   // Special handling for PO SIGN STATUS - spanning cell for first row
                                   if (cellData.field === 'poSignStatus') {
@@ -3267,7 +3385,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
                                           ₺
                                         </span>
                                       )}
-                                      {(cellData.field === 'invoice' || cellData.field === 'poUsd') && (
+                                      {cellData.field === 'invoice' && (
                                         <span style={{
                                           color: '#6b7280',
                                           fontSize: '14px',
@@ -3328,7 +3446,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
                                                 fontSize: '12px',
                                                 fontWeight: '600',
                                               }
-                                            : cellData.field === 'pfUsd' || cellData.field === 'pfTl' || cellData.field === 'expensesUsd' || cellData.field === 'expensesTl' || cellData.field === 'invoice' || cellData.field === 'invoiceTl' || cellData.field === 'poUsd'
+                                            : cellData.field === 'pfUsd' || cellData.field === 'pfTl' || cellData.field === 'expensesUsd' || cellData.field === 'expensesTl' || cellData.field === 'invoice' || cellData.field === 'invoiceTl'
                                             ? {
                                                 fontFamily: 'monospace',
                                                 fontWeight: '500'
@@ -3341,7 +3459,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
                                             : {})
                                         }}
                                       >
-                                        {(cellData.field === 'pfUsd' || cellData.field === 'pfTl' || cellData.field === 'expensesUsd' || cellData.field === 'expensesTl' || cellData.field === 'invoice' || cellData.field === 'invoiceTl' || cellData.field === 'poUsd')
+                                        {(cellData.field === 'pfUsd' || cellData.field === 'pfTl' || cellData.field === 'expensesUsd' || cellData.field === 'expensesTl' || cellData.field === 'invoice' || cellData.field === 'invoiceTl')
                                           ? formatCurrency(parseFloat(cellData.value || '0') || 0)
                                           : cellData.field === 'containerNo'
                                           ? getContainerDisplayText(cellData.value)
@@ -3409,7 +3527,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
                                             ? getStatusStyle(cellData.value).backgroundColor
                                             : cellData.field === 'pfSignStatus'
                                               ? getSignStatusStyle(cellData.value).backgroundColor
-                                              : (cellData.field === 'pfUsd' || cellData.field === 'pfTl' || cellData.field === 'expensesUsd' || cellData.field === 'expensesTl' || cellData.field === 'invoice' || cellData.field === 'invoiceTl' || cellData.field === 'poUsd')
+                                              : (cellData.field === 'pfUsd' || cellData.field === 'pfTl' || cellData.field === 'expensesUsd' || cellData.field === 'expensesTl' || cellData.field === 'invoice' || cellData.field === 'invoiceTl')
                                                 ? 'rgba(147, 197, 253, 0.1)'
                                                 : undefined,
                                         display: 'flex',
@@ -3584,11 +3702,11 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
                         { field: 'rdy', className: 'col-rdy' },
                         { field: 'ftd', className: 'col-ftd' },
                         { field: 'snd', className: 'col-snd' },
+                        { field: 'poUsd', className: 'col-po-usd' },
                         { field: 'pfUsd', className: 'col-pf-usd' },
                         { field: 'pfTl', className: 'col-pf-tl' },
                         { field: 'invoice', className: 'col-invoice' },
                         { field: 'invoiceTl', className: 'col-invoice-tl' },
-                        { field: 'poUsd', className: 'col-po-usd' },
                         { field: 'expensesUsd', className: 'col-expenses-usd' },
                         { field: 'expensesTl', className: 'col-expenses-tl' },
                         { field: 'paymentRule', className: 'col-payment-rule' },

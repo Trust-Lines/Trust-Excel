@@ -412,6 +412,8 @@ const OperationalBoardGrid = forwardRef<OperationalBoardGridHandle, OperationalB
       let itemsCount = 0;
 
       section.projects.forEach(project => {
+        // PO / USD is one price per type group - count each type of a project once
+        const poByType = new Map<string, number>();
         if (project.rows) {
           project.rows.forEach(row => {
             // Skip restricted items from totals
@@ -423,7 +425,8 @@ const OperationalBoardGrid = forwardRef<OperationalBoardGridHandle, OperationalB
               totalTl += parseMoney(liveItem.pfTl);
               totalInvoice += parseMoney((liveItem as any).invoice);
               totalInvoiceTl += parseMoney((liveItem as any).invoiceTl);
-              totalPoUsd += parseMoney((liveItem as any).poUsd);
+              const livePo = parseMoney((liveItem as any).poUsd);
+              if (livePo && !poByType.get(String(row.type))) poByType.set(String(row.type), livePo);
             } else {
               // Row without live item - check isRestricted flag if available
               if ((row as any).isRestricted) return;
@@ -432,10 +435,12 @@ const OperationalBoardGrid = forwardRef<OperationalBoardGridHandle, OperationalB
               totalTl += parseMoney(row.pfTl);
               totalInvoice += parseMoney((row as any).invoice);
               totalInvoiceTl += parseMoney((row as any).invoiceTl);
-              totalPoUsd += parseMoney((row as any).poUsd);
+              const rowPo = parseMoney((row as any).poUsd);
+              if (rowPo && !poByType.get(String(row.type))) poByType.set(String(row.type), rowPo);
             }
           });
         }
+        poByType.forEach(v => { totalPoUsd += v; });
       });
 
       return { pfUsd: totalUsd, pfTl: totalTl, invoice: totalInvoice, invoiceTl: totalInvoiceTl, poUsd: totalPoUsd, hasData: itemsCount > 0 };

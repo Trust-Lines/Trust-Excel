@@ -1,3 +1,4 @@
+import { applyOptInColumns } from '../common/helpers/opt-in-columns';
 import {
   Injectable,
   UnauthorizedException,
@@ -375,7 +376,7 @@ export class AuthService {
     }
 
     // Create userAccessPolicy from role column visibility for easy frontend consumption
-    const roleBasedPolicy = this.createRoleBasedPolicy(user.role.roleColumnVisibility);
+    const roleBasedPolicy = this.createRoleBasedPolicy(user.role.roleColumnVisibility, !!user.role.isSystem);
 
     // Get page permissions from new RolePageAccess model using pageKey
     const pagePermissions: Record<string, boolean> = {};
@@ -535,7 +536,7 @@ export class AuthService {
     };
   }
 
-  private createRoleBasedPolicy(roleColumnVisibility: any[]): any {
+  private createRoleBasedPolicy(roleColumnVisibility: any[], isSystemRole = false): any {
     // Group by table key for multi-table support
     const defaultColumns = { hidden: [], readOnly: [] };
     const supplierColumns = {
@@ -565,6 +566,13 @@ export class AuthService {
         }
       }
     });
+
+    // Opt-in Projects columns (e.g. PO) stay hidden until the role is explicitly granted them
+    applyOptInColumns(
+      roleColumnVisibility.filter(cv => !cv.table?.key || cv.table?.key === 'operational-board-grid'),
+      defaultColumns.hidden,
+      isSystemRole,
+    );
 
     return {
       // Legacy format for backward compatibility (Projects)

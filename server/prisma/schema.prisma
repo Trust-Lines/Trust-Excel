@@ -275,6 +275,7 @@ model ProjectItem {
   invoiceDate          DateTime?
   invoice              Decimal?               @db.Decimal(12, 2)
   invoiceTl            Decimal?               @db.Decimal(12, 2)
+  poUsd                Decimal?               @db.Decimal(12, 2) // PO amount (USD) - Projects table only
   statusNote           String?
   deletedAt            DateTime?
   sourcePriceListId    String?

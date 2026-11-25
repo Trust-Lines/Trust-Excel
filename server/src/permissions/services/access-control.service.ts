@@ -1,3 +1,4 @@
+import { applyOptInColumns } from '../../common/helpers/opt-in-columns';
 import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { getPermissionsV2Config, PermissionsV2Mode } from '../../config/permissions.config';
@@ -107,6 +108,8 @@ export class AccessControlService {
         }
       });
 
+      applyOptInColumns(user.role.roleColumnVisibility, columnsHidden, user.role.isSystem);
+
       // User-specific overrides
       if (user.userAccessPolicy) {
         columnsHidden.push(...(user.userAccessPolicy.columnsHidden || []));
@@ -209,6 +212,8 @@ export class AccessControlService {
           columnsHidden.push(cv.columnKey);
         }
       });
+
+      applyOptInColumns(user.role.roleColumnVisibility, columnsHidden, user.role.isSystem);
 
       if (user.userAccessPolicy?.columnsHidden) {
         columnsHidden.push(...user.userAccessPolicy.columnsHidden);

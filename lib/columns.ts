@@ -240,6 +240,15 @@ export const OPERATIONAL_BOARD_COLUMNS: Record<string, ColumnDefinition> = {
     isEditableByDefault: true,
     description: 'Invoice amount in Turkish Lira'
   },
+  poUsd: {
+    key: 'poUsd',
+    label: 'PO',
+    group: 'money',
+    width: '160px',
+    isMoney: true,
+    isEditableByDefault: false,
+    description: 'PO amount in USD (Projects table only, opt-in permission)'
+  },
 } as const;
 
 // Type exports

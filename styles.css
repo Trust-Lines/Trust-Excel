@@ -1735,6 +1735,7 @@ html, body {
 .col-pf-tl { width: 160px; flex-shrink: 0; }
 .col-invoice { width: 160px; flex-shrink: 0; }
 .col-invoice-tl { width: 160px; flex-shrink: 0; }
+.col-po-usd { width: 160px; flex-shrink: 0; }
 .col-payment-rule { width: 180px; flex-shrink: 0; }
 .col-container-no { width: 140px; flex-shrink: 0; }
 .col-container-date { width: 140px; flex-shrink: 0; }

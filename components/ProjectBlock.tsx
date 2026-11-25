@@ -421,7 +421,10 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
   const EXPENSES_HIDE_COLS = ['pfCode', 'pfSignStatus', 'poSignStatus', 'pfUsd', 'pfTl', 'rtd', 'containerDate'];
   const EXPENSES_SHOW_COLS = ['expensesUsd', 'expensesTl'];
   const isTrustStockMode = mode === 'trust-stock';
+  // PO column belongs to the Projects table only (not supplier sheets, ME, DO, expenses, trust stock)
+  const isProjectsTable = mode === 'projects' && !isSupplierMode;
   const isColumnVisible = useCallback((key: string) => {
+    if (key === 'poUsd' && !isProjectsTable) return false;
     // Trust Stock shows a fixed column set, ORDER NO included
     if (isTrustStockMode) {
       return TRUST_STOCK_COLS.includes(key) && baseIsColumnVisible(key);
@@ -433,7 +436,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
       if (EXPENSES_SHOW_COLS.includes(key)) return false;
     }
     return baseIsColumnVisible(key);
-  }, [baseIsColumnVisible, isExpensesPMode, isTrustStockMode]);
+  }, [baseIsColumnVisible, isExpensesPMode, isTrustStockMode, isProjectsTable]);
   const isColumnEditable = permissionOverrides?.isColumnEditable || defaultPermissions.isColumnEditable;
   const { paymentRules, addRule: addPaymentRule } = usePaymentRules();
 
@@ -525,7 +528,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
 
   const backendItemsSignature = useMemo(() => (
     (backendItems ?? []).map(i =>
-      `${i.id}:${i.updatedAt ?? ''}:${i.vendorId ?? ''}:${i.type ?? ''}:${i.pfUsd ?? ''}:${i.pfTl ?? ''}:${i.status ?? ''}:${i.pfSignStatus ?? ''}:${i.poSignStatus ?? ''}:${i.orderType ?? ''}:${i.statusNote ?? ''}:${i.std ?? ''}:${i.etd ?? ''}:${i.rtr ?? ''}:${i.rtd ?? ''}:${i.rdy ?? ''}:${i.ftd ?? ''}:${i.snd ?? ''}:${i.containerNo ?? ''}:${i.containerDate ?? ''}:${i.pfCode ?? ''}:${i.paidUsd1 ?? ''}:${i.paidUsd2 ?? ''}:${i.paidTl1 ?? ''}:${i.paidTl2 ?? ''}:${i.paidUsd1Date ?? ''}:${i.paidUsd2Date ?? ''}:${i.paidTl1Date ?? ''}:${i.paidTl2Date ?? ''}:${i.invoiceDate ?? ''}:${i.invoice ?? ''}:${(i as any).invoiceTl ?? ''}`
+      `${i.id}:${i.updatedAt ?? ''}:${i.vendorId ?? ''}:${i.type ?? ''}:${i.pfUsd ?? ''}:${i.pfTl ?? ''}:${i.status ?? ''}:${i.pfSignStatus ?? ''}:${i.poSignStatus ?? ''}:${i.orderType ?? ''}:${i.statusNote ?? ''}:${i.std ?? ''}:${i.etd ?? ''}:${i.rtr ?? ''}:${i.rtd ?? ''}:${i.rdy ?? ''}:${i.ftd ?? ''}:${i.snd ?? ''}:${i.containerNo ?? ''}:${i.containerDate ?? ''}:${i.pfCode ?? ''}:${i.paidUsd1 ?? ''}:${i.paidUsd2 ?? ''}:${i.paidTl1 ?? ''}:${i.paidTl2 ?? ''}:${i.paidUsd1Date ?? ''}:${i.paidUsd2Date ?? ''}:${i.paidTl1Date ?? ''}:${i.paidTl2Date ?? ''}:${i.invoiceDate ?? ''}:${i.invoice ?? ''}:${(i as any).invoiceTl ?? ''}:${(i as any).poUsd ?? ''}`
     ).join('|')
   ), [backendItems]);
 
@@ -692,6 +695,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
       pfTl: item.pfTl ? item.pfTl.toString() : '',
       invoice: item.invoice != null ? item.invoice.toString() : '',
       invoiceTl: (item as any).invoiceTl != null ? (item as any).invoiceTl.toString() : '',
+      poUsd: (item as any).poUsd != null ? (item as any).poUsd.toString() : '',
       paymentRule: item.paymentRule || '',
       containerNo: item.containerNo || '',
       containerDate: item.containerDate ? new Date(item.containerDate).toISOString().split('T')[0] : '', // ✅ ITEM-LEVEL: Container date from individual item
@@ -788,13 +792,19 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
       return sum + value;
     }, 0);
 
+    const totalPoUsd = visibleRows.reduce((sum, row) => {
+      const value = parseFloat((row as any).poUsd || '') || 0;
+      return sum + value;
+    }, 0);
+
     return {
       pfUsd: totalUsd,
       pfTl: totalTl,
       expensesUsd: totalExpensesUsd,
       expensesTl: totalExpensesTl,
       invoice: totalInvoice,
-      invoiceTl: totalInvoiceTl
+      invoiceTl: totalInvoiceTl,
+      poUsd: totalPoUsd
     };
   }, [computedRows]);
 
@@ -824,7 +834,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
 
   // CRITICAL FIX: Helper to update only the specific item, preventing bulk apply bug
   // ⚠️ MUST BE DEFINED BEFORE useEffect that uses it (line 543-567)
-  const updateItemInState = (itemId: string, patch: Partial<{ vendor: string; vendorId: string; pfCode: string; orderType: string; status: string; std: string | null; pfSignStatus: string; poSignStatus: string; etd: string | null; rtd: string | null; rtr: string | null; rdy: string | null; ftd: string | null; snd: string | null; containerNo: string; containerDate: string; paymentRule: string; pfUsd: string; pfTl: string; invoice: string; invoiceTl: string }>) => {
+  const updateItemInState = (itemId: string, patch: Partial<{ vendor: string; vendorId: string; pfCode: string; orderType: string; status: string; std: string | null; pfSignStatus: string; poSignStatus: string; etd: string | null; rtd: string | null; rtr: string | null; rdy: string | null; ftd: string | null; snd: string | null; containerNo: string; containerDate: string; paymentRule: string; pfUsd: string; pfTl: string; invoice: string; invoiceTl: string; poUsd: string }>) => {
 
 
     setItemsById(currentItems => {
@@ -873,6 +883,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
         pfTl: patch.pfTl !== undefined ? (patch.pfTl === '' ? null : parseFloat(patch.pfTl) || null) : existingItem.pfTl,
         invoice: patch.invoice !== undefined ? (patch.invoice === '' ? null : parseFloat(patch.invoice) || null) : existingItem.invoice,
         invoiceTl: patch.invoiceTl !== undefined ? (patch.invoiceTl === '' ? null : parseFloat(patch.invoiceTl) || null) : (existingItem as any).invoiceTl,
+        poUsd: patch.poUsd !== undefined ? (patch.poUsd === '' ? null : parseFloat(patch.poUsd) || null) : (existingItem as any).poUsd,
         updatedAt: new Date().toISOString(),
         // 🧩 PROOF-BASED DEBUG: Track data source
         __source: "itemsById_after_patch"
@@ -1531,7 +1542,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
         applyPatch(editingCell.itemId, patchPayload, editingCell.field)
           .then(() => {})
           .catch((_error) => {});
-      } else if (editingCell.field === 'pfUsd' || editingCell.field === 'pfTl' || editingCell.field === 'expensesUsd' || editingCell.field === 'expensesTl' || editingCell.field === 'invoice' || editingCell.field === 'invoiceTl') {
+      } else if (editingCell.field === 'pfUsd' || editingCell.field === 'pfTl' || editingCell.field === 'expensesUsd' || editingCell.field === 'expensesTl' || editingCell.field === 'invoice' || editingCell.field === 'invoiceTl' || editingCell.field === 'poUsd') {
         const parsed = parseFloat(value);
         const numericValue = value === '' ? null : (isNaN(parsed) ? null : parsed);
         const patchPayload = { [editingCell.field]: numericValue };
@@ -2951,6 +2962,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
                 <div className="column-header-cell col-pf-tl" style={getHeaderCellStyle('pfTl' as ColumnKey)}>PF / TL</div>
                 <div className="column-header-cell col-invoice" style={getHeaderCellStyle('invoice' as ColumnKey)}>INV / USD</div>
                 <div className="column-header-cell col-invoice-tl" style={getHeaderCellStyle('invoiceTl' as ColumnKey)}>INV / TL</div>
+                <div className="column-header-cell col-po-usd" style={getHeaderCellStyle('poUsd' as ColumnKey)}>PO</div>
                 <div className="column-header-cell col-expenses-usd" style={getHeaderCellStyle('expensesUsd' as ColumnKey)}>EXPENSES / USD</div>
                 <div className="column-header-cell col-expenses-tl" style={getHeaderCellStyle('expensesTl' as ColumnKey)}>EXPENSES / TL</div>
                 <div className="column-header-cell col-payment-rule" style={getHeaderCellStyle('paymentRule' as ColumnKey)}>PAYMENT RULE</div>
@@ -3138,6 +3150,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
                               { field: 'pfTl', value: row.pfTl, className: 'col-pf-tl', editable: isColumnEditable('pfTl') },
                               { field: 'invoice', value: row.invoice || '', className: 'col-invoice', editable: isColumnEditable('invoice') },
                               { field: 'invoiceTl', value: (row as any).invoiceTl || '', className: 'col-invoice-tl', editable: isColumnEditable('invoiceTl') },
+                              { field: 'poUsd', value: (row as any).poUsd || '', className: 'col-po-usd', editable: isColumnEditable('poUsd') },
                               { field: 'expensesUsd', value: row.expensesUsd || '', className: 'col-expenses-usd', editable: isColumnEditable('expensesUsd') },
                               { field: 'expensesTl', value: row.expensesTl || '', className: 'col-expenses-tl', editable: isColumnEditable('expensesTl') },
                               { field: 'paymentRule', value: row.paymentRule, className: 'col-payment-rule', editable: isColumnEditable('paymentRule') },
@@ -3254,7 +3267,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
                                           ₺
                                         </span>
                                       )}
-                                      {cellData.field === 'invoice' && (
+                                      {(cellData.field === 'invoice' || cellData.field === 'poUsd') && (
                                         <span style={{
                                           color: '#6b7280',
                                           fontSize: '14px',
@@ -3315,7 +3328,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
                                                 fontSize: '12px',
                                                 fontWeight: '600',
                                               }
-                                            : cellData.field === 'pfUsd' || cellData.field === 'pfTl' || cellData.field === 'expensesUsd' || cellData.field === 'expensesTl' || cellData.field === 'invoice' || cellData.field === 'invoiceTl'
+                                            : cellData.field === 'pfUsd' || cellData.field === 'pfTl' || cellData.field === 'expensesUsd' || cellData.field === 'expensesTl' || cellData.field === 'invoice' || cellData.field === 'invoiceTl' || cellData.field === 'poUsd'
                                             ? {
                                                 fontFamily: 'monospace',
                                                 fontWeight: '500'
@@ -3328,7 +3341,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
                                             : {})
                                         }}
                                       >
-                                        {(cellData.field === 'pfUsd' || cellData.field === 'pfTl' || cellData.field === 'expensesUsd' || cellData.field === 'expensesTl' || cellData.field === 'invoice' || cellData.field === 'invoiceTl')
+                                        {(cellData.field === 'pfUsd' || cellData.field === 'pfTl' || cellData.field === 'expensesUsd' || cellData.field === 'expensesTl' || cellData.field === 'invoice' || cellData.field === 'invoiceTl' || cellData.field === 'poUsd')
                                           ? formatCurrency(parseFloat(cellData.value || '0') || 0)
                                           : cellData.field === 'containerNo'
                                           ? getContainerDisplayText(cellData.value)
@@ -3396,7 +3409,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
                                             ? getStatusStyle(cellData.value).backgroundColor
                                             : cellData.field === 'pfSignStatus'
                                               ? getSignStatusStyle(cellData.value).backgroundColor
-                                              : (cellData.field === 'pfUsd' || cellData.field === 'pfTl' || cellData.field === 'expensesUsd' || cellData.field === 'expensesTl' || cellData.field === 'invoice' || cellData.field === 'invoiceTl')
+                                              : (cellData.field === 'pfUsd' || cellData.field === 'pfTl' || cellData.field === 'expensesUsd' || cellData.field === 'expensesTl' || cellData.field === 'invoice' || cellData.field === 'invoiceTl' || cellData.field === 'poUsd')
                                                 ? 'rgba(147, 197, 253, 0.1)'
                                                 : undefined,
                                         display: 'flex',
@@ -3575,6 +3588,7 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
                         { field: 'pfTl', className: 'col-pf-tl' },
                         { field: 'invoice', className: 'col-invoice' },
                         { field: 'invoiceTl', className: 'col-invoice-tl' },
+                        { field: 'poUsd', className: 'col-po-usd' },
                         { field: 'expensesUsd', className: 'col-expenses-usd' },
                         { field: 'expensesTl', className: 'col-expenses-tl' },
                         { field: 'paymentRule', className: 'col-payment-rule' },
@@ -3714,6 +3728,24 @@ const ProjectBlock: React.FC<ProjectBlockProps> = ({ mode = 'projects', project,
                             }}>
                               <span style={{ marginRight: '4px' }}>₺</span>
                               {formatCurrency((projectTotals as any).invoiceTl || 0)}
+                            </div>
+                          );
+                        } else if (col.field === 'poUsd') {
+                          return (
+                            <div key={col.field} className={`row-cell ${col.className}`} style={{
+                              textAlign: 'left',
+                              backgroundColor: '#1e40af',
+                              color: 'white',
+                              fontWeight: '700',
+                              fontSize: '11px',
+                              paddingLeft: '12px',
+                              borderRight: '1px solid #1e40af',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'flex-start'
+                            }}>
+                              <span style={{ marginRight: '4px' }}>$</span>
+                              {formatCurrency(projectTotals.poUsd)}
                             </div>
                           );
                         } else {

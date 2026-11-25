@@ -104,6 +104,7 @@ export interface BackendProjectItem {
   invoiceDate: string | null;
   invoice: number | null;
   invoiceTl: number | null;
+  poUsd?: number | null;
   createdAt: string;
   updatedAt: string;
   vendor?: { // Vendor relation when included
@@ -438,6 +439,7 @@ export interface UpdateProjectItemRequest {
   containerNo?: string;
   invoice?: number | null;
   invoiceTl?: number | null;
+  poUsd?: number | null;
 }
 
 // ==================== PROJECT ITEM API FUNCTIONS ====================

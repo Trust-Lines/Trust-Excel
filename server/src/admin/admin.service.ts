@@ -1,3 +1,4 @@
+import { applyOptInColumns, OPT_IN_PROJECT_COLUMNS } from '../common/helpers/opt-in-columns';
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
@@ -47,6 +48,7 @@ const OPERATIONAL_BOARD_COLUMNS = {
   pfTl: { key: 'pfTl', label: 'PF TL', group: 'money', width: '120px', isMoney: true, isEditableByDefault: true, description: 'Project fee in Turkish Lira' },
   invoice: { key: 'invoice', label: 'INV/USD', group: 'money', width: '160px', isMoney: true, isEditableByDefault: true, description: 'Invoice amount in USD' },
   invoiceTl: { key: 'invoiceTl', label: 'INV/TL', group: 'money', width: '160px', isMoney: true, isEditableByDefault: true, description: 'Invoice amount in Turkish Lira' },
+  poUsd: { key: 'poUsd', label: 'PO', group: 'money', width: '160px', isMoney: true, isEditableByDefault: false, description: 'PO amount in USD (Projects table only, opt-in permission)' },
   expensesUsd: { key: 'expensesUsd', label: 'Expenses USD', group: 'money', width: '160px', isMoney: true, isEditableByDefault: true, description: 'Expenses amount in USD' },
   expensesTl: { key: 'expensesTl', label: 'Expenses TL', group: 'money', width: '160px', isMoney: true, isEditableByDefault: true, description: 'Expenses amount in Turkish Lira' },
   paymentRule: { key: 'paymentRule', label: 'Payment Rule', group: 'logistics', width: '180px', isMoney: false, isEditableByDefault: true, description: 'Payment agreement terms' },
@@ -670,6 +672,9 @@ export class AdminService {
         }
       });
 
+      // Opt-in columns (e.g. PO) show as hidden until explicitly granted
+      applyOptInColumns(operationalBoardVisibility, columnsHidden, role.isSystem);
+
       this.logger.log(`Retrieved column policy for role ${role.name}`);
       return {
         success: true,
@@ -775,6 +780,20 @@ export class AdminService {
             columnKey,
             isHidden: false,
             isReadOnly: true,
+            tableId: null,
+          });
+        });
+
+      // Opt-in columns (e.g. PO) that are neither hidden nor read-only get an explicit
+      // "granted" row - without it they fall back to hidden (see applyOptInColumns)
+      OPT_IN_PROJECT_COLUMNS
+        .filter((columnKey) => !columnsHidden.includes(columnKey) && !columnsReadOnly.includes(columnKey))
+        .forEach((columnKey) => {
+          visibilityRecords.push({
+            roleId,
+            columnKey,
+            isHidden: false,
+            isReadOnly: false,
             tableId: null,
           });
         });
@@ -919,6 +938,20 @@ export class AdminService {
             columnKey,
             isHidden: false,
             isReadOnly: true,
+            tableId: null,
+          });
+        });
+
+      // Opt-in columns (e.g. PO) that are neither hidden nor read-only get an explicit
+      // "granted" row - without it they fall back to hidden (see applyOptInColumns)
+      OPT_IN_PROJECT_COLUMNS
+        .filter((columnKey) => !columnsHidden.includes(columnKey) && !columnsReadOnly.includes(columnKey))
+        .forEach((columnKey) => {
+          visibilityRecords.push({
+            roleId,
+            columnKey,
+            isHidden: false,
+            isReadOnly: false,
             tableId: null,
           });
         });

@@ -28,6 +28,7 @@ export const COLUMN_WIDTHS: Record<ColumnKey, number> = {
   pfTl: 160,
   invoice: 160,
   invoiceTl: 160,
+  poUsd: 160,
   paymentRule: 180,
   containerNo: 140,
   containerDate: 140,
@@ -57,6 +58,7 @@ export const SCROLLABLE_COLUMNS: ColumnKey[] = [
   'pfTl',
   'invoice',
   'invoiceTl',
+  'poUsd',
   'expensesUsd',
   'expensesTl',
   'paymentRule',
@@ -87,6 +89,10 @@ export const calculateGridWidth = (
   SCROLLABLE_COLUMNS.forEach((col) => {
     // Skip PO Sign Status in supplier mode
     if (isSupplierMode && col === 'poSignStatus') {
+      return;
+    }
+    // PO column lives only in the Projects table, never in supplier sheets
+    if (isSupplierMode && col === 'poUsd') {
       return;
     }
 

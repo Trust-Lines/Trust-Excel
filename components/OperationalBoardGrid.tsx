@@ -19,7 +19,7 @@ import GroupedPfTable from './GroupedPfTable';
 // Section Total Row Component
 const SectionTotalRow: React.FC<{
   sectionLabel: string;
-  totals: { pfUsd: number; pfTl: number; invoice: number; invoiceTl: number; hasData: boolean };
+  totals: { pfUsd: number; pfTl: number; invoice: number; invoiceTl: number; poUsd?: number; hasData: boolean };
   isColumnVisible: (columnKey: string) => boolean;
   shouldShowMoneyTotals: () => boolean;
   gridWidthPx: string;
@@ -33,8 +33,9 @@ const SectionTotalRow: React.FC<{
   const showTlTotal = isColumnVisible('pfTl');
   const showInvoiceTotal = isColumnVisible('invoice');
   const showInvoiceTlTotal = isColumnVisible('invoiceTl');
+  const showPoTotal = isColumnVisible('poUsd');
 
-  if (!showUsdTotal && !showTlTotal && !showInvoiceTotal && !showInvoiceTlTotal) {
+  if (!showUsdTotal && !showTlTotal && !showInvoiceTotal && !showInvoiceTlTotal && !showPoTotal) {
     return null;
   }
 
@@ -105,6 +106,11 @@ const SectionTotalRow: React.FC<{
           INV/TL {totals.invoiceTl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
       )}
+      {showPoTotal && (
+        <div style={{ ...moneyBoxStyle, right: `${getColumnRightOffset('poUsd') + 5}px` }}>
+          PO ${(totals.poUsd || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </div>
+      )}
     </div>
   );
 };
@@ -173,6 +179,8 @@ const OperationalBoardGrid = forwardRef<OperationalBoardGridHandle, OperationalB
   const EXPENSES_SHOW_COLS = ['expensesUsd', 'expensesTl'];
   const EXPENSES_HIDE_COLS = ['pfCode', 'pfSignStatus', 'poSignStatus', 'pfUsd', 'pfTl', 'rtd', 'containerDate'];
   const isColumnVisible = useCallback((key: string) => {
+    // PO column belongs to the Projects table only
+    if (key === 'poUsd' && mode !== 'projects') return false;
     if (isExpensesMode) {
       if (EXPENSES_HIDE_COLS.includes(key)) return false;
       if (EXPENSES_SHOW_COLS.includes(key)) return true;
@@ -180,7 +188,7 @@ const OperationalBoardGrid = forwardRef<OperationalBoardGridHandle, OperationalB
       if (EXPENSES_SHOW_COLS.includes(key)) return false;
     }
     return baseIsColumnVisible(key);
-  }, [baseIsColumnVisible, isExpensesMode]);
+  }, [baseIsColumnVisible, isExpensesMode, mode]);
 
   // Calculate dynamic grid width based on visible columns
   const gridWidthPx = useMemo(() => {
@@ -280,6 +288,7 @@ const OperationalBoardGrid = forwardRef<OperationalBoardGridHandle, OperationalB
           pfTl: (item.pfTl || 0).toString(),
           invoice: (item.invoice || 0).toString(),
           invoiceTl: (item.invoiceTl || 0).toString(),
+          poUsd: ((item as any).poUsd || 0).toString(),
           paymentRule: item.paymentRule || '',
           containerNo: item.containerNo,
           containerDate: item.containerDate ? new Date(item.containerDate).toISOString().split('T')[0] : '',
@@ -399,6 +408,7 @@ const OperationalBoardGrid = forwardRef<OperationalBoardGridHandle, OperationalB
       let totalTl = 0;
       let totalInvoice = 0;
       let totalInvoiceTl = 0;
+      let totalPoUsd = 0;
       let itemsCount = 0;
 
       section.projects.forEach(project => {
@@ -413,6 +423,7 @@ const OperationalBoardGrid = forwardRef<OperationalBoardGridHandle, OperationalB
               totalTl += parseMoney(liveItem.pfTl);
               totalInvoice += parseMoney((liveItem as any).invoice);
               totalInvoiceTl += parseMoney((liveItem as any).invoiceTl);
+              totalPoUsd += parseMoney((liveItem as any).poUsd);
             } else {
               // Row without live item - check isRestricted flag if available
               if ((row as any).isRestricted) return;
@@ -421,12 +432,13 @@ const OperationalBoardGrid = forwardRef<OperationalBoardGridHandle, OperationalB
               totalTl += parseMoney(row.pfTl);
               totalInvoice += parseMoney((row as any).invoice);
               totalInvoiceTl += parseMoney((row as any).invoiceTl);
+              totalPoUsd += parseMoney((row as any).poUsd);
             }
           });
         }
       });
 
-      return { pfUsd: totalUsd, pfTl: totalTl, invoice: totalInvoice, invoiceTl: totalInvoiceTl, hasData: itemsCount > 0 };
+      return { pfUsd: totalUsd, pfTl: totalTl, invoice: totalInvoice, invoiceTl: totalInvoiceTl, poUsd: totalPoUsd, hasData: itemsCount > 0 };
     };
   }, [globalItemsById, isItemRestricted]);
 
@@ -611,6 +623,7 @@ const OperationalBoardGrid = forwardRef<OperationalBoardGridHandle, OperationalB
       pfTl: item.pfTl ? item.pfTl.toString() : '',
       invoice: item.invoice ? item.invoice.toString() : '',
       invoiceTl: (item as any).invoiceTl ? (item as any).invoiceTl.toString() : '',
+      poUsd: (item as any).poUsd ? (item as any).poUsd.toString() : '',
       paymentRule: item.paymentRule || '',
       containerNo: item.containerNo || '',
       containerDate: item.containerDate ? new Date(item.containerDate).toISOString().split('T')[0] : '',

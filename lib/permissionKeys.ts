@@ -168,6 +168,7 @@ export const PROJECTS_COLUMNS = [
   { key: 'pfTl', label: 'PF TL', group: 'money', defaultVisible: true, defaultEditable: true },
   { key: 'invoice', label: 'INV/USD', group: 'money', defaultVisible: true, defaultEditable: true },
   { key: 'invoiceTl', label: 'INV/TL', group: 'money', defaultVisible: true, defaultEditable: true },
+  { key: 'poUsd', label: 'PO', group: 'money', defaultVisible: false, defaultEditable: false },
   { key: 'expensesUsd', label: 'Expenses USD', group: 'money', defaultVisible: true, defaultEditable: true },
   { key: 'expensesTl', label: 'Expenses TL', group: 'money', defaultVisible: true, defaultEditable: true },
   { key: 'paymentRule', label: 'Payment Rule', group: 'logistics', defaultVisible: true, defaultEditable: true },

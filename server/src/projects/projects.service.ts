@@ -1,3 +1,4 @@
+import { applyOptInColumns } from '../common/helpers/opt-in-columns';
 import {
   Injectable,
   Logger,
@@ -1017,6 +1018,7 @@ export class ProjectsService {
     }
     if (updateItemDto.invoice !== undefined) updateData.invoice = updateItemDto.invoice;
     if (updateItemDto.invoiceTl !== undefined) updateData.invoiceTl = updateItemDto.invoiceTl;
+    if (updateItemDto.poUsd !== undefined) updateData.poUsd = updateItemDto.poUsd;
     if (updateItemDto.priceNotes !== undefined) updateData.priceNotes = updateItemDto.priceNotes;
 
     if (updateItemDto.status !== undefined) {
@@ -1108,6 +1110,7 @@ export class ProjectsService {
         { key: 'status' }, { key: 'poSignStatus' }, { key: 'pfSignStatus' }, { key: 'orderType' },
         { key: 'pfUsd', format: (v: any) => v?.toString() || null },
         { key: 'pfTl', format: (v: any) => v?.toString() || null },
+        { key: 'poUsd', format: (v: any) => v?.toString() || null },
         { key: 'std', format: (v: any) => v?.toISOString?.() || v || null },
         { key: 'etd', format: (v: any) => v?.toISOString?.() || v || null },
         { key: 'rtd', format: (v: any) => v?.toISOString?.() || v || null },
@@ -1625,6 +1628,7 @@ export class ProjectsService {
         columnsReadOnly.push(cv.columnKey);
       }
     });
+    applyOptInColumns(user.role.roleColumnVisibility, columnsHidden, user.role.isSystem);
 
 
     // Determine which fields user is trying to update (exclude system fields)
@@ -1753,6 +1757,7 @@ export class ProjectsService {
         if (cv.isHidden) columnsHidden.push(cv.columnKey);
         else if (cv.isReadOnly) columnsReadOnly.push(cv.columnKey);
       });
+      applyOptInColumns(user.role.roleColumnVisibility, columnsHidden, user.role.isSystem);
 
       if (user.userAccessPolicy) {
         columnsHidden.push(...(user.userAccessPolicy.columnsHidden || []));

@@ -729,6 +729,7 @@ const AdminRoles: React.FC = () => {
       { key: 'pfTl', label: 'PF / TL', module: 'operational', defaultVisible: true, defaultEditable: true },
       { key: 'invoice', label: 'Invoice / USD', module: 'operational', defaultVisible: true, defaultEditable: true },
       { key: 'invoiceTl', label: 'Invoice / TL', module: 'operational', defaultVisible: true, defaultEditable: true },
+      { key: 'poUsd', label: 'PO (USD) - Projects only, grant manually', module: 'operational', defaultVisible: false, defaultEditable: false },
       { key: 'expensesUsd', label: 'Expenses / USD', module: 'operational', defaultVisible: true, defaultEditable: true },
       { key: 'expensesTl', label: 'Expenses / TL', module: 'operational', defaultVisible: true, defaultEditable: true },
       { key: 'paymentRule', label: 'Payment Rule', module: 'operational', defaultVisible: true, defaultEditable: true },

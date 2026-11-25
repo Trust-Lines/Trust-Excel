@@ -158,6 +158,11 @@ export class CreateProjectItemDto {
   invoiceTl?: number;
 
   @IsOptional()
+  @IsNumber({}, { message: 'PO USD must be a valid number' })
+  @Transform(({ value }) => value === null ? null : (value !== undefined && value !== '' ? parseFloat(value) : undefined))
+  poUsd?: number;
+
+  @IsOptional()
   @IsObject()
   priceNotes?: Record<string, string>;
 }

@@ -18,7 +18,7 @@ export const NAV_PAGES: NavPage[] = [
   { key: 'suppliers_vendors', label: 'Suppliers / Vendors', path: '/suppliers', icon: 'Building2' },
   { key: 'supplier_total', label: 'Supplier Total', path: '/supplier-total', icon: 'CircleDollarSign' },
   { key: 'project_total', label: 'Project Total', path: '/project-total', icon: 'BarChart3' },
-  { key: 'operational_board', label: 'Reports', path: '/reports', icon: 'FileText' },
+  { key: 'reports', label: 'Reports', path: '/reports', icon: 'FileText' },
   { key: 'admin_roles_permissions', label: 'Admin > Roles & Permissions', path: '/admin/roles', icon: 'ShieldCheck' },
   { key: 'admin_activity_log', label: 'Activity Log', path: '/admin/activity-log', icon: 'ScrollText' },
   { key: 'trust_expenses', label: 'Trust Expenses', path: '/trust-expenses', icon: 'Wallet' },
@@ -29,8 +29,8 @@ export const NAV_PAGES: NavPage[] = [
   { key: 'admin_roles_permissions', label: 'Backup & Restore', path: '/admin/backup-restore', icon: 'DatabaseBackup' },
   { key: 'trash_bin', label: 'Trash Bin', path: '/admin/trash-bin', icon: 'Trash2' },
   { key: 'admin_roles_permissions', label: 'Dropbox Test', path: '/dropbox-test', icon: 'HardDrive' },
-  { key: 'operational_board', label: 'Price List', path: '/price-list', icon: 'ClipboardList' },
-  { key: 'operational_board', label: 'Pending Approvals', path: '/pending-approvals', icon: 'ClipboardCheck' },
+  { key: 'price_list', label: 'Price List', path: '/price-list', icon: 'ClipboardList' },
+  { key: 'pending_approvals', label: 'Pending Approvals', path: '/pending-approvals', icon: 'ClipboardCheck' },
 ];
 
 // Helper: path -> pageKey mapping (for route guard)

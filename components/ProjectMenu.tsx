@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { PfGroup } from '../lib/pf-groups';
 import { apiFetch } from '../lib/auth';
+import { useAuth } from '../contexts/AuthContext';
 
 interface ProjectMenuProps {
   isOpen: boolean;
@@ -54,6 +55,9 @@ const ProjectMenu: React.FC<ProjectMenuProps> = ({
   onEditProject
 }) => {
   const navigate = useNavigate();
+  // "Belge Hazırla" opens the Price List page - only offer it to roles that can open that page
+  const { canAccessPage } = useAuth();
+  const canOpenPriceList = canAccessPage('price_list');
   const [editMode, setEditMode] = useState<'name' | 'address' | 'types' | 'region' | 'group' | null>(null);
   const [editTypes, setEditTypes] = useState<string[]>(projectTypes);
   const [newCustomType, setNewCustomType] = useState('');
@@ -200,7 +204,7 @@ const ProjectMenu: React.FC<ProjectMenuProps> = ({
       >
         {/* Menu Items */}
         <div style={{ padding: '4px 0' }}>
-          {!stockMode && (<>
+          {!stockMode && canOpenPriceList && (<>
           {/* Belge Hazırla */}
           <button
             onClick={() => { navigate(`/price-list?projectId=${projectId}`); onClose(); }}

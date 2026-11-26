@@ -1,3 +1,4 @@
+import { applySplitPageFallbacks } from '../common/helpers/page-key-fallbacks';
 import { applyOptInColumns, OPT_IN_PROJECT_COLUMNS } from '../common/helpers/opt-in-columns';
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -1668,6 +1669,9 @@ export class AdminService {
           permissions[key] = false;
         }
       }
+
+      // Reports / Price List / Pending Approvals have their own keys now; unset → inherit Projects
+      applySplitPageFallbacks(permissions);
 
       // Legacy key aliases for backward compatibility
       permissions.projects = permissions.operational_board;

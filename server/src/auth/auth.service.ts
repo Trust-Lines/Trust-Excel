@@ -1,3 +1,4 @@
+import { applySplitPageFallbacks } from '../common/helpers/page-key-fallbacks';
 import { applyOptInColumns } from '../common/helpers/opt-in-columns';
 import {
   Injectable,
@@ -392,6 +393,8 @@ export class AuthService {
         pagePermissions[key] = false;
       }
     }
+    // Reports / Price List / Pending Approvals have their own keys now; unset → inherit Projects
+    applySplitPageFallbacks(pagePermissions);
     // Legacy aliases
     pagePermissions.projects = pagePermissions.operational_board;
     pagePermissions.suppliers = pagePermissions.suppliers_vendors;

@@ -266,7 +266,7 @@ const App: React.FC = () => {
               <Route
                 path="/reports"
                 element={
-                  <RoleBasedRoute pageKey="operational_board">
+                  <RoleBasedRoute pageKey="reports">
                     <Reports />
                   </RoleBasedRoute>
                 }
@@ -336,7 +336,7 @@ const App: React.FC = () => {
               <Route
                 path="/price-list"
                 element={
-                  <RoleBasedRoute pageKey="operational_board">
+                  <RoleBasedRoute pageKey="price_list">
                     <PriceList />
                   </RoleBasedRoute>
                 }
@@ -346,7 +346,7 @@ const App: React.FC = () => {
               <Route
                 path="/pending-approvals"
                 element={
-                  <RoleBasedRoute pageKey="operational_board">
+                  <RoleBasedRoute pageKey="pending_approvals">
                     <PendingApprovals />
                   </RoleBasedRoute>
                 }
